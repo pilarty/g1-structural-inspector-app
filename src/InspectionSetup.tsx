@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import ActivityBar, { NavTab } from './ActivityBar';
-import { TopNav } from './components';
+import { TopNav, TurquoiseCard, PanelTitle, PanelLabel, PanelText, PrimaryButton } from './components';
 import { mockProjects } from './data';
 import { ChevronDown, Check } from 'lucide-react';
 
@@ -66,26 +66,26 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
             </div>
 
             {/* ── Section: Estado del robot ── */}
-            <section>
-              <div className="flex items-center justify-between pb-3 border-b border-[#11676A]/15">
-                <h2 className="text-[14px] font-bold text-[#1A1C1E]">Estado del robot</h2>
+            <TurquoiseCard size="lg" bordered className="mb-5">
+              <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#11676A]/10">
+                <PanelTitle>Estado del robot</PanelTitle>
                 <span className="flex items-center gap-1.5 text-[12px] font-semibold text-[#1A1C1E]">
                   <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ backgroundColor: status.dot }} />
                   {status.label}
                 </span>
               </div>
 
-              <div className="py-5 space-y-5">
+              <div className="px-5 py-5 space-y-5">
 
                 {/* Robot ID + battery */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[9px] font-normal text-[#0B5559] uppercase tracking-widest mb-1">Robot</p>
-                    <p className="text-[13px] font-semibold text-[#1A1C1E]">{robot.label}</p>
+                    <PanelLabel>Robot</PanelLabel>
+                    <PanelText className="mt-0.5 font-semibold">{robot.label}</PanelText>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] font-normal text-[#0B5559] uppercase tracking-widest mb-1">Batería</p>
-                    <div className="flex items-center gap-2">
+                    <PanelLabel>Batería</PanelLabel>
+                    <div className="flex items-center gap-2 mt-0.5">
                       <div className="w-16 h-1.5 bg-black/8 rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full"
@@ -114,7 +114,7 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
 
                 {/* Network */}
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-normal text-[#0B5559] uppercase tracking-widest">Red</span>
+                  <PanelLabel>Red</PanelLabel>
                   {robot.network ? (
                     <p className="text-[12px] text-[#1A1C1E]">
                       WiFi 6 — <span className="font-semibold">{robot.network}</span>
@@ -137,19 +137,19 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                   </div>
                 )}
               </div>
-            </section>
+            </TurquoiseCard>
 
             {/* ── Section: Configuración del relevamiento ── */}
-            <section className="mt-2">
-              <div className="pb-3 border-b border-[#11676A]/15">
-                <h2 className="text-[14px] font-bold text-[#1A1C1E]">Configuración del relevamiento</h2>
+            <TurquoiseCard size="lg" bordered>
+              <div className="px-5 pt-4 pb-3 border-b border-[#11676A]/10">
+                <PanelTitle>Configuración del relevamiento</PanelTitle>
               </div>
 
-              <div className="py-5 space-y-4">
+              <div className="px-5 py-5 space-y-4">
 
                 {/* Building selector */}
                 <div className="relative">
-                  <p className="text-[9px] font-normal text-[#0B5559] uppercase tracking-widest mb-1.5">Edificio</p>
+                  <PanelLabel className="mb-1.5">Edificio</PanelLabel>
                   <button
                     onClick={() => { setBuildingMenuOpen(o => !o); setRobotMenuOpen(false); }}
                     className="w-full flex items-center justify-between px-4 py-2.5 bg-white/60 hover:bg-white/80 transition-colors rounded-xl text-left"
@@ -186,7 +186,7 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                 <div className="grid grid-cols-3 gap-3">
                   {/* Robot selector */}
                   <div className="col-span-1 relative">
-                    <p className="text-[9px] font-normal text-[#0B5559] uppercase tracking-widest mb-1.5">Robot asignado</p>
+                    <PanelLabel className="mb-1.5">Robot asignado</PanelLabel>
                     <button
                       onClick={() => { setRobotMenuOpen(o => !o); setBuildingMenuOpen(false); }}
                       className="w-full flex items-center justify-between px-3 py-2.5 bg-white/40 hover:bg-white/70 transition-colors rounded-xl h-[42px]"
@@ -219,7 +219,7 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
 
                   {/* Date */}
                   <div className="col-span-1">
-                    <p className="text-[9px] font-normal text-[#0B5559] uppercase tracking-widest mb-1.5">Fecha</p>
+                    <PanelLabel className="mb-1.5">Fecha</PanelLabel>
                     <input
                       type="date"
                       value={date}
@@ -230,7 +230,7 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
 
                   {/* Time */}
                   <div className="col-span-1">
-                    <p className="text-[9px] font-normal text-[#0B5559] uppercase tracking-widest mb-1.5">Hora</p>
+                    <PanelLabel className="mb-1.5">Hora</PanelLabel>
                     <input
                       type="time"
                       value={time}
@@ -241,20 +241,17 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                 </div>
 
               </div>
-            </section>
+            </TurquoiseCard>
 
             {/* Primary action */}
-            <button
+            <PrimaryButton
+              variant="full"
               disabled={!canStart}
               onClick={() => canStart && onTabChange('inspeccion-en-curso')}
-              className={`w-full mt-6 py-3.5 rounded-xl text-[14px] font-semibold transition-colors ${
-                canStart
-                  ? 'bg-[#11676A] text-white hover:bg-[#0E5254]'
-                  : 'bg-[#E2DFD8] text-[#A0A2A4] cursor-not-allowed'
-              }`}
+              className="mt-6"
             >
               Iniciar configuración
-            </button>
+            </PrimaryButton>
 
           </div>
         </div>

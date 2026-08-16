@@ -1,6 +1,6 @@
 import React from 'react';
 import ActivityBar, { NavTab } from './ActivityBar';
-import { TopNav } from './components';
+import { TopNav, PrimaryButton } from './components';
 import { MapPin, Layers, Calendar, Map, Settings, Download, Play } from 'lucide-react';
 
 const GRID_BG = {
@@ -83,13 +83,9 @@ export default function BuildingEmpty({ activeTab, onTabChange, onStartInspectio
                 Iniciá una inspección para comenzar a recolectar datos estructurales y detectar daños en tiempo real.
               </p>
 
-              <button
-                onClick={onStartInspection}
-                className="flex items-center gap-2 px-7 py-3 bg-[#11676A] hover:bg-[#0E5254] text-white text-[14px] font-semibold rounded-xl transition-colors shadow-[0_2px_12px_rgba(17,103,106,0.3)]"
-              >
-                <Play className="w-4 h-4" />
+              <PrimaryButton onClick={onStartInspection} variant="large" shadow icon={<Play className="w-4 h-4" />}>
                 Iniciar inspección
-              </button>
+              </PrimaryButton>
 
               <p className="text-[11px] text-[#A0A2A4] mt-5">
                 Necesitás tener un robot conectado y el plano configurado antes de comenzar.

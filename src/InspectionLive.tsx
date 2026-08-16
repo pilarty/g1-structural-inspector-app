@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ActivityBar, { NavTab } from './ActivityBar';
-import { TopNav } from './components';
+import { TopNav, StatBlock, PanelLabel, PanelText } from './components';
 import { Wifi, Battery, Square } from 'lucide-react';
 
 const GRID_BG = {
@@ -109,16 +109,16 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
               dot: true,
             },
           ].map((stat, i) => (
-            <div key={i} className={`flex-1 px-5 py-1 ${i < 3 ? 'border-r border-[#F0EDE8]' : ''}`}>
-              <p className="text-[9px] font-semibold text-[#8A8C8E] uppercase tracking-widest mb-1">{stat.label}</p>
-              <div className="flex items-center gap-1.5">
-                {stat.dot && <span className="w-2 h-2 rounded-full flex-none" style={{ backgroundColor: stat.color }} />}
-                <span className="text-[20px] font-bold leading-none tracking-tight tabular-nums" style={{ color: stat.color }}>
-                  {stat.value}
-                </span>
-              </div>
-              <p className="text-[10px] text-[#A0A2A4] mt-0.5">{stat.sub}</p>
-            </div>
+            <StatBlock
+              key={i}
+              variant="live"
+              label={stat.label}
+              value={stat.value}
+              sub={stat.sub}
+              valueColor={stat.color}
+              dot={stat.dot}
+              divider={i < 3}
+            />
           ))}
         </div>
 
@@ -210,8 +210,8 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
                   { label: 'Operador', value: 'M. García' },
                 ].map(({ label, value }) => (
                   <div key={label}>
-                    <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-0.5">{label}</p>
-                    <p className="text-[12px] font-medium text-[#1A1C1E] leading-snug">{value}</p>
+                    <PanelLabel>{label}</PanelLabel>
+                    <PanelText className="leading-snug mt-0.5">{value}</PanelText>
                   </div>
                 ))}
               </div>

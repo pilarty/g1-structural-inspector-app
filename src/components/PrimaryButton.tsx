@@ -6,11 +6,14 @@ interface PrimaryButtonProps {
   disabled?: boolean;
   /** Icon rendered to the left of the label */
   icon?: React.ReactNode;
+  /** Icon rendered to the right of the label */
+  iconRight?: React.ReactNode;
   /** 'default' — inline px-6 py-2.5 | 'large' — px-7 py-3 | 'full' — w-full py-3.5 */
   variant?: 'default' | 'large' | 'full';
   /** Add brand drop-shadow */
   shadow?: boolean;
   type?: 'button' | 'submit';
+  className?: string;
 }
 
 const sizeClasses: Record<NonNullable<PrimaryButtonProps['variant']>, string> = {
@@ -24,9 +27,11 @@ export default function PrimaryButton({
   onClick,
   disabled,
   icon,
+  iconRight,
   variant = 'default',
   shadow = false,
   type = 'button',
+  className = '',
 }: PrimaryButtonProps) {
   return (
     <button
@@ -40,10 +45,12 @@ export default function PrimaryButton({
           ? 'bg-[#E2DFD8] text-[#A0A2A4] cursor-not-allowed'
           : 'bg-[#11676A] text-white hover:bg-[#0E5254]',
         shadow && !disabled ? 'shadow-[0_2px_12px_rgba(17,103,106,0.30)]' : '',
+        className,
       ].join(' ')}
     >
       {icon}
       {children}
+      {iconRight}
     </button>
   );
 }

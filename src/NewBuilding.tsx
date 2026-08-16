@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import ActivityBar, { NavTab } from './ActivityBar';
-import { TopNav } from './components';
+import { TopNav, TurquoiseCard, PanelTitle, PanelLabel, PrimaryButton, SecondaryButton } from './components';
 import { ChevronDown, Upload, X, FileText, Building2 } from 'lucide-react';
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <p className="text-[9px] font-normal text-[#0B5559] uppercase tracking-widest mb-1.5">{children}</p>;
+  return <PanelLabel className="mb-1.5">{children}</PanelLabel>;
 }
 
 function TextInput({ placeholder, type = 'text' }: { placeholder: string; type?: string }) {
@@ -71,10 +71,10 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel }: NewBui
             <div className="grid grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] gap-5 items-start">
 
               {/* ── Card: Datos obligatorios ── */}
-              <div className="bg-[#11676A]/[0.07] rounded-2xl overflow-hidden">
+              <TurquoiseCard size="lg">
                 <div className="px-5 pt-4 pb-3 border-b border-[#11676A]/10 flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-[#11676A]" />
-                  <span className="text-[14px] font-bold text-[#1A1C1E]">Datos del edificio</span>
+                  <PanelTitle>Datos del edificio</PanelTitle>
                 </div>
                 <div className="px-5 py-5 space-y-4">
 
@@ -106,12 +106,12 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel }: NewBui
                   </div>
 
                 </div>
-              </div>
+              </TurquoiseCard>
 
               {/* ── Card: Información adicional ── */}
-              <div className="bg-[#11676A]/[0.07] rounded-2xl overflow-hidden">
+              <TurquoiseCard size="lg">
                 <div className="px-5 pt-4 pb-3 border-b border-[#11676A]/10 flex items-center gap-3">
-                  <span className="text-[14px] font-bold text-[#1A1C1E]">Información adicional</span>
+                  <PanelTitle>Información adicional</PanelTitle>
                   <span className="text-[10px] font-normal text-[#8A8C8E] bg-white/50 px-2 py-0.5 rounded-md">Opcional</span>
                 </div>
                 <div className="px-5 py-5 space-y-4">
@@ -181,20 +181,13 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel }: NewBui
                   </div>
 
                 </div>
-              </div>
+              </TurquoiseCard>
             </div>
 
             {/* Actions */}
             <div className="flex items-center gap-5 pt-5">
-              <button className="px-6 py-2.5 bg-[#11676A] hover:bg-[#0E5254] text-white text-[13px] font-semibold rounded-xl transition-colors">
-                Guardar edificio
-              </button>
-              <button
-                onClick={onCancel}
-                className="text-[13px] font-medium text-[#8A8C8E] hover:text-[#1A1C1E] transition-colors"
-              >
-                Cancelar
-              </button>
+              <PrimaryButton>Guardar edificio</PrimaryButton>
+              <SecondaryButton onClick={onCancel}>Cancelar</SecondaryButton>
             </div>
 
           </div>

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { mockProjects, Building } from './data';
-import { TopNav, ProjectsSidebar } from './components';
+import { TopNav, ProjectsSidebar, StatBlock, PanelLabel, PanelText, PrimaryButton } from './components';
 import {
   Map,
   ZoomIn, ZoomOut, Maximize, ArrowRight,
+  CircleCheck, Clock, Gauge, Bot,
 } from 'lucide-react';
 
 const GRID_BG = {
@@ -73,30 +74,31 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
         <div className="flex-none bg-white border-b border-[#EDEBE6] px-5 py-3.5 flex items-center">
           {([
             {
+              icon: <CircleCheck className="w-4 h-4" />,
               label: 'Estado',
               value: currentBuilding.relevamientos > 0 ? 'Recorrido completado' : 'Sin recorridos',
               valueColor: currentBuilding.relevamientos > 0 ? '#0B5559' : '#8A8C8E',
             },
             {
+              icon: <Clock className="w-4 h-4" />,
               label: 'Duración',
               value: currentBuilding.relevamientos > 0 ? '1h 35min' : '—',
               valueColor: '#1A1C1E',
             },
             {
+              icon: <Gauge className="w-4 h-4" />,
               label: 'Cobertura',
               value: currentBuilding.relevamientos > 0 ? '100% de la planta' : '—',
               valueColor: '#1A1C1E',
             },
             {
+              icon: <Bot className="w-4 h-4" />,
               label: 'Robot utilizado',
               value: currentBuilding.lastRobot !== '—' ? currentBuilding.lastRobot : '—',
               valueColor: '#1A1C1E',
             },
-          ] as const).map(({ label, value, valueColor }, i) => (
-            <div key={i} className={`flex-1 px-4 ${i < 3 ? 'border-r border-[#F0EDE8]' : ''}`}>
-              <p className="text-[9px] font-semibold text-[#8A8C8E] uppercase tracking-widest mb-1">{label}</p>
-              <p className="text-[13px] font-semibold leading-tight" style={{ color: valueColor }}>{value}</p>
-            </div>
+          ] as const).map((stat, i) => (
+            <StatBlock key={i} variant="summary" divider={i < 3} {...stat} />
           ))}
         </div>
 
@@ -253,13 +255,9 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
               ))}
             </div>
             {currentBuilding.relevamientos > 0 && (
-              <button
-                onClick={onViewDetails}
-                className="flex items-center gap-2 px-5 py-2 bg-[#11676A] hover:bg-[#0E5254] text-white text-[12px] font-semibold rounded-xl transition-colors shadow-[0_2px_10px_rgba(17,103,106,0.25)]"
-              >
+              <PrimaryButton onClick={onViewDetails} iconRight={<ArrowRight className="w-3.5 h-3.5" />} shadow>
                 Ver detalles
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              </PrimaryButton>
             )}
           </div>
 
@@ -268,22 +266,22 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
             {infoTab === 'datos' && (
               <div className="flex items-start gap-10">
                 <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Inicio</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">{currentBuilding.lastRelevamientoDate !== '—' ? currentBuilding.lastRelevamientoDate : '—'}</p>
+                  <PanelLabel>Inicio</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">{currentBuilding.lastRelevamientoDate !== '—' ? currentBuilding.lastRelevamientoDate : '—'}</PanelText>
                   <p className="text-[11px] text-[#8A8C8E]">14:30 hs</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Fin</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">{currentBuilding.lastRelevamientoDate !== '—' ? currentBuilding.lastRelevamientoDate : '—'}</p>
+                  <PanelLabel>Fin</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">{currentBuilding.lastRelevamientoDate !== '—' ? currentBuilding.lastRelevamientoDate : '—'}</PanelText>
                   <p className="text-[11px] text-[#8A8C8E]">16:05 hs</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Duración total</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">{currentBuilding.relevamientos > 0 ? '1h 35min' : '—'}</p>
+                  <PanelLabel>Duración total</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">{currentBuilding.relevamientos > 0 ? '1h 35min' : '—'}</PanelText>
                   <p className="text-[11px] text-[#8A8C8E]">Planta 1</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Cobertura</p>
+                  <PanelLabel>Cobertura</PanelLabel>
                   {currentBuilding.relevamientos > 0 ? (
                     <div className="flex items-center gap-2 mt-1">
                       <div className="w-20 h-1.5 bg-[#E2DFD8] rounded-full overflow-hidden">
@@ -292,18 +290,18 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                       <span className="text-[13px] font-bold text-[#11676A]">100%</span>
                     </div>
                   ) : (
-                    <p className="text-[13px] font-semibold text-[#8A8C8E]">—</p>
+                    <PanelText className="font-semibold text-[#8A8C8E] mt-0.5">—</PanelText>
                   )}
                 </div>
                 <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Estado</p>
+                  <PanelLabel>Estado</PanelLabel>
                   {currentBuilding.relevamientos > 0 ? (
-                    <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#0B5559]">
+                    <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#0B5559] mt-0.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] flex-none" />
                       Completado
                     </span>
                   ) : (
-                    <span className="text-[13px] font-semibold text-[#8A8C8E]">Sin recorridos</span>
+                    <PanelText className="font-semibold text-[#8A8C8E] mt-0.5">Sin recorridos</PanelText>
                   )}
                 </div>
               </div>
@@ -312,17 +310,17 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
             {infoTab === 'robot' && (
               <div className="flex items-start gap-10">
                 <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Identificación</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">{currentBuilding.lastRobot}</p>
+                  <PanelLabel>Identificación</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">{currentBuilding.lastRobot}</PanelText>
                   <p className="text-[11px] text-[#8A8C8E]">Robot de inspección autónomo</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Batería al inicio</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">100%</p>
+                  <PanelLabel>Batería al inicio</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">100%</PanelText>
                   <p className="text-[11px] text-[#8A8C8E]">Carga completa</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Batería al fin</p>
+                  <PanelLabel>Batería al fin</PanelLabel>
                   <div className="flex items-center gap-2 mt-1">
                     <div className="w-20 h-1.5 bg-[#E2DFD8] rounded-full overflow-hidden">
                       <div className="h-full bg-[#10B981] rounded-full" style={{ width: '72%' }} />
@@ -331,8 +329,8 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                   </div>
                 </div>
                 <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Sensores activos</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">Cámara, LiDAR 3D, WiFi</p>
+                  <PanelLabel>Sensores activos</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">Cámara, LiDAR 3D, WiFi</PanelText>
                   <p className="text-[11px] text-[#8A8C8E]">Sin fallas registradas</p>
                 </div>
               </div>
@@ -341,17 +339,17 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
             {infoTab === 'operador' && (
               <div className="flex items-start gap-10">
                 <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Nombre</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">{currentBuilding.lastOperator}</p>
+                  <PanelLabel>Nombre</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">{currentBuilding.lastOperator}</PanelText>
                   <p className="text-[11px] text-[#8A8C8E]">Técnico de inspección</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Inicio de sesión</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">{currentBuilding.lastRelevamientoDate}, 14:25 hs</p>
+                  <PanelLabel>Inicio de sesión</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">{currentBuilding.lastRelevamientoDate}, 14:25 hs</PanelText>
                 </div>
                 <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Organización</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">Municipalidad CABA — Zona Norte</p>
+                  <PanelLabel>Organización</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">Municipalidad CABA — Zona Norte</PanelText>
                 </div>
               </div>
             )}
@@ -359,24 +357,24 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
             {infoTab === 'edificio' && (
               <div className="flex items-start gap-10">
                 <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Edificio</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">{currentBuilding.name}</p>
+                  <PanelLabel>Edificio</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">{currentBuilding.name}</PanelText>
                   <p className="text-[11px] text-[#8A8C8E]">{currentBuilding.address}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Planta recorrida</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">Planta 1</p>
+                  <PanelLabel>Planta recorrida</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">Planta 1</PanelText>
                   <p className="text-[11px] text-[#8A8C8E]">de {currentBuilding.floors} plantas totales</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Año de construcción</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">{currentBuilding.yearBuilt}</p>
+                  <PanelLabel>Año de construcción</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">{currentBuilding.yearBuilt}</PanelText>
                 </div>
                 <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Total relevamientos</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">
+                  <PanelLabel>Total relevamientos</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">
                     {currentBuilding.relevamientos > 0 ? `${currentBuilding.relevamientos} relevamientos` : 'Sin relevamientos'}
-                  </p>
+                  </PanelText>
                 </div>
               </div>
             )}

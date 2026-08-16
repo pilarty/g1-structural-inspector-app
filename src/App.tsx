@@ -6,7 +6,7 @@ import BuildingEmpty from './BuildingEmpty';
 import InspectionLive from './InspectionLive';
 import InspectionRecorrido from './InspectionRecorrido';
 import ActivityBar, { NavTab } from './ActivityBar';
-import { TopNav } from './components';
+import { TopNav, TurquoiseCard, PanelTitle, PanelLabel, PanelText, PrimaryButton, SecondaryButton } from './components';
 import {
   Maximize,
   X,
@@ -14,18 +14,6 @@ import {
   RotateCw,
   Layers,
 } from 'lucide-react';
-
-// ─── Panel typography ───────────────────────────────────────────────────────
-// One consistent style each for title / subtitle / body text across every panel.
-function PanelTitle({ children }: { children: React.ReactNode }) {
-  return <span className="text-[14px] font-bold text-[#1A1C1E]">{children}</span>;
-}
-function PanelLabel({ children }: { children: React.ReactNode }) {
-  return <p className="text-[11px] font-medium text-[#0B5559]">{children}</p>;
-}
-function PanelText({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <p className={`text-[12px] font-normal text-[#1A1C1E] ${className}`}>{children}</p>;
-}
 
 type Severity = 'low' | 'medium' | 'high' | 'critical';
 type DamageType = 'Grieta diagonal' | 'Grieta horizontal' | 'Humedad' | 'Desprendimiento';
@@ -122,11 +110,6 @@ export default function App() {
 
   const handleTabChange = (tab: NavTab) => setActiveTab(tab);
 
-  const handleSelectBuilding = (id: string) => {
-    setSelectedBuildingId(id);
-    setActiveTab('recorrido');
-  };
-
   const handleViewDetails = () => {
     setActiveTab('relevamiento');
   };
@@ -138,7 +121,8 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={handleTabChange}
         selectedBuildingId={selectedBuildingId}
-        onSelectBuilding={handleSelectBuilding}
+        onSelectBuilding={setSelectedBuildingId}
+        onViewRecorrido={() => setActiveTab('recorrido')}
       />
     );
   }
@@ -277,7 +261,7 @@ function FloorPlan({ activeTab, onTabChange }: { activeTab: NavTab; onTabChange:
         <div className="absolute left-4 top-4 bottom-4 w-[212px] z-20 flex flex-col gap-3 overflow-y-auto pointer-events-none">
 
           {/* Card: Filtros */}
-          <div className="pointer-events-auto flex-shrink-0 bg-[#11676A]/[0.18] overflow-hidden">
+          <TurquoiseCard size="overlay" className="pointer-events-auto flex-shrink-0">
             <div className="px-3.5 pt-3 pb-1 flex items-center justify-between">
               <PanelTitle>Filtros</PanelTitle>
               <span className="text-[12px] font-normal bg-[#11676A]/20 text-[#0B5559] px-2 py-0.5 rounded-md">
@@ -324,14 +308,14 @@ function FloorPlan({ activeTab, onTabChange }: { activeTab: NavTab; onTabChange:
                 </label>
               ))}
             </div>
-          </div>
+          </TurquoiseCard>
         </div>
 
         {/* ── RIGHT PANEL ── */}
         <div className="absolute right-4 top-4 bottom-4 w-[212px] z-20 flex flex-col gap-3 overflow-y-auto pointer-events-none">
 
           {/* Card: Datos del edificio */}
-          <div className="pointer-events-auto bg-[#11676A]/[0.18] overflow-hidden">
+          <TurquoiseCard size="overlay" className="pointer-events-auto">
             <div className="px-3.5 pt-3 pb-1">
               <PanelTitle>Datos del edificio</PanelTitle>
             </div>
@@ -359,10 +343,10 @@ function FloorPlan({ activeTab, onTabChange }: { activeTab: NavTab; onTabChange:
                 <PanelText className="mt-0.5">1978</PanelText>
               </div>
             </div>
-          </div>
+          </TurquoiseCard>
 
           {/* Card: Relevamiento */}
-          <div className="pointer-events-auto bg-[#11676A]/[0.18] overflow-hidden">
+          <TurquoiseCard size="overlay" className="pointer-events-auto">
             <div className="px-3.5 pt-3 pb-1">
               <PanelTitle>Relevamiento</PanelTitle>
             </div>
@@ -398,7 +382,7 @@ function FloorPlan({ activeTab, onTabChange }: { activeTab: NavTab; onTabChange:
                 <PanelText className="mt-0.5">HR-04 / Unidad 2</PanelText>
               </div>
             </div>
-          </div>
+          </TurquoiseCard>
         </div>
 
         {/* Zoom controls — bottom left */}

@@ -3,8 +3,8 @@ import React from 'react';
 interface TurquoiseCardProps {
   children: React.ReactNode;
   className?: string;
-  /** 'md' — rounded-xl (FloorPlan overlay panels) | 'lg' — rounded-2xl (form/setup cards) */
-  size?: 'md' | 'lg';
+  /** 'overlay' — flat, square corners, no blur (map overlay panels, Relevamiento) | 'md' — rounded-xl | 'lg' — rounded-2xl (form/setup cards) */
+  size?: 'overlay' | 'md' | 'lg';
   /** Add 1px teal border (used on form-style cards in NewBuilding, Setup) */
   bordered?: boolean;
 }
@@ -18,8 +18,9 @@ export default function TurquoiseCard({
   return (
     <div
       className={[
-        'bg-[#11676A]/[0.07] backdrop-blur-md overflow-hidden',
-        size === 'lg' ? 'rounded-2xl' : 'rounded-xl',
+        size === 'overlay' ? 'bg-[#11676A]/[0.18]' : 'bg-[#11676A]/[0.07] backdrop-blur-md',
+        'overflow-hidden',
+        size === 'lg' ? 'rounded-2xl' : size === 'md' ? 'rounded-xl' : '',
         bordered ? 'border border-[#11676A]/20' : '',
         className,
       ].join(' ')}
