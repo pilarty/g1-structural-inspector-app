@@ -154,11 +154,11 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
               <path d="M62 25 A8 8 0 0 0 70 33 L70 25" fill="none" stroke="#A0A2A4" strokeWidth="0.5" strokeDasharray="1.5 1" />
               <path d="M62 25 L70 25" stroke="#FFFFFF" strokeWidth="1.5" />
               {/* Room labels */}
-              <text x="23" y="35" fill="#D0CCC6" fontSize="4" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala A</text>
-              <text x="50" y="27" fill="#D0CCC6" fontSize="4" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala B</text>
-              <text x="77" y="27" fill="#D0CCC6" fontSize="4" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala C</text>
-              <text x="55" y="76" fill="#D0CCC6" fontSize="4" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala D</text>
-              <text x="72" y="65" fill="#D0CCC6" fontSize="3.5" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Pasillo</text>
+              <text x="23" y="35" fill="#D0CCC6" fontSize="4" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala A</text>
+              <text x="50" y="27" fill="#D0CCC6" fontSize="4" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala B</text>
+              <text x="77" y="27" fill="#D0CCC6" fontSize="4" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala C</text>
+              <text x="55" y="76" fill="#D0CCC6" fontSize="4" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala D</text>
+              <text x="72" y="65" fill="#D0CCC6" fontSize="3.5" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Pasillo</text>
 
               {/* Robot trail */}
               {trailPoints && (

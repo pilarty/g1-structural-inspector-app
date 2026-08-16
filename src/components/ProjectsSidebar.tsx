@@ -50,44 +50,17 @@ export default function ProjectsSidebar({
     }))
     .filter(p => !query || p.buildings.length > 0);
 
-  const allBuildings = mockProjects.flatMap(p => p.buildings);
-
   // ── Collapsed state ───────────────────────────────────────────────────────
   if (collapsed) {
     return (
-      <aside className="flex-none w-[52px] flex flex-col bg-white border-r border-[#EDEBE6] items-center py-3 gap-1 overflow-hidden">
-        {/* Expand button */}
+      <aside className="flex-none w-[44px] flex flex-col bg-white border-r border-[#EDEBE6] items-center py-3">
         <button
           onClick={() => setCollapsed(false)}
-          title="Expandir panel"
-          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#F3F1ED] transition-colors mb-2 text-[#8A8C8E]"
+          title="Ver edificios"
+          className="w-8 h-8 flex-none flex items-center justify-center rounded-full hover:bg-[#F3F1ED] transition-colors text-[#8A8C8E] hover:text-[#11676A]"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
-
-        {/* Building initials chips */}
-        {allBuildings.map(building => {
-          const isSelected = building.id === selectedBuildingId;
-          const initials = building.name
-            .replace(/^(Edificio|Torre|Residencial|Centro|Palacio)\s+/i, '')
-            .slice(0, 2)
-            .toUpperCase();
-          return (
-            <button
-              key={building.id}
-              onClick={() => onSelectBuilding(building.id)}
-              title={building.name}
-              className={[
-                'w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors',
-                isSelected
-                  ? 'bg-[#11676A] text-white'
-                  : 'bg-[#F3F1ED] text-[#66686A] hover:bg-[#ECEAE5]',
-              ].join(' ')}
-            >
-              {initials}
-            </button>
-          );
-        })}
       </aside>
     );
   }

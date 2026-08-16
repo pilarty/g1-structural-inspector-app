@@ -1,14 +1,13 @@
 import React from 'react';
-import { LayoutDashboard, Building2, ScanLine, Users, ClipboardList, Settings } from 'lucide-react';
+import { ListBullets, Buildings, Scan, ClipboardText, GearSix } from '@phosphor-icons/react';
 
 export type NavTab = 'dashboard' | 'edificios' | 'relevamiento' | 'inspeccion' | 'equipo' | 'nuevo-edificio' | 'building-empty' | 'inspeccion-en-curso' | 'recorrido';
 
-const navItems: { id: NavTab; Icon: React.ElementType }[] = [
-  { id: 'dashboard',   Icon: LayoutDashboard },
-  { id: 'edificios',   Icon: Building2 },
-  { id: 'relevamiento', Icon: ScanLine },
-  { id: 'inspeccion',  Icon: ClipboardList },
-  { id: 'equipo',      Icon: Users },
+const navItems: { id: NavTab; Icon: React.ElementType; label: string }[] = [
+  { id: 'edificios',   Icon: ListBullets,   label: 'Índice' },
+  { id: 'dashboard',   Icon: Buildings,     label: 'Dashboard' },
+  { id: 'relevamiento', Icon: ClipboardText, label: 'Relevamiento' },
+  { id: 'inspeccion',  Icon: Scan,          label: 'Iniciar inspección' },
 ];
 
 interface ActivityBarProps {
@@ -19,13 +18,13 @@ interface ActivityBarProps {
 export default function ActivityBar({ active, onChange }: ActivityBarProps) {
   return (
     <div className="flex-none w-[58px] h-full bg-[#0D5254] flex flex-col items-center pt-2 z-30">
-      {navItems.map(({ id, Icon }) => {
+      {navItems.map(({ id, Icon, label }) => {
         const isActive = active === id;
         return (
           <button
             key={id}
             onClick={() => onChange(id)}
-            className={`relative w-full flex items-center justify-center h-12 transition-colors ${
+            className={`group relative w-full flex items-center justify-center h-12 transition-colors ${
               isActive ? 'text-white' : 'text-white/35 hover:text-white/70'
             }`}
           >
@@ -35,15 +34,20 @@ export default function ActivityBar({ active, onChange }: ActivityBarProps) {
             {isActive && (
               <span className="absolute inset-x-3 inset-y-1.5 bg-white/[0.12] rounded-lg" />
             )}
-            <Icon className="w-[18px] h-[18px] relative z-10" />
+            <Icon size={24} weight={isActive ? 'fill' : 'regular'} className="relative z-10" />
+            <span className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 whitespace-nowrap bg-[#1A1C1E] text-white text-[11px] font-medium px-2.5 py-1.5 rounded-lg shadow-lg opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-150 z-40">
+              {label}
+            </span>
           </button>
         );
       })}
 
       <div className="flex-1" />
-      <div className="w-8 h-px bg-white/10 mb-2" />
-      <button className="w-full flex items-center justify-center h-12 text-white/35 hover:text-white/70 transition-colors mb-1">
-        <Settings className="w-[18px] h-[18px]" />
+      <button className="group relative w-full flex items-center justify-center h-12 text-white/35 hover:text-white/70 transition-colors mb-1">
+        <GearSix size={24} />
+        <span className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 whitespace-nowrap bg-[#1A1C1E] text-white text-[11px] font-medium px-2.5 py-1.5 rounded-lg shadow-lg opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-150 z-40">
+          Configuración
+        </span>
       </button>
     </div>
   );

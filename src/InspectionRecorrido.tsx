@@ -3,7 +3,7 @@ import ActivityBar, { NavTab } from './ActivityBar';
 import { mockProjects, Building } from './data';
 import { TopNav, ProjectsSidebar } from './components';
 import {
-  CheckCircle2, Clock, Map, Bot,
+  Map,
   ZoomIn, ZoomOut, Maximize, ArrowRight,
 } from 'lucide-react';
 
@@ -70,45 +70,32 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
         />
 
         {/* Stats row */}
-        <div className="flex-none bg-white border-b border-[#EDEBE6] px-4 py-3 flex items-center">
+        <div className="flex-none bg-white border-b border-[#EDEBE6] px-5 py-3.5 flex items-center">
           {([
             {
-              Icon: CheckCircle2,
               label: 'Estado',
               value: currentBuilding.relevamientos > 0 ? 'Recorrido completado' : 'Sin recorridos',
-              valueColor: currentBuilding.relevamientos > 0 ? '#10B981' : '#8A8C8E',
-              iconColor: currentBuilding.relevamientos > 0 ? '#10B981' : '#8A8C8E',
+              valueColor: currentBuilding.relevamientos > 0 ? '#0B5559' : '#8A8C8E',
             },
             {
-              Icon: Clock,
               label: 'Duración',
               value: currentBuilding.relevamientos > 0 ? '1h 35min' : '—',
               valueColor: '#1A1C1E',
-              iconColor: '#11676A',
             },
             {
-              Icon: Map,
               label: 'Cobertura',
               value: currentBuilding.relevamientos > 0 ? '100% de la planta' : '—',
               valueColor: '#1A1C1E',
-              iconColor: '#11676A',
             },
             {
-              Icon: Bot,
               label: 'Robot utilizado',
               value: currentBuilding.lastRobot !== '—' ? currentBuilding.lastRobot : '—',
               valueColor: '#1A1C1E',
-              iconColor: '#11676A',
             },
-          ] as const).map(({ Icon, label, value, valueColor, iconColor }, i) => (
-            <div key={i} className={`flex-1 flex items-center gap-3 px-3 ${i < 3 ? 'border-r border-[#F0EDE8]' : ''}`}>
-              <div className="w-8 h-8 rounded-lg bg-[#11676A]/[0.07] flex items-center justify-center flex-none">
-                <Icon className="w-4 h-4" style={{ color: iconColor }} />
-              </div>
-              <div>
-                <p className="text-[9px] font-semibold text-[#8A8C8E] uppercase tracking-widest mb-0.5">{label}</p>
-                <p className="text-[13px] font-semibold leading-tight" style={{ color: valueColor }}>{value}</p>
-              </div>
+          ] as const).map(({ label, value, valueColor }, i) => (
+            <div key={i} className={`flex-1 px-4 ${i < 3 ? 'border-r border-[#F0EDE8]' : ''}`}>
+              <p className="text-[9px] font-semibold text-[#8A8C8E] uppercase tracking-widest mb-1">{label}</p>
+              <p className="text-[13px] font-semibold leading-tight" style={{ color: valueColor }}>{value}</p>
             </div>
           ))}
         </div>
@@ -152,11 +139,11 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
               <path d="M500 150 A50 50 0 0 1 550 200 L500 200" fill="none" stroke="#A0A2A4" strokeWidth="1.5" strokeDasharray="4 4" />
               <path d="M500 150 L500 200" stroke="#FFFFFF" strokeWidth="5" />
               {/* Room labels */}
-              <text x="145" y="210" fill="#C8C5BF" fontSize="11" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala A</text>
-              <text x="375" y="155" fill="#C8C5BF" fontSize="11" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala B</text>
-              <text x="625" y="155" fill="#C8C5BF" fontSize="11" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala C</text>
-              <text x="420" y="460" fill="#C8C5BF" fontSize="11" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala D</text>
-              <text x="575" y="410" fill="#C8C5BF" fontSize="11" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Pasillo</text>
+              <text x="145" y="210" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala A</text>
+              <text x="375" y="155" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala B</text>
+              <text x="625" y="155" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala C</text>
+              <text x="420" y="460" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala D</text>
+              <text x="575" y="410" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Pasillo</text>
 
               {/* Trajectory */}
               <polyline
@@ -185,7 +172,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                 <circle cx={START[0]} cy={START[1]} r="7"  fill="#10B981" />
                 <circle cx={START[0]} cy={START[1]} r="3"  fill="white" />
               </g>
-              <text x={START[0] + 15} y={START[1] - 10} fill="#10B981" fontSize="9" fontFamily="DM Sans, sans-serif" fontWeight="700" letterSpacing="0.04em">INICIO</text>
+              <text x={START[0] + 15} y={START[1] - 10} fill="#10B981" fontSize="9" fontFamily="IBM Plex Sans, sans-serif" fontWeight="700" letterSpacing="0.04em">INICIO</text>
 
               {/* End marker */}
               <g filter="url(#endGlow)">
@@ -193,7 +180,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                 <rect x={END[0] - 7} y={END[1] - 7} width="14" height="14" rx="3" fill="#11676A" />
                 <rect x={END[0] - 3} y={END[1] - 3} width="6"  height="6"  rx="1" fill="white" />
               </g>
-              <text x={END[0] + 15} y={END[1] - 10} fill="#11676A" fontSize="9" fontFamily="DM Sans, sans-serif" fontWeight="700" letterSpacing="0.04em">FIN</text>
+              <text x={END[0] + 15} y={END[1] - 10} fill="#11676A" fontSize="9" fontFamily="IBM Plex Sans, sans-serif" fontWeight="700" letterSpacing="0.04em">FIN</text>
             </svg>
           ) : (
             /* No relevamientos empty state */
@@ -311,8 +298,8 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                 <div>
                   <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Estado</p>
                   {currentBuilding.relevamientos > 0 ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#DCEFEF] text-[#0B5559] text-[11px] font-semibold rounded-lg">
-                      <CheckCircle2 className="w-3 h-3" />
+                    <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#0B5559]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] flex-none" />
                       Completado
                     </span>
                   ) : (

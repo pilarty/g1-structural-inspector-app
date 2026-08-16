@@ -16,15 +16,6 @@ interface TopNavProps {
 export default function TopNav({ badge }: TopNavProps) {
   return (
     <nav className="flex-none h-12 bg-[#11676A] flex items-center px-6 z-20">
-      {/* Left — title + optional badge */}
-      <div className="flex items-center gap-2.5 flex-1 min-w-0">
-        <Building2 className="w-4 h-4 text-white/80 flex-none" />
-        <span className="text-[14px] font-semibold text-white tracking-tight whitespace-nowrap">
-          Relevamiento Estructural
-        </span>
-        {badge}
-      </div>
-
       {/* Right — notifications + user */}
       <div className="flex items-center gap-1 flex-none">
         <button

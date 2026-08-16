@@ -1,19 +1,33 @@
 import React, { useState } from 'react';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav } from './components';
-import {
-  ChevronDown,
-  Wifi, Battery, Check, AlertTriangle, RefreshCw,
-  Play, Bot, Calendar, Clock,
-} from 'lucide-react';
+import { mockProjects } from './data';
+import { ChevronDown, Check } from 'lucide-react';
 
 type RobotStatus = 'listo' | 'espera' | 'desconectado';
 
-const statusConfig: Record<RobotStatus, { label: string; dot: string; chip: string }> = {
-  listo:        { label: 'Listo',               dot: '#10B981', chip: 'bg-[#DCEFEF] text-[#0B5559]' },
-  espera:       { label: 'Conectado en espera', dot: '#FBBF24', chip: 'bg-[#FFFBEB] text-[#92400E]' },
-  desconectado: { label: 'Desconectado',        dot: '#EF4444', chip: 'bg-[#FEF2F2] text-[#991B1B]' },
+const statusConfig: Record<RobotStatus, { label: string; dot: string }> = {
+  listo:        { label: 'Listo',               dot: '#10B981' },
+  espera:       { label: 'Conectado en espera', dot: '#FBBF24' },
+  desconectado: { label: 'Desconectado',        dot: '#EF4444' },
 };
+
+interface RobotOption {
+  id: string;
+  label: string;
+  status: RobotStatus;
+  battery: number;
+  sensorsOk: boolean;
+  network: string | null; // null = sin conexión
+}
+
+const robots: RobotOption[] = [
+  { id: 'HR-04', label: 'HR-04 / Unidad 2', status: 'listo',        battery: 84, sensorsOk: true,  network: 'Red_Obra_01' },
+  { id: 'HR-02', label: 'HR-02 / Unidad 1', status: 'espera',       battery: 61, sensorsOk: true,  network: 'Red_Obra_01' },
+  { id: 'HR-01', label: 'HR-01 / Unidad 3', status: 'desconectado', battery: 12, sensorsOk: false, network: null },
+];
+
+const buildings = mockProjects.flatMap(p => p.buildings);
 
 interface InspectionSetupProps {
   activeTab: NavTab;
@@ -21,11 +35,17 @@ interface InspectionSetupProps {
 }
 
 export default function InspectionSetup({ activeTab, onTabChange }: InspectionSetupProps) {
-  const [robotStatus, setRobotStatus] = useState<RobotStatus>('listo');
+  const [selectedRobotId, setSelectedRobotId] = useState(robots[0].id);
+  const [selectedBuildingId, setSelectedBuildingId] = useState(buildings[0]?.id);
+  const [date, setDate] = useState('2026-08-15');
+  const [time, setTime] = useState('09:00');
+  const [robotMenuOpen, setRobotMenuOpen] = useState(false);
+  const [buildingMenuOpen, setBuildingMenuOpen] = useState(false);
 
-  const status = statusConfig[robotStatus];
-  const canStart = robotStatus === 'listo';
-  const sensorsOk = robotStatus !== 'desconectado';
+  const robot = robots.find(r => r.id === selectedRobotId) ?? robots[0];
+  const building = buildings.find(b => b.id === selectedBuildingId) ?? buildings[0];
+  const status = statusConfig[robot.status];
+  const canStart = robot.status === 'listo';
 
   return (
     <div className="flex h-screen font-sans text-[#1A1C1E]">
@@ -36,186 +56,206 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
         <TopNav />
 
         {/* Content area */}
-        <div
-          className="flex-1 overflow-y-auto"
-          style={{
-            backgroundColor: '#F3F1ED',
-            backgroundImage: `linear-gradient(rgba(229,231,235,0.17) 1px, transparent 1px), linear-gradient(90deg, rgba(229,231,235,0.17) 1px, transparent 1px)`,
-            backgroundSize: '22px 22px',
-          }}
-        >
-          <div className="max-w-[560px] mx-auto px-6 py-8">
+        <div className="flex-1 overflow-y-auto bg-[#F3F1ED]">
+          <div className="max-w-[720px] px-8 py-10">
 
             {/* Page header */}
-            <div className="mb-6">
-              <h1 className="text-[20px] font-bold text-[#1A1C1E] tracking-tight leading-tight">Iniciar inspección</h1>
+            <div className="mb-8">
+              <h1 className="text-[22px] font-bold text-[#1A1C1E] tracking-tight leading-tight">Iniciar inspección</h1>
               <p className="text-[13px] text-[#8A8C8E] mt-1">Verificá el estado del robot y configurá los parámetros antes de comenzar.</p>
             </div>
 
-            {/* Dev state toggle */}
-            <div className="flex items-center gap-1.5 mb-5 text-[11px] text-[#8A8C8E]">
-              <span className="mr-1">Estado:</span>
-              {(['listo', 'espera', 'desconectado'] as RobotStatus[]).map(s => (
-                <button
-                  key={s}
-                  onClick={() => setRobotStatus(s)}
-                  className={`px-2.5 py-0.5 rounded-md transition-colors ${
-                    robotStatus === s
-                      ? 'bg-[#11676A]/15 text-[#0B5559] font-semibold'
-                      : 'hover:bg-[#11676A]/8 text-[#8A8C8E]'
-                  }`}
-                >
-                  {statusConfig[s].label}
-                </button>
-              ))}
-            </div>
-
-            <div className="space-y-4">
-
-              {/* ── Card: Estado del robot ── */}
-              <div className="bg-[#11676A]/[0.07] border border-[#11676A]/20 backdrop-blur-md rounded-2xl overflow-hidden">
-                <div className="px-5 pt-4 pb-3 border-b border-[#11676A]/10 flex items-center justify-between">
-                  <span className="text-[13px] font-semibold text-[#1A1C1E] flex items-center gap-2">
-                    <Bot className="w-4 h-4 text-[#11676A]" />
-                    Estado del robot
-                  </span>
-                  <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg ${status.chip}`}>
-                    {status.label}
-                  </span>
-                </div>
-
-                <div className="px-5 py-4 space-y-4">
-
-                  {/* Robot ID + battery */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-2.5 h-2.5 rounded-full flex-none" style={{ backgroundColor: status.dot }} />
-                      <span className="text-[14px] font-semibold text-[#1A1C1E]">HR-04 / Unidad 2</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Battery className="w-3.5 h-3.5 text-[#10B981]" />
-                      <div className="w-14 h-1.5 bg-black/8 rounded-full overflow-hidden">
-                        <div className="h-full bg-[#10B981] rounded-full" style={{ width: '84%' }} />
-                      </div>
-                      <span className="text-[11px] font-semibold text-[#10B981]">84%</span>
-                    </div>
-                  </div>
-
-                  {/* Sensor rows */}
-                  <div className="space-y-2.5">
-                    {[
-                      { label: 'Cámara de profundidad' },
-                      { label: 'LiDAR 3D' },
-                    ].map(sensor => (
-                      <div key={sensor.label} className="flex items-center gap-2.5">
-                        {sensorsOk ? (
-                          <Check className="w-3.5 h-3.5 text-[#10B981] flex-none" />
-                        ) : (
-                          <AlertTriangle className="w-3.5 h-3.5 text-[#EF4444] flex-none" />
-                        )}
-                        <span className="text-[12px] text-[#1A1C1E] flex-1">{sensor.label}</span>
-                        <span className={`text-[11px] font-semibold ${sensorsOk ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
-                          {sensorsOk ? 'OK' : 'Sin señal'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Network */}
-                  <div className="pt-3 border-t border-[#11676A]/10 flex items-center gap-1.5 text-[11px]">
-                    <Wifi className="w-3 h-3 flex-none text-[#8A8C8E]" />
-                    {robotStatus !== 'desconectado' ? (
-                      <span className="text-[#8A8C8E]">
-                        Conectado vía WiFi 6 — <span className="font-medium text-[#66686A]">Red_Obra_01</span>
-                      </span>
-                    ) : (
-                      <span className="text-[#EF4444]">Sin conexión de red detectada</span>
-                    )}
-                  </div>
-                </div>
+            {/* ── Section: Estado del robot ── */}
+            <section>
+              <div className="flex items-center justify-between pb-3 border-b border-[#11676A]/15">
+                <h2 className="text-[14px] font-bold text-[#1A1C1E]">Estado del robot</h2>
+                <span className="flex items-center gap-1.5 text-[12px] font-semibold text-[#1A1C1E]">
+                  <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ backgroundColor: status.dot }} />
+                  {status.label}
+                </span>
               </div>
 
-              {/* ── Card: Configuración del relevamiento ── */}
-              <div className="bg-[#11676A]/[0.07] border border-[#11676A]/20 backdrop-blur-md rounded-2xl overflow-hidden">
-                <div className="px-5 pt-4 pb-3 border-b border-[#11676A]/10">
-                  <span className="text-[13px] font-semibold text-[#1A1C1E]">Configuración del relevamiento</span>
+              <div className="py-5 space-y-5">
+
+                {/* Robot ID + battery */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[9px] font-normal text-[#0B5559] uppercase tracking-widest mb-1">Robot</p>
+                    <p className="text-[13px] font-semibold text-[#1A1C1E]">{robot.label}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[9px] font-normal text-[#0B5559] uppercase tracking-widest mb-1">Batería</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-1.5 bg-black/8 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${robot.battery}%`, backgroundColor: robot.battery > 30 ? '#10B981' : '#EF4444' }}
+                        />
+                      </div>
+                      <span className="text-[12px] font-semibold text-[#1A1C1E]">{robot.battery}%</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="px-5 py-4 space-y-4">
+                {/* Sensor rows */}
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                  {[
+                    { label: 'Cámara de profundidad' },
+                    { label: 'LiDAR 3D' },
+                  ].map(sensor => (
+                    <div key={sensor.label} className="flex items-center justify-between">
+                      <span className="text-[12px] text-[#1A1C1E]">{sensor.label}</span>
+                      <span className={`text-[11px] font-semibold ${robot.sensorsOk ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+                        {robot.sensorsOk ? 'OK' : 'Sin señal'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
 
-                  {/* Building selector */}
-                  <div>
-                    <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1.5">Edificio</p>
-                    <button className="w-full flex items-center justify-between px-4 py-2.5 bg-white/60 hover:bg-white/80 transition-colors rounded-xl border border-[#11676A]/15 text-left">
-                      <div>
-                        <p className="text-[13px] font-semibold text-[#1A1C1E]">Edificio Corrientes 1234</p>
-                        <p className="text-[11px] text-[#8A8C8E] mt-0.5">Av. Corrientes 1234, CABA · Planta 1</p>
-                      </div>
-                      <ChevronDown className="w-4 h-4 text-[#8A8C8E] flex-none ml-3" />
+                {/* Network */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-normal text-[#0B5559] uppercase tracking-widest">Red</span>
+                  {robot.network ? (
+                    <p className="text-[12px] text-[#1A1C1E]">
+                      WiFi 6 — <span className="font-semibold">{robot.network}</span>
+                    </p>
+                  ) : (
+                    <p className="text-[12px] font-semibold text-[#EF4444]">Sin conexión de red detectada</p>
+                  )}
+                </div>
+
+                {/* Warning — disconnected only */}
+                {robot.status === 'desconectado' && (
+                  <div className="flex items-center justify-between px-3.5 py-3 bg-[#FEF2F2] rounded-xl">
+                    <span className="text-[11px] font-medium text-[#991B1B]">Robot no detectado en la red.</span>
+                    <button
+                      onClick={() => {}}
+                      className="text-[11px] font-semibold text-[#11676A] hover:opacity-70 transition-opacity whitespace-nowrap"
+                    >
+                      Reintentar
                     </button>
                   </div>
+                )}
+              </div>
+            </section>
 
-                  {/* Robot (read-only) */}
-                  <div>
-                    <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1.5">Robot asignado</p>
-                    <div className="flex items-center gap-2.5 px-4 py-2.5 bg-white/40 rounded-xl border border-[#11676A]/10">
-                      <span className="w-2 h-2 rounded-full flex-none" style={{ backgroundColor: status.dot }} />
-                      <span className="text-[13px] font-medium text-[#1A1C1E]">HR-04 / Unidad 2</span>
-                      <span className="ml-auto text-[11px] text-[#8A8C8E]">{status.label}</span>
-                    </div>
-                  </div>
-
-                  {/* Date + time */}
-                  <div className="flex gap-3">
-                    <div className="flex-1">
-                      <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1.5">Fecha</p>
-                      <div className="flex items-center gap-2 px-4 py-2.5 bg-white/60 rounded-xl border border-[#11676A]/15">
-                        <Calendar className="w-3.5 h-3.5 text-[#8A8C8E] flex-none" />
-                        <span className="text-[13px] text-[#1A1C1E]">15 ago 2026</span>
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1.5">Hora estimada</p>
-                      <div className="flex items-center gap-2 px-4 py-2.5 bg-white/60 rounded-xl border border-[#11676A]/15">
-                        <Clock className="w-3.5 h-3.5 text-[#8A8C8E] flex-none" />
-                        <span className="text-[13px] text-[#1A1C1E]">09:00</span>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
+            {/* ── Section: Configuración del relevamiento ── */}
+            <section className="mt-2">
+              <div className="pb-3 border-b border-[#11676A]/15">
+                <h2 className="text-[14px] font-bold text-[#1A1C1E]">Configuración del relevamiento</h2>
               </div>
 
-              {/* Warning — disconnected only */}
-              {robotStatus === 'desconectado' && (
-                <div className="flex items-center gap-2.5 px-4 py-3 bg-[#FEF2F2] border border-[#EF4444]/20 rounded-xl">
-                  <AlertTriangle className="w-3.5 h-3.5 text-[#EF4444] flex-none" />
-                  <span className="text-[12px] font-medium text-[#991B1B]">Robot no detectado en la red.</span>
+              <div className="py-5 space-y-4">
+
+                {/* Building selector */}
+                <div className="relative">
+                  <p className="text-[9px] font-normal text-[#0B5559] uppercase tracking-widest mb-1.5">Edificio</p>
                   <button
-                    onClick={() => {}}
-                    className="ml-auto flex items-center gap-1 text-[12px] font-semibold text-[#11676A] hover:opacity-70 transition-opacity whitespace-nowrap"
+                    onClick={() => { setBuildingMenuOpen(o => !o); setRobotMenuOpen(false); }}
+                    className="w-full flex items-center justify-between px-4 py-2.5 bg-white/60 hover:bg-white/80 transition-colors rounded-xl text-left"
                   >
-                    <RefreshCw className="w-3 h-3" />
-                    Reintentar conexión
+                    <div>
+                      <p className="text-[13px] font-semibold text-[#1A1C1E]">{building?.name}</p>
+                      <p className="text-[11px] text-[#8A8C8E] mt-0.5">{building?.address}</p>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-[#8A8C8E] flex-none ml-3 transition-transform ${buildingMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
+
+                  {buildingMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setBuildingMenuOpen(false)} />
+                      <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden z-20 max-h-64 overflow-y-auto">
+                        {buildings.map(b => (
+                          <button
+                            key={b.id}
+                            onClick={() => { setSelectedBuildingId(b.id); setBuildingMenuOpen(false); }}
+                            className="w-full flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-[#F3F1ED] transition-colors text-left"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-[12px] font-semibold text-[#1A1C1E] truncate">{b.name}</p>
+                              <p className="text-[11px] text-[#8A8C8E] truncate">{b.address}</p>
+                            </div>
+                            {b.id === selectedBuildingId && <Check className="w-3.5 h-3.5 text-[#11676A] flex-none" />}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
-              )}
 
-              {/* Primary action */}
-              <button
-                disabled={!canStart}
-                onClick={() => canStart && onTabChange('inspeccion-en-curso')}
-                className={`w-full py-3.5 rounded-xl text-[14px] font-semibold flex items-center justify-center gap-2 transition-colors ${
-                  canStart
-                    ? 'bg-[#11676A] text-white hover:bg-[#0E5254]'
-                    : 'bg-[#E2DFD8] text-[#A0A2A4] cursor-not-allowed'
-                }`}
-              >
-                <Play className="w-4 h-4" />
-                Iniciar configuración
-              </button>
+                <div className="grid grid-cols-3 gap-3">
+                  {/* Robot selector */}
+                  <div className="col-span-1 relative">
+                    <p className="text-[9px] font-normal text-[#0B5559] uppercase tracking-widest mb-1.5">Robot asignado</p>
+                    <button
+                      onClick={() => { setRobotMenuOpen(o => !o); setBuildingMenuOpen(false); }}
+                      className="w-full flex items-center justify-between px-3 py-2.5 bg-white/40 hover:bg-white/70 transition-colors rounded-xl h-[42px]"
+                    >
+                      <span className="text-[12px] font-semibold text-[#1A1C1E] truncate">{robot.id}</span>
+                      <ChevronDown className={`w-3.5 h-3.5 text-[#8A8C8E] flex-none transition-transform ${robotMenuOpen ? 'rotate-180' : ''}`} />
+                    </button>
 
-            </div>
+                    {robotMenuOpen && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setRobotMenuOpen(false)} />
+                        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden z-20">
+                          {robots.map(r => (
+                            <button
+                              key={r.id}
+                              onClick={() => { setSelectedRobotId(r.id); setRobotMenuOpen(false); }}
+                              className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 hover:bg-[#F3F1ED] transition-colors text-left"
+                            >
+                              <span className="flex items-center gap-2 min-w-0">
+                                <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ backgroundColor: statusConfig[r.status].dot }} />
+                                <span className="text-[12px] font-semibold text-[#1A1C1E] truncate">{r.id}</span>
+                              </span>
+                              {r.id === selectedRobotId && <Check className="w-3.5 h-3.5 text-[#11676A] flex-none" />}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Date */}
+                  <div className="col-span-1">
+                    <p className="text-[9px] font-normal text-[#0B5559] uppercase tracking-widest mb-1.5">Fecha</p>
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={e => setDate(e.target.value)}
+                      className="w-full px-3 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl h-[42px] text-[12px] font-semibold text-[#1A1C1E] outline-none transition-colors"
+                    />
+                  </div>
+
+                  {/* Time */}
+                  <div className="col-span-1">
+                    <p className="text-[9px] font-normal text-[#0B5559] uppercase tracking-widest mb-1.5">Hora</p>
+                    <input
+                      type="time"
+                      value={time}
+                      onChange={e => setTime(e.target.value)}
+                      className="w-full px-3 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl h-[42px] text-[12px] font-semibold text-[#1A1C1E] outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+
+              </div>
+            </section>
+
+            {/* Primary action */}
+            <button
+              disabled={!canStart}
+              onClick={() => canStart && onTabChange('inspeccion-en-curso')}
+              className={`w-full mt-6 py-3.5 rounded-xl text-[14px] font-semibold transition-colors ${
+                canStart
+                  ? 'bg-[#11676A] text-white hover:bg-[#0E5254]'
+                  : 'bg-[#E2DFD8] text-[#A0A2A4] cursor-not-allowed'
+              }`}
+            >
+              Iniciar configuración
+            </button>
+
           </div>
         </div>
 
