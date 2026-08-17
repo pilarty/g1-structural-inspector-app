@@ -9,7 +9,7 @@ export function PanelTitle({ children }: { children: React.ReactNode }) {
 }
 
 export function PanelLabel({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <p className={`text-[11px] font-medium text-[#0B5559] ${className}`}>{children}</p>;
+  return <p className={`text-[11px] font-medium text-[#104247] ${className}`}>{children}</p>;
 }
 
 export function PanelText({ children, className = '' }: { children: React.ReactNode; className?: string }) {

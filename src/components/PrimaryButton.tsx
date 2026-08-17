@@ -43,8 +43,8 @@ export default function PrimaryButton({
         sizeClasses[variant],
         disabled
           ? 'bg-[#E2DFD8] text-[#A0A2A4] cursor-not-allowed'
-          : 'bg-[#11676A] text-white hover:bg-[#0E5254]',
-        shadow && !disabled ? 'shadow-[0_2px_12px_rgba(17,103,106,0.30)]' : '',
+          : 'bg-[#1B6E77] text-white hover:bg-[#165B62]',
+        shadow && !disabled ? 'shadow-[0_2px_12px_rgba(27,110,119,0.30)]' : '',
         className,
       ].join(' ')}
     >

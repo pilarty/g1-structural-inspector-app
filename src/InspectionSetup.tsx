@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import ActivityBar, { NavTab } from './ActivityBar';
-import { TopNav, TurquoiseCard, PanelTitle, PanelLabel, PanelText, PrimaryButton } from './components';
+import { TopNav, TurquoiseCard, PanelTitle, PanelLabel, PrimaryButton } from './components';
 import { mockProjects } from './data';
 import { ChevronDown, Check } from 'lucide-react';
+import RobotConnectionSection, { ConnectionJsonPreview, defaultConnectionConfig, getConnectionErrors } from './RobotConnectionConfig';
 
 type RobotStatus = 'listo' | 'espera' | 'desconectado';
 
@@ -41,11 +42,13 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
   const [time, setTime] = useState('09:00');
   const [robotMenuOpen, setRobotMenuOpen] = useState(false);
   const [buildingMenuOpen, setBuildingMenuOpen] = useState(false);
+  const [connectionConfig, setConnectionConfig] = useState(defaultConnectionConfig);
 
   const robot = robots.find(r => r.id === selectedRobotId) ?? robots[0];
   const building = buildings.find(b => b.id === selectedBuildingId) ?? buildings[0];
   const status = statusConfig[robot.status];
-  const canStart = robot.status === 'listo';
+  const connectionErrors = getConnectionErrors(connectionConfig);
+  const canStart = robot.status === 'listo' && connectionErrors.length === 0;
 
   return (
     <div className="flex h-screen font-sans text-[#1A1C1E]">
@@ -57,142 +60,70 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
 
         {/* Content area */}
         <div className="flex-1 overflow-y-auto bg-[#F3F1ED]">
-          <div className="max-w-[720px] px-8 py-10">
+          <div className="max-w-[1120px] mx-auto px-8 py-10">
 
             {/* Page header */}
-            <div className="mb-8">
+            <div className="mb-6">
               <h1 className="text-[22px] font-bold text-[#1A1C1E] tracking-tight leading-tight">Iniciar inspección</h1>
-              <p className="text-[13px] text-[#8A8C8E] mt-1">Verificá el estado del robot y configurá los parámetros antes de comenzar.</p>
+              <p className="text-[13px] text-[#8A8C8E] mt-1">Elegí el edificio y el robot, y confirmá que esté listo para comenzar.</p>
             </div>
 
-            {/* ── Section: Estado del robot ── */}
-            <TurquoiseCard size="lg" bordered className="mb-5">
-              <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#11676A]/10">
-                <PanelTitle>Estado del robot</PanelTitle>
-                <span className="flex items-center gap-1.5 text-[12px] font-semibold text-[#1A1C1E]">
-                  <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ backgroundColor: status.dot }} />
-                  {status.label}
-                </span>
-              </div>
-
-              <div className="px-5 py-5 space-y-5">
-
-                {/* Robot ID + battery */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <PanelLabel>Robot</PanelLabel>
-                    <PanelText className="mt-0.5 font-semibold">{robot.label}</PanelText>
-                  </div>
-                  <div className="text-right">
-                    <PanelLabel>Batería</PanelLabel>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <div className="w-16 h-1.5 bg-black/8 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full"
-                          style={{ width: `${robot.battery}%`, backgroundColor: robot.battery > 30 ? '#10B981' : '#EF4444' }}
-                        />
-                      </div>
-                      <span className="text-[12px] font-semibold text-[#1A1C1E]">{robot.battery}%</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sensor rows */}
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-                  {[
-                    { label: 'Cámara de profundidad' },
-                    { label: 'LiDAR 3D' },
-                  ].map(sensor => (
-                    <div key={sensor.label} className="flex items-center justify-between">
-                      <span className="text-[12px] text-[#1A1C1E]">{sensor.label}</span>
-                      <span className={`text-[11px] font-semibold ${robot.sensorsOk ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
-                        {robot.sensorsOk ? 'OK' : 'Sin señal'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Network */}
-                <div className="flex items-center justify-between">
-                  <PanelLabel>Red</PanelLabel>
-                  {robot.network ? (
-                    <p className="text-[12px] text-[#1A1C1E]">
-                      WiFi 6 — <span className="font-semibold">{robot.network}</span>
-                    </p>
-                  ) : (
-                    <p className="text-[12px] font-semibold text-[#EF4444]">Sin conexión de red detectada</p>
-                  )}
-                </div>
-
-                {/* Warning — disconnected only */}
-                {robot.status === 'desconectado' && (
-                  <div className="flex items-center justify-between px-3.5 py-3 bg-[#FEF2F2] rounded-xl">
-                    <span className="text-[11px] font-medium text-[#991B1B]">Robot no detectado en la red.</span>
-                    <button
-                      onClick={() => {}}
-                      className="text-[11px] font-semibold text-[#11676A] hover:opacity-70 transition-opacity whitespace-nowrap"
-                    >
-                      Reintentar
-                    </button>
-                  </div>
-                )}
-              </div>
-            </TurquoiseCard>
-
-            {/* ── Section: Configuración del relevamiento ── */}
+            {/* ── Card: Configuración del relevamiento ── */}
             <TurquoiseCard size="lg" bordered>
-              <div className="px-5 pt-4 pb-3 border-b border-[#11676A]/10">
+              <div className="px-5 pt-4 pb-3 border-b border-[#1B6E77]/10">
                 <PanelTitle>Configuración del relevamiento</PanelTitle>
               </div>
 
-              <div className="px-5 py-5 space-y-4">
+              <div className="px-5 py-5 grid grid-cols-2 gap-x-5 gap-y-4 items-start">
 
-                {/* Building selector */}
-                <div className="relative">
-                  <PanelLabel className="mb-1.5">Edificio</PanelLabel>
-                  <button
-                    onClick={() => { setBuildingMenuOpen(o => !o); setRobotMenuOpen(false); }}
-                    className="w-full flex items-center justify-between px-4 py-2.5 bg-white/60 hover:bg-white/80 transition-colors rounded-xl text-left"
-                  >
-                    <div>
-                      <p className="text-[13px] font-semibold text-[#1A1C1E]">{building?.name}</p>
-                      <p className="text-[11px] text-[#8A8C8E] mt-0.5">{building?.address}</p>
-                    </div>
-                    <ChevronDown className={`w-4 h-4 text-[#8A8C8E] flex-none ml-3 transition-transform ${buildingMenuOpen ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {buildingMenuOpen && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setBuildingMenuOpen(false)} />
-                      <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden z-20 max-h-64 overflow-y-auto">
-                        {buildings.map(b => (
-                          <button
-                            key={b.id}
-                            onClick={() => { setSelectedBuildingId(b.id); setBuildingMenuOpen(false); }}
-                            className="w-full flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-[#F3F1ED] transition-colors text-left"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-[12px] font-semibold text-[#1A1C1E] truncate">{b.name}</p>
-                              <p className="text-[11px] text-[#8A8C8E] truncate">{b.address}</p>
-                            </div>
-                            {b.id === selectedBuildingId && <Check className="w-3.5 h-3.5 text-[#11676A] flex-none" />}
-                          </button>
-                        ))}
+                  {/* Building selector */}
+                  <div className="relative">
+                    <PanelLabel className="mb-1.5">Edificio</PanelLabel>
+                    <button
+                      onClick={() => { setBuildingMenuOpen(o => !o); setRobotMenuOpen(false); }}
+                      className="w-full flex items-center justify-between px-4 py-2.5 bg-white/60 hover:bg-white/80 transition-colors rounded-xl text-left"
+                    >
+                      <div>
+                        <p className="text-[13px] font-semibold text-[#1A1C1E]">{building?.name}</p>
+                        <p className="text-[11px] text-[#8A8C8E] mt-0.5">{building?.address}</p>
                       </div>
-                    </>
-                  )}
-                </div>
+                      <ChevronDown className={`w-4 h-4 text-[#8A8C8E] flex-none ml-3 transition-transform ${buildingMenuOpen ? 'rotate-180' : ''}`} />
+                    </button>
 
-                <div className="grid grid-cols-3 gap-3">
+                    {buildingMenuOpen && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setBuildingMenuOpen(false)} />
+                        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden z-20 max-h-64 overflow-y-auto">
+                          {buildings.map(b => (
+                            <button
+                              key={b.id}
+                              onClick={() => { setSelectedBuildingId(b.id); setBuildingMenuOpen(false); }}
+                              className="w-full flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-[#F3F1ED] transition-colors text-left"
+                            >
+                              <div className="min-w-0">
+                                <p className="text-[12px] font-semibold text-[#1A1C1E] truncate">{b.name}</p>
+                                <p className="text-[11px] text-[#8A8C8E] truncate">{b.address}</p>
+                              </div>
+                              {b.id === selectedBuildingId && <Check className="w-3.5 h-3.5 text-[#1B6E77] flex-none" />}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
                   {/* Robot selector */}
-                  <div className="col-span-1 relative">
+                  <div className="relative">
                     <PanelLabel className="mb-1.5">Robot asignado</PanelLabel>
                     <button
                       onClick={() => { setRobotMenuOpen(o => !o); setBuildingMenuOpen(false); }}
-                      className="w-full flex items-center justify-between px-3 py-2.5 bg-white/40 hover:bg-white/70 transition-colors rounded-xl h-[42px]"
+                      className="w-full flex items-center justify-between px-4 py-2.5 bg-white/60 hover:bg-white/80 transition-colors rounded-xl text-left"
                     >
-                      <span className="text-[12px] font-semibold text-[#1A1C1E] truncate">{robot.id}</span>
-                      <ChevronDown className={`w-3.5 h-3.5 text-[#8A8C8E] flex-none transition-transform ${robotMenuOpen ? 'rotate-180' : ''}`} />
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ backgroundColor: status.dot }} />
+                        <span className="text-[13px] font-semibold text-[#1A1C1E] truncate">{robot.label}</span>
+                      </span>
+                      <ChevronDown className={`w-4 h-4 text-[#8A8C8E] flex-none ml-3 transition-transform ${robotMenuOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     {robotMenuOpen && (
@@ -207,9 +138,9 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                             >
                               <span className="flex items-center gap-2 min-w-0">
                                 <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ backgroundColor: statusConfig[r.status].dot }} />
-                                <span className="text-[12px] font-semibold text-[#1A1C1E] truncate">{r.id}</span>
+                                <span className="text-[12px] font-semibold text-[#1A1C1E] truncate">{r.label}</span>
                               </span>
-                              {r.id === selectedRobotId && <Check className="w-3.5 h-3.5 text-[#11676A] flex-none" />}
+                              {r.id === selectedRobotId && <Check className="w-3.5 h-3.5 text-[#1B6E77] flex-none" />}
                             </button>
                           ))}
                         </div>
@@ -218,7 +149,7 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                   </div>
 
                   {/* Date */}
-                  <div className="col-span-1">
+                  <div>
                     <PanelLabel className="mb-1.5">Fecha</PanelLabel>
                     <input
                       type="date"
@@ -229,7 +160,7 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                   </div>
 
                   {/* Time */}
-                  <div className="col-span-1">
+                  <div>
                     <PanelLabel className="mb-1.5">Hora</PanelLabel>
                     <input
                       type="time"
@@ -238,20 +169,31 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                       className="w-full px-3 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl h-[42px] text-[12px] font-semibold text-[#1A1C1E] outline-none transition-colors"
                     />
                   </div>
-                </div>
 
               </div>
             </TurquoiseCard>
 
-            {/* Primary action */}
-            <PrimaryButton
-              variant="full"
-              disabled={!canStart}
-              onClick={() => canStart && onTabChange('inspeccion-en-curso')}
-              className="mt-6"
-            >
-              Iniciar configuración
-            </PrimaryButton>
+            <RobotConnectionSection config={connectionConfig} onChange={setConnectionConfig} />
+
+            <ConnectionJsonPreview config={connectionConfig} />
+
+            {/* Primary action — always last, after every field is visible */}
+            <div className="mt-6">
+              <PrimaryButton
+                variant="full"
+                disabled={!canStart}
+                onClick={() => canStart && onTabChange('inspeccion-en-curso')}
+              >
+                Iniciar configuración
+              </PrimaryButton>
+              {!canStart && (
+                <p className="text-[11px] text-[#991B1B] mt-2">
+                  {robot.status !== 'listo'
+                    ? 'El robot debe estar en estado "Listo" para iniciar.'
+                    : 'Completá la configuración de conexión para continuar.'}
+                </p>
+              )}
+            </div>
 
           </div>
         </div>

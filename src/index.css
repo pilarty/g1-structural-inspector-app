@@ -6,12 +6,12 @@
   --color-foreground: #1A1C1E;
   --color-card: #FFFFFF;
   --color-card-foreground: #1A1C1E;
-  --color-primary: #11676A;
+  --color-primary: #1B6E77;
   --color-primary-foreground: #FFFFFF;
   --color-muted: #E2DFD8;
   --color-muted-foreground: #66686A;
   --color-border: #E2DFD8;
-  --color-ring: #11676A;
+  --color-ring: #1B6E77;
 
   /* Severity colors */
   --color-severity-low: #10B981;

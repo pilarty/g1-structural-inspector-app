@@ -18,10 +18,10 @@ export default function TurquoiseCard({
   return (
     <div
       className={[
-        size === 'overlay' ? 'bg-[#11676A]/[0.18]' : 'bg-[#11676A]/[0.07] backdrop-blur-md',
+        size === 'overlay' ? 'bg-[#1B6E77]/[0.18]' : 'bg-[#1B6E77]/[0.07] backdrop-blur-md',
         'overflow-hidden',
         size === 'lg' ? 'rounded-2xl' : size === 'md' ? 'rounded-xl' : '',
-        bordered ? 'border border-[#11676A]/20' : '',
+        bordered ? 'border border-[#1B6E77]/20' : '',
         className,
       ].join(' ')}
     >

@@ -35,11 +35,13 @@ interface InspectionRecorridoProps {
   activeTab: NavTab;
   onTabChange: (tab: NavTab) => void;
   onViewDetails: () => void;
+  selectedBuildingId?: string | null;
+  onSelectBuilding?: (id: string) => void;
 }
 
-export default function InspectionRecorrido({ activeTab, onTabChange, onViewDetails }: InspectionRecorridoProps) {
+export default function InspectionRecorrido({ activeTab, onTabChange, onViewDetails, selectedBuildingId, onSelectBuilding }: InspectionRecorridoProps) {
   const [infoTab, setInfoTab] = useState<TabId>('datos');
-  const [currentBuildingId, setCurrentBuildingId] = useState(defaultBuilding.id);
+  const currentBuildingId = selectedBuildingId ?? defaultBuilding.id;
 
   const currentBuilding: Building =
     mockProjects.flatMap(p => p.buildings).find(b => b.id === currentBuildingId) ?? defaultBuilding;
@@ -54,11 +56,6 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
   return (
     <div className="flex h-screen font-sans text-[#1A1C1E]">
       <ActivityBar active={activeTab} onChange={onTabChange} />
-      <ProjectsSidebar
-        selectedBuildingId={currentBuildingId}
-        onSelectBuilding={setCurrentBuildingId}
-        onNewBuilding={() => onTabChange('nuevo-edificio')}
-      />
 
       {/* ── Main content ── */}
       <div className="flex flex-col flex-1 overflow-hidden">
@@ -70,37 +67,14 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
           }
         />
 
-        {/* Stats row */}
-        <div className="flex-none bg-white border-b border-[#EDEBE6] px-5 py-3.5 flex items-center">
-          {([
-            {
-              icon: <CircleCheck className="w-4 h-4" />,
-              label: 'Estado',
-              value: currentBuilding.relevamientos > 0 ? 'Recorrido completado' : 'Sin recorridos',
-              valueColor: currentBuilding.relevamientos > 0 ? '#0B5559' : '#8A8C8E',
-            },
-            {
-              icon: <Clock className="w-4 h-4" />,
-              label: 'Duración',
-              value: currentBuilding.relevamientos > 0 ? '1h 35min' : '—',
-              valueColor: '#1A1C1E',
-            },
-            {
-              icon: <Gauge className="w-4 h-4" />,
-              label: 'Cobertura',
-              value: currentBuilding.relevamientos > 0 ? '100% de la planta' : '—',
-              valueColor: '#1A1C1E',
-            },
-            {
-              icon: <Bot className="w-4 h-4" />,
-              label: 'Robot utilizado',
-              value: currentBuilding.lastRobot !== '—' ? currentBuilding.lastRobot : '—',
-              valueColor: '#1A1C1E',
-            },
-          ] as const).map((stat, i) => (
-            <StatBlock key={i} variant="summary" divider={i < 3} {...stat} />
-          ))}
-        </div>
+        <div className="flex flex-1 overflow-hidden">
+          <ProjectsSidebar
+            selectedBuildingId={currentBuildingId}
+            onSelectBuilding={id => onSelectBuilding?.(id)}
+            onNewBuilding={() => onTabChange('nuevo-edificio')}
+          />
+
+        <div className="flex flex-col flex-1 overflow-hidden min-h-0">
 
         {/* Floor plan */}
         <div className="flex-1 relative overflow-hidden min-h-0" style={GRID_BG}>
@@ -151,7 +125,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
               <polyline
                 points={trajStr}
                 fill="none"
-                stroke="#11676A"
+                stroke="#1B6E77"
                 strokeWidth="2.5"
                 strokeOpacity="0.45"
                 strokeLinecap="round"
@@ -161,7 +135,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
               <polyline
                 points={trajStr}
                 fill="none"
-                stroke="#11676A"
+                stroke="#1B6E77"
                 strokeWidth="1.5"
                 strokeOpacity="0.85"
                 strokeLinecap="round"
@@ -178,11 +152,11 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
 
               {/* End marker */}
               <g filter="url(#endGlow)">
-                <circle cx={END[0]} cy={END[1]} r="12" fill="#11676A" fillOpacity="0.18" />
-                <rect x={END[0] - 7} y={END[1] - 7} width="14" height="14" rx="3" fill="#11676A" />
+                <circle cx={END[0]} cy={END[1]} r="12" fill="#1B6E77" fillOpacity="0.18" />
+                <rect x={END[0] - 7} y={END[1] - 7} width="14" height="14" rx="3" fill="#1B6E77" />
                 <rect x={END[0] - 3} y={END[1] - 3} width="6"  height="6"  rx="1" fill="white" />
               </g>
-              <text x={END[0] + 15} y={END[1] - 10} fill="#11676A" fontSize="9" fontFamily="IBM Plex Sans, sans-serif" fontWeight="700" letterSpacing="0.04em">FIN</text>
+              <text x={END[0] + 15} y={END[1] - 10} fill="#1B6E77" fontSize="9" fontFamily="IBM Plex Sans, sans-serif" fontWeight="700" letterSpacing="0.04em">FIN</text>
             </svg>
           ) : (
             /* No relevamientos empty state */
@@ -207,26 +181,26 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                   <span className="text-[11px] font-medium text-[#1A1C1E]">Punto de inicio</span>
                 </div>
                 <div className="flex items-center gap-2 mb-1.5">
-                  <div className="w-2 h-2 rounded-sm bg-[#11676A] flex-none" />
+                  <div className="w-2 h-2 rounded-sm bg-[#1B6E77] flex-none" />
                   <span className="text-[11px] font-medium text-[#1A1C1E]">Punto de fin</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-0.5 border-t-2 border-dashed border-[#11676A]/60 flex-none" />
+                  <div className="w-6 h-0.5 border-t-2 border-dashed border-[#1B6E77]/60 flex-none" />
                   <span className="text-[11px] font-medium text-[#1A1C1E]">Recorrido del robot</span>
                 </div>
               </div>
 
               {/* Zoom controls */}
               <div className="absolute bottom-5 right-5 z-20 flex flex-col bg-white/80 backdrop-blur-md rounded-xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.08)]">
-                <button className="p-2.5 hover:bg-[#11676A]/10 text-[#66686A] hover:text-[#11676A] transition-colors" title="Acercar">
+                <button className="p-2.5 hover:bg-[#1B6E77]/10 text-[#66686A] hover:text-[#1B6E77] transition-colors" title="Acercar">
                   <ZoomIn className="w-4 h-4" />
                 </button>
-                <div className="h-px bg-[#11676A]/10" />
-                <button className="p-2.5 hover:bg-[#11676A]/10 text-[#66686A] hover:text-[#11676A] transition-colors" title="Alejar">
+                <div className="h-px bg-[#1B6E77]/10" />
+                <button className="p-2.5 hover:bg-[#1B6E77]/10 text-[#66686A] hover:text-[#1B6E77] transition-colors" title="Alejar">
                   <ZoomOut className="w-4 h-4" />
                 </button>
-                <div className="h-px bg-[#11676A]/10" />
-                <button className="p-2.5 hover:bg-[#11676A]/10 text-[#66686A] hover:text-[#11676A] transition-colors" title="Restaurar">
+                <div className="h-px bg-[#1B6E77]/10" />
+                <button className="p-2.5 hover:bg-[#1B6E77]/10 text-[#66686A] hover:text-[#1B6E77] transition-colors" title="Restaurar">
                   <Maximize className="w-4 h-4" />
                 </button>
               </div>
@@ -246,7 +220,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                   onClick={() => setInfoTab(tab.id)}
                   className={`px-4 py-3 text-[12px] font-semibold transition-colors border-b-2 -mb-px ${
                     infoTab === tab.id
-                      ? 'border-[#11676A] text-[#11676A]'
+                      ? 'border-[#1B6E77] text-[#1B6E77]'
                       : 'border-transparent text-[#8A8C8E] hover:text-[#1A1C1E]'
                   }`}
                 >
@@ -285,9 +259,9 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                   {currentBuilding.relevamientos > 0 ? (
                     <div className="flex items-center gap-2 mt-1">
                       <div className="w-20 h-1.5 bg-[#E2DFD8] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#11676A] rounded-full w-full" />
+                        <div className="h-full bg-[#1B6E77] rounded-full w-full" />
                       </div>
-                      <span className="text-[13px] font-bold text-[#11676A]">100%</span>
+                      <span className="text-[13px] font-bold text-[#1B6E77]">100%</span>
                     </div>
                   ) : (
                     <PanelText className="font-semibold text-[#8A8C8E] mt-0.5">—</PanelText>
@@ -296,7 +270,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                 <div>
                   <PanelLabel>Estado</PanelLabel>
                   {currentBuilding.relevamientos > 0 ? (
-                    <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#0B5559] mt-0.5">
+                    <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#104247] mt-0.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] flex-none" />
                       Completado
                     </span>
@@ -379,6 +353,9 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
               </div>
             )}
           </div>
+        </div>
+
+        </div>
         </div>
 
       </div>

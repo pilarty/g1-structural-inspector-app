@@ -17,7 +17,7 @@ interface ActivityBarProps {
 
 export default function ActivityBar({ active, onChange }: ActivityBarProps) {
   return (
-    <div className="flex-none w-[58px] h-full bg-[#0D5254] flex flex-col items-center pt-2 z-30">
+    <div className="flex-none w-[58px] h-full bg-[#10141A] flex flex-col items-center pt-2 z-30">
       {navItems.map(({ id, Icon, label }) => {
         const isActive = active === id;
         return (

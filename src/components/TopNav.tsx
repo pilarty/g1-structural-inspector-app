@@ -10,12 +10,20 @@ interface TopNavProps {
 }
 
 /**
- * App-wide top navigation bar. Fixed at h-12, teal background, shows
- * app title + optional badge on the left and notification + user avatar on the right.
+ * App-wide top navigation bar. Fixed at h-12, navy background (matches ActivityBar),
+ * shows app title + optional badge on the left and notification + user avatar on the right.
  */
 export default function TopNav({ badge }: TopNavProps) {
   return (
-    <nav className="flex-none h-12 bg-[#11676A] flex items-center px-6 z-20">
+    <nav className="flex-none h-12 bg-[#10141A] flex items-center justify-between px-6 z-20 border-b border-white/5">
+      {/* Left — app identity + optional badge */}
+      <div className="flex items-center min-w-0">
+        <div className="flex items-center gap-2 text-white flex-none">
+
+        </div>
+        {badge}
+      </div>
+
       {/* Right — notifications + user */}
       <div className="flex items-center gap-1 flex-none">
         <button
