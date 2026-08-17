@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { TurquoiseCard, PanelTitle, PanelLabel } from './components';
-import { ChevronDown, Copy, Check, TriangleAlert } from 'lucide-react';
+import { ChevronDown, Copy, Check, EthernetPort, Antenna } from 'lucide-react';
 
 // ─── Connection config — Unitree G1 setup (MYBOTSHOP/QUADRUPED official setup) ─
 
@@ -105,11 +105,11 @@ function TextField({
 
 function WarningRow({ tone, children }: { tone: 'error' | 'warning'; children: React.ReactNode }) {
   const styles = tone === 'error'
-    ? 'bg-[#FEF2F2] text-[#991B1B]'
-    : 'bg-[#FFFBEB] text-[#92400E]';
+    ? { bg: 'bg-[#FEF2F2]', text: 'text-[#991B1B]', dot: '#EF4444' }
+    : { bg: 'bg-[#FFFBEB]', text: 'text-[#92400E]', dot: '#FBBF24' };
   return (
-    <div className={`flex items-start gap-2 px-3.5 py-2.5 rounded-xl ${styles}`}>
-      <TriangleAlert className="w-3.5 h-3.5 flex-none mt-0.5" />
+    <div className={`flex items-start gap-2 px-3.5 py-2.5 rounded-xl ${styles.bg} ${styles.text}`}>
+      <span className="w-1.5 h-1.5 rounded-full flex-none mt-1.5" style={{ backgroundColor: styles.dot }} />
       <span className="text-[11px] font-medium leading-snug">{children}</span>
     </div>
   );
@@ -179,52 +179,6 @@ export default function RobotConnectionSection({ config, onChange }: RobotConnec
 
       <div className="px-5 py-5 space-y-6">
 
-        {/* ── Setup inicial por LAN ── */}
-        <div className="space-y-2.5">
-          <SectionLabel>Setup inicial por LAN (una sola vez)</SectionLabel>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="IP estática de la PC">
-              <TextField
-                value={config.network.pcStaticIp}
-                onChange={v => patch({ network: { ...config.network, pcStaticIp: v } })}
-              />
-            </Field>
-            <Field label="Máscara de red (CIDR)">
-              <TextField
-                type="number"
-                value={String(config.network.netmaskPrefix)}
-                onChange={v => patch({ network: { ...config.network, netmaskPrefix: Number(v) || 0 } })}
-              />
-            </Field>
-          </div>
-          <p className="text-[11px] text-[#8A8C8E] leading-relaxed">
-            Se configura en tu PC, no en el robot. Requiere cable LAN directo para el primer setup.
-          </p>
-        </div>
-
-        <div className="h-px bg-[#1B6E77]/10" />
-
-        {/* ── IPs fijas del robot ── */}
-        <div className="space-y-2.5">
-          <SectionLabel>IPs fijas del robot (referencia)</SectionLabel>
-          <div className="space-y-2">
-            {[
-              { label: 'G1 MCU', value: ROBOT_IPS.mcu },
-              { label: 'G1 Auxiliary PC (SSH)', value: ROBOT_IPS.auxPcSsh },
-              { label: 'G1 Webserver', value: ROBOT_IPS.webserver },
-              { label: 'Mid360 LIDAR', value: ROBOT_IPS.lidar },
-            ].map(row => (
-              <div key={row.label} className="flex items-center justify-between">
-                <span className="text-[12px] text-[#1A1C1E]">{row.label}</span>
-                <span className="text-[12px] font-semibold text-[#104247]" style={{ fontFamily: 'monospace' }}>{row.value}</span>
-              </div>
-            ))}
-          </div>
-          <WarningRow tone="error">Nunca le asignes a tu PC ninguna de estas direcciones IP.</WarningRow>
-        </div>
-
-        <div className="h-px bg-[#1B6E77]/10" />
-
         {/* ── Acceso SSH ── */}
         <div className="space-y-2.5">
           <SectionLabel>Acceso SSH</SectionLabel>
@@ -235,12 +189,6 @@ export default function RobotConnectionSection({ config, onChange }: RobotConnec
             <Field label="Contraseña">
               <TextField type="password" value={config.ssh.password} onChange={v => patch({ ssh: { ...config.ssh, password: v } })} />
             </Field>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-2 bg-black/5 rounded-lg overflow-x-auto">
-            <span className="text-[10px] text-[#66686A] flex-none">Comando de referencia:</span>
-            <code className="text-[11px] text-[#104247] whitespace-nowrap" style={{ fontFamily: 'monospace' }}>
-              ssh -X {config.ssh.user || 'unitree'}@{ROBOT_IPS.auxPcSsh}
-            </code>
           </div>
         </div>
 
@@ -268,16 +216,25 @@ export default function RobotConnectionSection({ config, onChange }: RobotConnec
         <div className="space-y-2.5">
           <SectionLabel>Modo de conectividad para operación</SectionLabel>
           <Field label="Conectividad" required>
-            <div className="relative">
-              <select
-                value={config.connectivityMode}
-                onChange={e => patch({ connectivityMode: e.target.value as 'lan' | 'wifi' })}
-                className="w-full appearance-none px-3 py-2.5 bg-white/60 hover:bg-white/80 rounded-xl h-[42px] text-[12px] font-semibold text-[#1A1C1E] outline-none transition-colors pr-9"
-              >
-                <option value="wifi">WiFi (recomendado)</option>
-                <option value="lan">LAN (Ethernet)</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8A8C8E] pointer-events-none" />
+            <div className="flex bg-white/40 rounded-xl p-1 gap-1">
+              {([
+                { value: 'wifi', label: 'WiFi (recomendado)', icon: <Antenna className="w-3.5 h-3.5" /> },
+                { value: 'lan', label: 'LAN (Ethernet)', icon: <EthernetPort className="w-3.5 h-3.5" /> },
+              ] as const).map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => patch({ connectivityMode: opt.value })}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg h-[42px] text-[12px] font-semibold transition-colors ${
+                    config.connectivityMode === opt.value
+                      ? 'bg-[#1B6E77] text-white'
+                      : 'text-[#66686A] hover:bg-white/70'
+                  }`}
+                >
+                  {opt.icon}
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </Field>
           <p className="text-[11px] text-[#8A8C8E] leading-relaxed">

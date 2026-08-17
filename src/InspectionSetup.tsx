@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import ActivityBar, { NavTab } from './ActivityBar';
-import { TopNav, TurquoiseCard, PanelTitle, PanelLabel, PrimaryButton } from './components';
+import { TopNav, TurquoiseCard, PanelTitle, PanelLabel, PrimaryButton, SecondaryButton } from './components';
 import { mockProjects } from './data';
 import { ChevronDown, Check } from 'lucide-react';
-import RobotConnectionSection, { ConnectionJsonPreview, defaultConnectionConfig, getConnectionErrors } from './RobotConnectionConfig';
 
 type RobotStatus = 'listo' | 'espera' | 'desconectado';
 
@@ -20,12 +19,13 @@ interface RobotOption {
   battery: number;
   sensorsOk: boolean;
   network: string | null; // null = sin conexión
+  configured: boolean; // conexión (LAN/SSH/Webserver/ROS2) ya configurada desde "Añadir robot"
 }
 
 const robots: RobotOption[] = [
-  { id: 'HR-04', label: 'HR-04 / Unidad 2', status: 'listo',        battery: 84, sensorsOk: true,  network: 'Red_Obra_01' },
-  { id: 'HR-02', label: 'HR-02 / Unidad 1', status: 'espera',       battery: 61, sensorsOk: true,  network: 'Red_Obra_01' },
-  { id: 'HR-01', label: 'HR-01 / Unidad 3', status: 'desconectado', battery: 12, sensorsOk: false, network: null },
+  { id: 'HR-04', label: 'HR-04 / Unidad 2', status: 'listo',        battery: 84, sensorsOk: true,  network: 'Red_Obra_01', configured: true },
+  { id: 'HR-02', label: 'HR-02 / Unidad 1', status: 'espera',       battery: 61, sensorsOk: true,  network: 'Red_Obra_01', configured: true },
+  { id: 'HR-01', label: 'HR-01 / Unidad 3', status: 'desconectado', battery: 12, sensorsOk: false, network: null,          configured: false },
 ];
 
 const buildings = mockProjects.flatMap(p => p.buildings);
@@ -42,13 +42,11 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
   const [time, setTime] = useState('09:00');
   const [robotMenuOpen, setRobotMenuOpen] = useState(false);
   const [buildingMenuOpen, setBuildingMenuOpen] = useState(false);
-  const [connectionConfig, setConnectionConfig] = useState(defaultConnectionConfig);
 
   const robot = robots.find(r => r.id === selectedRobotId) ?? robots[0];
   const building = buildings.find(b => b.id === selectedBuildingId) ?? buildings[0];
   const status = statusConfig[robot.status];
-  const connectionErrors = getConnectionErrors(connectionConfig);
-  const canStart = robot.status === 'listo' && connectionErrors.length === 0;
+  const canStart = robot.status === 'listo' && robot.configured;
 
   return (
     <div className="flex h-screen font-sans text-[#1A1C1E]">
@@ -60,7 +58,7 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
 
         {/* Content area */}
         <div className="flex-1 overflow-y-auto bg-[#F3F1ED]">
-          <div className="max-w-[1120px] mx-auto px-8 py-10">
+          <div className="w-full px-8 py-10">
 
             {/* Page header */}
             <div className="mb-6">
@@ -69,12 +67,12 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
             </div>
 
             {/* ── Card: Configuración del relevamiento ── */}
-            <TurquoiseCard size="lg" bordered>
+            <TurquoiseCard size="lg" bordered className="w-full">
               <div className="px-5 pt-4 pb-3 border-b border-[#1B6E77]/10">
                 <PanelTitle>Configuración del relevamiento</PanelTitle>
               </div>
 
-              <div className="px-5 py-5 grid grid-cols-2 gap-x-5 gap-y-4 items-start">
+              <div className="px-5 py-5 grid grid-cols-4 gap-x-5 gap-y-4 items-start">
 
                   {/* Building selector */}
                   <div className="relative">
@@ -171,14 +169,23 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                   </div>
 
               </div>
+
+              {/* Estado de configuración del robot elegido */}
+              <div className="mx-5 mb-5 flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-black/[0.03]">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ backgroundColor: robot.configured ? '#10B981' : '#EF4444' }} />
+                  <span className="text-[12px] font-semibold text-[#1A1C1E]">
+                    {robot.configured ? 'Conexión configurada' : 'Conexión sin configurar'}
+                  </span>
+                </div>
+                <SecondaryButton onClick={() => onTabChange('nuevo-robot')}>
+                  {robot.configured ? 'Editar configuración' : 'Configurar robot'}
+                </SecondaryButton>
+              </div>
             </TurquoiseCard>
 
-            <RobotConnectionSection config={connectionConfig} onChange={setConnectionConfig} />
-
-            <ConnectionJsonPreview config={connectionConfig} />
-
             {/* Primary action — always last, after every field is visible */}
-            <div className="mt-6">
+            <div className="max-w-[420px] mt-6">
               <PrimaryButton
                 variant="full"
                 disabled={!canStart}
@@ -190,7 +197,7 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                 <p className="text-[11px] text-[#991B1B] mt-2">
                   {robot.status !== 'listo'
                     ? 'El robot debe estar en estado "Listo" para iniciar.'
-                    : 'Completá la configuración de conexión para continuar.'}
+                    : 'Configurá la conexión del robot para continuar.'}
                 </p>
               )}
             </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav, StatBlock, PanelLabel, PanelText } from './components';
-import { Wifi, Battery, Square } from 'lucide-react';
+import { Square } from 'lucide-react';
 
 const GRID_BG = {
   backgroundColor: '#FFFFFF',
@@ -234,12 +234,9 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
               </div>
             </div>
 
-            <div className="px-4 py-3 flex items-center gap-1.5 text-[11px] text-[#8A8C8E]">
-              <Wifi className="w-3 h-3 flex-none" />
+            <div className="px-4 py-3 flex items-center text-[11px] text-[#8A8C8E]">
               <span>Red_Obra_01</span>
-              <span className="ml-auto flex items-center gap-1 text-[#10B981] font-semibold">
-                <Battery className="w-3 h-3" />{battery}%
-              </span>
+              <span className="ml-auto text-[#10B981] font-semibold">{battery}%</span>
             </div>
           </div>
         </div>

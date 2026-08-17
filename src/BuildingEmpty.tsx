@@ -1,7 +1,7 @@
 import React from 'react';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav, PrimaryButton } from './components';
-import { MapPin, Layers, Calendar, Map, Settings, Download, Play } from 'lucide-react';
+import { Play } from 'lucide-react';
 
 const GRID_BG = {
   backgroundColor: '#F3F1ED',
@@ -39,33 +39,23 @@ export default function BuildingEmpty({ activeTab, onTabChange, onStartInspectio
                   <h1 className="text-[24px] font-bold text-white leading-tight tracking-tight mb-2">
                     Torre Libertador 4500
                   </h1>
-                  <p className="text-[13px] text-white/60 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 flex-none" />
+                  <p className="text-[13px] text-white/60">
                     Av. del Libertador 4500, Palermo
                   </p>
                   <div className="flex items-center gap-5 mt-5">
-                    <div className="flex items-center gap-1.5 text-white/55">
-                      <Layers className="w-3.5 h-3.5" />
-                      <span className="text-[12px]">22 plantas</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-white/55">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span className="text-[12px]">Construido 2003</span>
-                    </div>
+                    <span className="text-[12px] text-white/55">22 plantas</span>
+                    <span className="text-[12px] text-white/55">Construido 2003</span>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-2.5 flex-none">
-                  <button className="flex items-center gap-2 px-5 py-2.5 bg-white/10 text-white/50 text-[13px] font-semibold rounded-xl border border-white/15 cursor-not-allowed">
-                    <Map className="w-3.5 h-3.5" />
+                  <button className="px-5 py-2.5 bg-white/10 text-white/50 text-[13px] font-semibold rounded-xl border border-white/15 cursor-not-allowed">
                     Ver plano
                   </button>
-                  <button className="flex items-center gap-2 px-5 py-2.5 bg-white/10 text-white text-[13px] font-medium rounded-xl hover:bg-white/20 transition-colors border border-white/15">
-                    <Settings className="w-3.5 h-3.5" />
+                  <button className="px-5 py-2.5 bg-white/10 text-white text-[13px] font-medium rounded-xl hover:bg-white/20 transition-colors border border-white/15">
                     Configurar
                   </button>
-                  <button className="flex items-center gap-2 px-5 py-2.5 bg-white/10 text-white/40 text-[13px] font-medium rounded-xl border border-white/10 cursor-not-allowed">
-                    <Download className="w-3.5 h-3.5" />
+                  <button className="px-5 py-2.5 bg-white/10 text-white/40 text-[13px] font-medium rounded-xl border border-white/10 cursor-not-allowed">
                     Exportar informe
                   </button>
                 </div>

@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { mockProjects, Building } from './data';
-import { TopNav, ProjectsSidebar, StatBlock, PanelLabel, PanelText, PrimaryButton } from './components';
+import { TopNav, ProjectsSidebar, TurquoiseCard, PanelTitle, PanelLabel, PanelText, PrimaryButton } from './components';
 import {
   Map,
   ZoomIn, ZoomOut, Maximize, ArrowRight,
-  CircleCheck, Clock, Gauge, Bot,
 } from 'lucide-react';
 
 const GRID_BG = {
@@ -59,13 +58,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
 
       {/* ── Main content ── */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        <TopNav
-          badge={
-            <span className="ml-3 text-[11px] font-semibold text-white/50 bg-white/10 px-2.5 py-0.5 rounded-md truncate">
-              {currentBuilding.name}
-            </span>
-          }
-        />
+        <TopNav />
 
         <div className="flex flex-1 overflow-hidden">
           <ProjectsSidebar
@@ -174,21 +167,25 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
           {currentBuilding.relevamientos > 0 && (
             <>
               {/* Legend */}
-              <div className="absolute top-4 left-4 bg-white/80 backdrop-blur-md rounded-xl px-3.5 py-3 shadow-[0_2px_12px_rgba(0,0,0,0.08)]">
-                <p className="text-[9px] font-semibold text-[#8A8C8E] uppercase tracking-widest mb-2">Trayectoria</p>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className="w-2 h-2 rounded-full bg-[#10B981] flex-none" />
-                  <span className="text-[11px] font-medium text-[#1A1C1E]">Punto de inicio</span>
+              <TurquoiseCard size="overlay" className="absolute top-4 left-4">
+                <div className="px-3.5 pt-3 pb-1">
+                  <PanelTitle>Trayectoria</PanelTitle>
                 </div>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className="w-2 h-2 rounded-sm bg-[#1B6E77] flex-none" />
-                  <span className="text-[11px] font-medium text-[#1A1C1E]">Punto de fin</span>
+                <div className="px-3.5 pt-1 pb-3 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-[#10B981] flex-none" />
+                    <PanelText className="leading-none">Punto de inicio</PanelText>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-sm bg-[#1B6E77] flex-none" />
+                    <PanelText className="leading-none">Punto de fin</PanelText>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-0.5 border-t-2 border-dashed border-[#1B6E77]/60 flex-none" />
+                    <PanelText className="leading-none">Recorrido del robot</PanelText>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-0.5 border-t-2 border-dashed border-[#1B6E77]/60 flex-none" />
-                  <span className="text-[11px] font-medium text-[#1A1C1E]">Recorrido del robot</span>
-                </div>
-              </div>
+              </TurquoiseCard>
 
               {/* Zoom controls */}
               <div className="absolute bottom-5 right-5 z-20 flex flex-col bg-white/80 backdrop-blur-md rounded-xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.08)]">
@@ -230,7 +227,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
             </div>
             {currentBuilding.relevamientos > 0 && (
               <PrimaryButton onClick={onViewDetails} iconRight={<ArrowRight className="w-3.5 h-3.5" />} shadow>
-                Ver detalles
+                Ver relevamiento
               </PrimaryButton>
             )}
           </div>

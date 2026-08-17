@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import Home from './Home';
 import InspectionSetup from './InspectionSetup';
 import NewBuilding from './NewBuilding';
+import NewProject from './NewProject';
+import NewRobot from './NewRobot';
 import BuildingEmpty from './BuildingEmpty';
 import InspectionLive from './InspectionLive';
 import InspectionRecorrido from './InspectionRecorrido';
@@ -12,7 +14,6 @@ import {
   X,
   Check,
   RotateCw,
-  Layers,
 } from 'lucide-react';
 
 type Severity = 'low' | 'medium' | 'high' | 'critical';
@@ -146,6 +147,14 @@ export default function App() {
     return <NewBuilding activeTab={activeTab} onTabChange={handleTabChange} onCancel={() => setActiveTab('dashboard')} />;
   }
 
+  if (activeTab === 'nuevo-proyecto') {
+    return <NewProject activeTab={activeTab} onTabChange={handleTabChange} onCancel={() => setActiveTab('dashboard')} />;
+  }
+
+  if (activeTab === 'nuevo-robot') {
+    return <NewRobot activeTab={activeTab} onTabChange={handleTabChange} onCancel={() => setActiveTab('inspeccion')} />;
+  }
+
   if (activeTab === 'building-empty') {
     return <BuildingEmpty activeTab={activeTab} onTabChange={handleTabChange} onStartInspection={() => setActiveTab('inspeccion')} />;
   }
@@ -218,9 +227,9 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
           backgroundSize: '24px 24px'
         }}
       >
-        {/* Floor plan SVG — full bleed background */}
+        {/* Floor plan SVG — inset so it never sits under the side panels */}
         <div
-          className="absolute inset-0"
+          className="absolute left-[252px] right-[252px] top-6 bottom-6"
           style={{ transform: `rotate(${rotation}deg)`, transition: 'transform 0.35s cubic-bezier(0.4,0,0.2,1)', transformOrigin: 'center' }}
         >
           <svg viewBox="0 0 800 600" className="w-full h-full" fill="none" preserveAspectRatio="xMidYMid meet">
@@ -353,10 +362,7 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
             <div className="px-3.5 py-2.5 flex gap-5">
               <div>
                 <PanelLabel>Plantas</PanelLabel>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <Layers className="w-3 h-3 text-[#1B6E77]" />
-                  <PanelText>8</PanelText>
-                </div>
+                <PanelText className="mt-0.5">8</PanelText>
               </div>
               <div>
                 <PanelLabel>Año</PanelLabel>
