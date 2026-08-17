@@ -6,12 +6,6 @@ import { ChevronDown, Check } from 'lucide-react';
 
 type RobotStatus = 'listo' | 'espera' | 'desconectado';
 
-const statusConfig: Record<RobotStatus, { label: string; dot: string }> = {
-  listo:        { label: 'Listo',               dot: '#10B981' },
-  espera:       { label: 'Conectado en espera', dot: '#FBBF24' },
-  desconectado: { label: 'Desconectado',        dot: '#EF4444' },
-};
-
 interface RobotOption {
   id: string;
   label: string;
@@ -45,7 +39,6 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
 
   const robot = robots.find(r => r.id === selectedRobotId) ?? robots[0];
   const building = buildings.find(b => b.id === selectedBuildingId) ?? buildings[0];
-  const status = statusConfig[robot.status];
   const canStart = robot.status === 'listo' && robot.configured;
 
   return (
@@ -72,7 +65,7 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                 <PanelTitle>Configuración del relevamiento</PanelTitle>
               </div>
 
-              <div className="px-5 py-5 grid grid-cols-4 gap-x-5 gap-y-4 items-start">
+              <div className="px-5 py-5 grid grid-cols-2 gap-x-5 gap-y-4 items-start">
 
                   {/* Building selector */}
                   <div className="relative">
@@ -118,7 +111,6 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                       className="w-full flex items-center justify-between px-4 py-2.5 bg-white/60 hover:bg-white/80 transition-colors rounded-xl text-left"
                     >
                       <span className="flex items-center gap-2 min-w-0">
-                        <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ backgroundColor: status.dot }} />
                         <span className="text-[13px] font-semibold text-[#1A1C1E] truncate">{robot.label}</span>
                       </span>
                       <ChevronDown className={`w-4 h-4 text-[#8A8C8E] flex-none ml-3 transition-transform ${robotMenuOpen ? 'rotate-180' : ''}`} />
@@ -135,7 +127,6 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                               className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 hover:bg-[#F3F1ED] transition-colors text-left"
                             >
                               <span className="flex items-center gap-2 min-w-0">
-                                <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ backgroundColor: statusConfig[r.status].dot }} />
                                 <span className="text-[12px] font-semibold text-[#1A1C1E] truncate">{r.label}</span>
                               </span>
                               {r.id === selectedRobotId && <Check className="w-3.5 h-3.5 text-[#1B6E77] flex-none" />}
@@ -173,7 +164,6 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
               {/* Estado de configuración del robot elegido */}
               <div className="mx-5 mb-5 flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-black/[0.03]">
                 <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ backgroundColor: robot.configured ? '#10B981' : '#EF4444' }} />
                   <span className="text-[12px] font-semibold text-[#1A1C1E]">
                     {robot.configured ? 'Conexión configurada' : 'Conexión sin configurar'}
                   </span>

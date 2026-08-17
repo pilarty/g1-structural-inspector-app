@@ -14,11 +14,13 @@ const GRID_BG = {
 } as const;
 
 // Full floor-plan trajectory in 800×600 viewBox space
+// Points are routed so the line always crosses a wall through its door opening
 const TRAJ_POINTS: [number, number][] = [
-  [144, 210], [144, 132], [250, 132], [370, 132],
-  [370, 200], [440, 200], [440, 132], [578, 132],
-  [578, 240], [450, 240], [450, 348], [376, 348],
-  [376, 440], [520, 440], [578, 440], [578, 340],
+  [144, 210], [144, 132], [250, 175], [370, 132],
+  [370, 200], [440, 200], [440, 132], [500, 175],
+  [578, 132], [578, 240], [500, 185], [450, 240],
+  [450, 345], [425, 345], [425, 440], [376, 440],
+  [425, 345], [578, 300], [578, 440], [578, 340],
 ];
 const START    = TRAJ_POINTS[0];
 const END      = TRAJ_POINTS[TRAJ_POINTS.length - 1];
@@ -54,7 +56,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
 
   return (
     <div className="flex h-screen font-sans text-[#1A1C1E]">
-      <ActivityBar active={activeTab} onChange={onTabChange} />
+      <ActivityBar active={activeTab === 'recorrido' ? 'dashboard' : activeTab} onChange={onTabChange} />
 
       {/* ── Main content ── */}
       <div className="flex flex-col flex-1 overflow-hidden">
