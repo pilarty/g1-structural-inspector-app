@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Home from './Home';
 import InspectionSetup from './InspectionSetup';
 import NewBuilding from './NewBuilding';
@@ -9,6 +9,8 @@ import InspectionLive from './InspectionLive';
 import InspectionRecorrido from './InspectionRecorrido';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav, TurquoiseCard, PanelTitle, PanelLabel, PanelText, PrimaryButton, SecondaryButton, ProjectsSidebar } from './components';
+import { useLiveDetections } from './useLiveDetections';
+import { useRoomLayout, worldToCanvas, canvasToPercent } from './useRoomLayout';
 import {
   Maximize,
   X,
@@ -17,14 +19,16 @@ import {
 } from 'lucide-react';
 
 type Severity = 'low' | 'medium' | 'high' | 'critical';
-type DamageType = 'Grieta diagonal' | 'Grieta horizontal' | 'Humedad' | 'Desprendimiento';
+// Antes era una unión fija en español. Ahora es string porque el modelo
+// puede devolver cualquiera de las 7 clases traducidas en el backend.
+type DamageType = string;
 
 interface Detection {
   id: string;
   x: number; // percentage 0-100
   y: number; // percentage 0-100
   severity: Severity;
-  types: { type: DamageType; probability: number }[];
+  types: { type: string; label: string; probability: number }[];
   date: string;
   image: string;
 }
@@ -43,6 +47,9 @@ const severityLabels: Record<Severity, string> = {
   critical: 'Crítica'
 };
 
+// Lista base para que el panel de filtros no arranque vacío antes de que
+// lleguen detecciones reales del backend. Se combina más abajo con los
+// tipos que realmente van apareciendo (allDamagesLive).
 const allDamages: DamageType[] = ['Grieta diagonal', 'Grieta horizontal', 'Humedad', 'Desprendimiento'];
 
 const mockDetections: Detection[] = [
@@ -52,8 +59,8 @@ const mockDetections: Detection[] = [
     y: 35,
     severity: 'high',
     types: [
-      { type: 'Grieta diagonal', probability: 87 },
-      { type: 'Humedad', probability: 34 }
+      { type: 'Diagonal crack', label: 'Grieta diagonal', probability: 87 },
+      { type: 'Humedad', label: 'Humedad', probability: 34 }
     ],
     date: '12 Ago 2026, 14:35',
     image: 'https://images.unsplash.com/photo-1518596637153-f725359a0f05?auto=format&fit=crop&q=80&w=800'
@@ -64,7 +71,7 @@ const mockDetections: Detection[] = [
     y: 70,
     severity: 'low',
     types: [
-      { type: 'Humedad', probability: 92 }
+      { type: 'Humedad', label: 'Humedad', probability: 92 }
     ],
     date: '12 Ago 2026, 14:40',
     image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800'
@@ -75,8 +82,8 @@ const mockDetections: Detection[] = [
     y: 60,
     severity: 'critical',
     types: [
-      { type: 'Desprendimiento', probability: 95 },
-      { type: 'Grieta horizontal', probability: 78 }
+      { type: 'Concrete spalling', label: 'Desprendimiento', probability: 95 },
+      { type: 'Grieta horizontal', label: 'Grieta horizontal', probability: 78 }
     ],
     date: '12 Ago 2026, 14:45',
     image: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&q=80&w=800'
@@ -87,7 +94,7 @@ const mockDetections: Detection[] = [
     y: 20,
     severity: 'medium',
     types: [
-      { type: 'Grieta horizontal', probability: 64 }
+      { type: 'Grieta horizontal', label: 'Grieta horizontal', probability: 64 }
     ],
     date: '12 Ago 2026, 14:50',
     image: 'https://images.unsplash.com/photo-1518596637153-f725359a0f05?auto=format&fit=crop&q=80&w=800'
@@ -98,7 +105,7 @@ const mockDetections: Detection[] = [
     y: 50,
     severity: 'low',
     types: [
-      { type: 'Humedad', probability: 45 }
+      { type: 'Humedad', label: 'Humedad', probability: 45 }
     ],
     date: '12 Ago 2026, 14:55',
     image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800'
@@ -187,6 +194,40 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
   const [hoveredDetection, setHoveredDetection] = useState<string | null>(null);
   const [rotation, setRotation] = useState(0);
 
+  // ── Conexión con el backend (MuJoCo → backend → acá) ──
+  const room = useRoomLayout();
+  const liveDetectionsRaw = useLiveDetections();
+
+  // Convierte las detecciones (que vienen en metros) a % del plano,
+  // usando el contorno real de la habitación. Si el layout todavía no
+  // llegó del backend, no hay forma de ubicarlas bien: se muestran vacías
+  // y cae al fallback de mockDetections más abajo.
+  const liveDetections = room
+    ? liveDetectionsRaw.map(d => {
+        const { px, py } = worldToCanvas(d.worldX, d.worldY, room);
+        const pos = canvasToPercent(px, py);
+        return { id: d.id, x: pos.x, y: pos.y, severity: d.severity, types: d.types, date: d.date, image: d.image };
+      })
+    : [];
+
+  const allDamagesLive = Array.from(
+    new Set(liveDetectionsRaw.flatMap(d => d.types.map(t => t.label)))
+  );
+  // Lista mostrada en el panel de filtros: la base (para que no arranque
+  // vacío) + lo que realmente va apareciendo en las detecciones reales.
+  const filterOptions = Array.from(new Set([...allDamages, ...allDamagesLive]));
+
+  // Cada vez que aparece un tipo de daño nuevo, se agrega automáticamente
+  // a los "tildados" para que no quede oculto por default.
+  useEffect(() => {
+    setSelectedDamageTypes(prev => {
+      const next = new Set(prev);
+      allDamagesLive.forEach(label => next.add(label));
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allDamagesLive.join(',')]);
+
   const toggleDamageType = (type: DamageType) => {
     const next = new Set(selectedDamageTypes);
     next.has(type) ? next.delete(type) : next.add(type);
@@ -199,9 +240,11 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
     setSelectedSeverities(next);
   };
 
-  const filteredDetections = mockDetections.filter(d =>
+  // Usa detecciones reales si ya hay al menos una; si todavía no llegó
+  // ninguna del backend, muestra las mock para no dejar la pantalla vacía.
+  const filteredDetections = (liveDetections.length ? liveDetections : mockDetections).filter(d =>
     selectedSeverities.has(d.severity) &&
-    d.types.some(t => selectedDamageTypes.has(t.type))
+    d.types.some(t => selectedDamageTypes.has(t.label))
   );
 
   return (
@@ -233,25 +276,41 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
           style={{ transform: `rotate(${rotation}deg)`, transition: 'transform 0.35s cubic-bezier(0.4,0,0.2,1)', transformOrigin: 'center' }}
         >
           <svg viewBox="0 0 800 600" className="w-full h-full" fill="none" preserveAspectRatio="xMidYMid meet">
-            {/* Outer walls */}
-            <path d="M50 50 L750 50 L750 550 L50 550 Z" stroke="#C8C5BF" strokeWidth="2.5" />
-            {/* Inner walls */}
-            <path d="M250 50 L250 350 L50 350" stroke="#C8C5BF" strokeWidth="1.75" />
-            <path d="M500 50 L500 250 L750 250" stroke="#C8C5BF" strokeWidth="1.75" />
-            <path d="M350 550 L350 350 L500 350 L500 550" stroke="#C8C5BF" strokeWidth="1.75" />
-            {/* Doors */}
-            <path d="M250 150 A50 50 0 0 1 300 200 L250 200" fill="none" stroke="#A0A2A4" strokeWidth="1" strokeDasharray="4 4" />
-            <path d="M250 150 L250 200" stroke="#FFFFFF" strokeWidth="2.5" />
-            <path d="M400 350 A50 50 0 0 0 450 300 L450 350" fill="none" stroke="#A0A2A4" strokeWidth="1" strokeDasharray="4 4" />
-            <path d="M400 350 L450 350" stroke="#FFFFFF" strokeWidth="2.5" />
-            <path d="M500 150 A50 50 0 0 1 550 200 L500 200" fill="none" stroke="#A0A2A4" strokeWidth="1" strokeDasharray="4 4" />
-            <path d="M500 150 L500 200" stroke="#FFFFFF" strokeWidth="2.5" />
-            {/* Room labels */}
-            <text x="145" y="210" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala A</text>
-            <text x="375" y="155" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala B</text>
-            <text x="625" y="155" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala C</text>
-            <text x="420" y="460" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala D</text>
-            <text x="575" y="410" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Pasillo</text>
+            {room ? (
+              // ── Plano real, generado a partir del mesh de escenario.xml ──
+              <polygon
+                points={room.floorPolygon.map(([x, y]) => {
+                  const { px, py } = worldToCanvas(x, y, room);
+                  return `${px},${py}`;
+                }).join(' ')}
+                stroke="#C8C5BF"
+                strokeWidth="2.5"
+                fill="#FDFCFB"
+              />
+            ) : (
+              // ── Fallback: plano dibujado a mano, mientras no llega el real ──
+              <>
+                {/* Outer walls */}
+                <path d="M50 50 L750 50 L750 550 L50 550 Z" stroke="#C8C5BF" strokeWidth="2.5" />
+                {/* Inner walls */}
+                <path d="M250 50 L250 350 L50 350" stroke="#C8C5BF" strokeWidth="1.75" />
+                <path d="M500 50 L500 250 L750 250" stroke="#C8C5BF" strokeWidth="1.75" />
+                <path d="M350 550 L350 350 L500 350 L500 550" stroke="#C8C5BF" strokeWidth="1.75" />
+                {/* Doors */}
+                <path d="M250 150 A50 50 0 0 1 300 200 L250 200" fill="none" stroke="#A0A2A4" strokeWidth="1" strokeDasharray="4 4" />
+                <path d="M250 150 L250 200" stroke="#FFFFFF" strokeWidth="2.5" />
+                <path d="M400 350 A50 50 0 0 0 450 300 L450 350" fill="none" stroke="#A0A2A4" strokeWidth="1" strokeDasharray="4 4" />
+                <path d="M400 350 L450 350" stroke="#FFFFFF" strokeWidth="2.5" />
+                <path d="M500 150 A50 50 0 0 1 550 200 L500 200" fill="none" stroke="#A0A2A4" strokeWidth="1" strokeDasharray="4 4" />
+                <path d="M500 150 L500 200" stroke="#FFFFFF" strokeWidth="2.5" />
+                {/* Room labels */}
+                <text x="145" y="210" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala A</text>
+                <text x="375" y="155" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala B</text>
+                <text x="625" y="155" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala C</text>
+                <text x="420" y="460" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala D</text>
+                <text x="575" y="410" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Pasillo</text>
+              </>
+            )}
           </svg>
 
           {/* Pins — inside rotated container so they rotate with the plan */}
@@ -278,7 +337,7 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
                   />
                   {isHovered && !isSelected && (
                     <div className="absolute bottom-full mb-2 bg-white px-3 py-1.5 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.12)] whitespace-nowrap z-20 pointer-events-none">
-                      <div className="text-[12px] font-semibold text-[#1A1C1E]">{det.types[0].type}</div>
+                      <div className="text-[12px] font-semibold text-[#1A1C1E]">{det.types[0].label}</div>
                       <div className="text-[10px] text-[#8A8C8E]">Detección #{det.id}</div>
                     </div>
                   )}
@@ -299,7 +358,7 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
             </div>
             <div className="px-3.5 pt-1 pb-2.5 space-y-2">
               <PanelLabel>Tipo de daño</PanelLabel>
-              {allDamages.map(type => (
+              {filterOptions.map(type => (
                 <label key={type} className="flex items-center gap-3 cursor-pointer group">
                   <div
                     onClick={() => toggleDamageType(type)}
@@ -479,7 +538,7 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
                     {selectedDetection.types.map((t, i) => (
                       <div key={i} className="bg-[#F8F7F5] p-4 rounded-xl">
                         <div className="flex justify-between items-center mb-2.5">
-                          <span className="text-[13px] font-medium text-[#1A1C1E]">{t.type}</span>
+                          <span className="text-[13px] font-medium text-[#1A1C1E]">{t.label}</span>
                           <span className="text-[12px] font-semibold text-[#1B6E77] bg-[#DDE9EC] px-2.5 py-0.5 rounded-md">
                             {t.probability}%
                           </span>
