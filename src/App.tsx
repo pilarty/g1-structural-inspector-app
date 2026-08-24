@@ -50,7 +50,15 @@ const severityLabels: Record<Severity, string> = {
 // Lista base para que el panel de filtros no arranque vacío antes de que
 // lleguen detecciones reales del backend. Se combina más abajo con los
 // tipos que realmente van apareciendo (allDamagesLive).
-const allDamages: DamageType[] = ['Grieta diagonal', 'Grieta horizontal', 'Humedad', 'Desprendimiento'];
+const allDamages: DamageType[] = [
+  'Grieta diagonal',
+  'Desprendimiento de hormigón',
+  'Corrosión',
+  'Grieta de corte',
+  'Grieta de flexión/basculante',
+  'Escombros',
+  'Grieta de desprendimiento',
+];
 
 const mockDetections: Detection[] = [
   {
@@ -234,11 +242,13 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
     setSelectedDamageTypes(next);
   };
 
-  const toggleSeverity = (severity: Severity) => {
-    const next = new Set(selectedSeverities);
-    next.has(severity) ? next.delete(severity) : next.add(severity);
-    setSelectedSeverities(next);
-  };
+  // Filtro por severidad deshabilitado temporalmente: todos los puntos se
+  // muestran en rojo y no aparece en el panel de filtros.
+  // const toggleSeverity = (severity: Severity) => {
+  //   const next = new Set(selectedSeverities);
+  //   next.has(severity) ? next.delete(severity) : next.add(severity);
+  //   setSelectedSeverities(next);
+  // };
 
   // Usa detecciones reales si ya hay al menos una; si todavía no llegó
   // ninguna del backend, muestra las mock para no dejar la pantalla vacía.
@@ -317,7 +327,9 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
           {filteredDetections.map(det => {
             const isSelected = selectedDetection?.id === det.id;
             const isHovered = hoveredDetection === det.id;
-            const color = severityColors[det.severity];
+            // Severidad deshabilitada temporalmente: todos los puntos en rojo.
+            // const color = severityColors[det.severity];
+            const color = '#EF4444';
             return (
               <div
                 key={det.id}
@@ -374,6 +386,7 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
                 </label>
               ))}
             </div>
+            {/* Filtro por severidad deshabilitado temporalmente.
             <div className="h-px bg-[#1B6E77]/15 mx-3.5" />
             <div className="px-3.5 pt-2.5 pb-3 space-y-2">
               <PanelLabel>Severidad</PanelLabel>
@@ -396,6 +409,7 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
                 </label>
               ))}
             </div>
+            */}
           </TurquoiseCard>
         </div>
 
