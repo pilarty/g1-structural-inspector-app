@@ -50,44 +50,17 @@ export default function ProjectsSidebar({
     }))
     .filter(p => !query || p.buildings.length > 0);
 
-  const allBuildings = mockProjects.flatMap(p => p.buildings);
-
   // ── Collapsed state ───────────────────────────────────────────────────────
   if (collapsed) {
     return (
-      <aside className="flex-none w-[52px] flex flex-col bg-white border-r border-[#EDEBE6] items-center py-3 gap-1 overflow-hidden">
-        {/* Expand button */}
+      <aside className="flex-none w-[44px] flex flex-col bg-white border-r border-[#EDEBE6] items-center py-3">
         <button
           onClick={() => setCollapsed(false)}
-          title="Expandir panel"
-          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#F3F1ED] transition-colors mb-2 text-[#8A8C8E]"
+          title="Ver edificios"
+          className="w-8 h-8 flex-none flex items-center justify-center rounded-full hover:bg-[#F3F1ED] transition-colors text-[#8A8C8E] hover:text-[#1B6E77]"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
-
-        {/* Building initials chips */}
-        {allBuildings.map(building => {
-          const isSelected = building.id === selectedBuildingId;
-          const initials = building.name
-            .replace(/^(Edificio|Torre|Residencial|Centro|Palacio)\s+/i, '')
-            .slice(0, 2)
-            .toUpperCase();
-          return (
-            <button
-              key={building.id}
-              onClick={() => onSelectBuilding(building.id)}
-              title={building.name}
-              className={[
-                'w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors',
-                isSelected
-                  ? 'bg-[#11676A] text-white'
-                  : 'bg-[#F3F1ED] text-[#66686A] hover:bg-[#ECEAE5]',
-              ].join(' ')}
-            >
-              {initials}
-            </button>
-          );
-        })}
       </aside>
     );
   }
@@ -97,7 +70,7 @@ export default function ProjectsSidebar({
     <aside className="flex-none w-[264px] flex flex-col bg-white border-r border-[#EDEBE6] overflow-hidden">
       {/* Search + collapse */}
       <div className="px-3 py-3 border-b border-[#EDEBE6] flex items-center gap-2">
-        <div className="flex items-center gap-2 px-3 py-2 bg-[#F3F1ED] rounded-xl border border-[#E8E5DF] focus-within:border-[#11676A]/40 transition-colors flex-1 min-w-0">
+        <div className="flex items-center gap-2 px-3 py-2 bg-[#F3F1ED] rounded-xl border border-[#E8E5DF] focus-within:border-[#1B6E77]/40 transition-colors flex-1 min-w-0">
           <Search className="w-3.5 h-3.5 text-[#8A8C8E] flex-none" />
           <input
             type="text"
@@ -125,7 +98,7 @@ export default function ProjectsSidebar({
           </span>
           <button
             onClick={onNewBuilding}
-            className="flex items-center gap-1 text-[11px] font-semibold text-[#11676A] hover:opacity-70 transition-opacity"
+            className="flex items-center gap-1 text-[11px] font-semibold text-[#1B6E77] hover:opacity-70 transition-opacity"
           >
             <Plus className="w-3 h-3" />
             Nuevo

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, Bell, User, ChevronDown } from 'lucide-react';
+import { Bell, User, ChevronDown } from 'lucide-react';
 
 interface TopNavProps {
   /**
@@ -10,18 +10,14 @@ interface TopNavProps {
 }
 
 /**
- * App-wide top navigation bar. Fixed at h-12, teal background, shows
- * app title + optional badge on the left and notification + user avatar on the right.
+ * App-wide top navigation bar. Fixed at h-12, navy background (matches ActivityBar),
+ * shows app title + optional badge on the left and notification + user avatar on the right.
  */
 export default function TopNav({ badge }: TopNavProps) {
   return (
-    <nav className="flex-none h-12 bg-[#11676A] flex items-center px-6 z-20">
-      {/* Left — title + optional badge */}
-      <div className="flex items-center gap-2.5 flex-1 min-w-0">
-        <Building2 className="w-4 h-4 text-white/80 flex-none" />
-        <span className="text-[14px] font-semibold text-white tracking-tight whitespace-nowrap">
-          Relevamiento Estructural
-        </span>
+    <nav className="flex-none h-12 bg-[#10141A] flex items-center justify-between px-6 z-20 border-b border-white/5">
+      {/* Left — optional badge */}
+      <div className="flex items-center min-w-0">
         {badge}
       </div>
 

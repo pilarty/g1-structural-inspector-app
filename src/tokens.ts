@@ -2,17 +2,19 @@
 // Single source of truth for colors, spacing, radii, shadows, and patterns.
 // Import from here instead of repeating raw values across components.
 
-// Brand — teal palette
+// Brand — storm-coast palette (navy / teal / ice / sand)
 export const brand = {
-  DEFAULT:      '#11676A',               // Primary action, header bg
-  dark:         '#0E5254',               // Hover on primary
-  deep:         '#0D5254',               // ActivityBar background
-  label:        '#0B5559',               // Small all-caps field labels
-  cardBg:       'rgba(17,103,106,0.07)', // TurquoiseCard surface
-  cardBorder:   'rgba(17,103,106,0.20)', // TurquoiseCard border (NewBuilding/Setup)
-  cardDivider:  'rgba(17,103,106,0.15)', // Inside card dividers
-  chipBg:       '#DCEFEF',               // Light teal chip background
-  chipText:     '#0B5559',               // Light teal chip text
+  DEFAULT:      '#1B6E77',               // Primary action, header bg
+  dark:         '#165B62',               // Hover on primary
+  deep:         '#10141A',               // ActivityBar background (storm navy)
+  label:        '#104247',               // Small all-caps field labels
+  cardBg:       'rgba(27,110,119,0.07)', // TurquoiseCard surface
+  cardBorder:   'rgba(27,110,119,0.20)', // TurquoiseCard border (NewBuilding/Setup)
+  cardDivider:  'rgba(27,110,119,0.15)', // Inside card dividers
+  chipBg:       '#DDE9EC',               // Ice-blue chip background
+  chipText:     '#104247',               // Ice-blue chip text
+  accent:       '#AD8F6E',               // Sand accent — used sparingly
+  accentBg:     'rgba(173,143,110,0.16)',// Sand accent chip background
 } as const;
 
 // Severity — damage classification
@@ -25,7 +27,7 @@ export const severity = {
 
 // Status — robot connection states
 export const robotStatus = {
-  listo:        { dot: '#10B981', chip: 'bg-[#DCEFEF] text-[#0B5559]',     label: 'Listo'               },
+  listo:        { dot: '#10B981', chip: 'bg-[#DDE9EC] text-[#104247]',     label: 'Listo'               },
   espera:       { dot: '#FBBF24', chip: 'bg-[#FFFBEB] text-[#92400E]',     label: 'Conectado en espera' },
   desconectado: { dot: '#EF4444', chip: 'bg-[#FEF2F2] text-[#991B1B]',     label: 'Desconectado'        },
 } as const;
@@ -75,8 +77,8 @@ export const shadows = {
   card:   '0 2px 16px rgba(0,0,0,0.07)',
   float:  '0 2px 12px rgba(0,0,0,0.08)',
   modal:  '0 8px 48px rgba(0,0,0,0.16)',
-  brand:  '0 2px 12px rgba(17,103,106,0.30)',
-  brandSm:'0 2px 10px rgba(17,103,106,0.25)',
+  brand:  '0 2px 12px rgba(27,110,119,0.30)',
+  brandSm:'0 2px 10px rgba(27,110,119,0.25)',
 } as const;
 
 // Grid background pattern (content area behind cards)

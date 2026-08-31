@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ActivityBar, { NavTab } from './ActivityBar';
-import { TopNav } from './components';
-import { Wifi, Battery, Square } from 'lucide-react';
+import { TopNav, StatBlock, PanelLabel, PanelText } from './components';
+import { Square } from 'lucide-react';
 
 const GRID_BG = {
   backgroundColor: '#FFFFFF',
@@ -73,7 +73,7 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
 
         <TopNav
           badge={
-            <span className="ml-3 flex items-center gap-1.5 text-[11px] font-semibold text-[#11676A] bg-white px-2.5 py-0.5 rounded-md">
+            <span className="ml-3 flex items-center gap-1.5 text-[11px] font-semibold text-[#1B6E77] bg-white px-2.5 py-0.5 rounded-md">
               <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
               Inspección en curso
             </span>
@@ -87,7 +87,7 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
               label: 'Tiempo transcurrido',
               value: formatTime(elapsed),
               sub: 'hh:mm:ss',
-              color: '#11676A',
+              color: '#1B6E77',
             },
             {
               label: 'Detecciones',
@@ -109,16 +109,16 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
               dot: true,
             },
           ].map((stat, i) => (
-            <div key={i} className={`flex-1 px-5 py-1 ${i < 3 ? 'border-r border-[#F0EDE8]' : ''}`}>
-              <p className="text-[9px] font-semibold text-[#8A8C8E] uppercase tracking-widest mb-1">{stat.label}</p>
-              <div className="flex items-center gap-1.5">
-                {stat.dot && <span className="w-2 h-2 rounded-full flex-none" style={{ backgroundColor: stat.color }} />}
-                <span className="text-[20px] font-bold leading-none tracking-tight tabular-nums" style={{ color: stat.color }}>
-                  {stat.value}
-                </span>
-              </div>
-              <p className="text-[10px] text-[#A0A2A4] mt-0.5">{stat.sub}</p>
-            </div>
+            <StatBlock
+              key={i}
+              variant="live"
+              label={stat.label}
+              value={stat.value}
+              sub={stat.sub}
+              valueColor={stat.color}
+              dot={stat.dot}
+              divider={i < 3}
+            />
           ))}
         </div>
 
@@ -154,18 +154,18 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
               <path d="M62 25 A8 8 0 0 0 70 33 L70 25" fill="none" stroke="#A0A2A4" strokeWidth="0.5" strokeDasharray="1.5 1" />
               <path d="M62 25 L70 25" stroke="#FFFFFF" strokeWidth="1.5" />
               {/* Room labels */}
-              <text x="23" y="35" fill="#D0CCC6" fontSize="4" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala A</text>
-              <text x="50" y="27" fill="#D0CCC6" fontSize="4" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala B</text>
-              <text x="77" y="27" fill="#D0CCC6" fontSize="4" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala C</text>
-              <text x="55" y="76" fill="#D0CCC6" fontSize="4" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala D</text>
-              <text x="72" y="65" fill="#D0CCC6" fontSize="3.5" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Pasillo</text>
+              <text x="23" y="35" fill="#D0CCC6" fontSize="4" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala A</text>
+              <text x="50" y="27" fill="#D0CCC6" fontSize="4" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala B</text>
+              <text x="77" y="27" fill="#D0CCC6" fontSize="4" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala C</text>
+              <text x="55" y="76" fill="#D0CCC6" fontSize="4" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala D</text>
+              <text x="72" y="65" fill="#D0CCC6" fontSize="3.5" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Pasillo</text>
 
               {/* Robot trail */}
               {trailPoints && (
                 <polyline
                   points={trailPoints}
                   fill="none"
-                  stroke="#11676A"
+                  stroke="#1B6E77"
                   strokeWidth="0.8"
                   strokeOpacity="0.35"
                   strokeLinecap="round"
@@ -176,8 +176,8 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
 
               {/* Robot position */}
               <g transform={`translate(${rx}%, ${ry}%)`} filter="url(#robotGlow)">
-                <circle r="3" fill="rgba(17,103,106,0.15)" />
-                <circle r="1.8" fill="#11676A" />
+                <circle r="3" fill="rgba(27,110,119,0.15)" />
+                <circle r="1.8" fill="#1B6E77" />
                 <circle r="0.8" fill="white" />
               </g>
             </svg>
@@ -188,11 +188,11 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
               <div className="flex items-center gap-2">
                 <div className="w-24 h-1.5 bg-[#E2DFD8] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#11676A] rounded-full transition-all duration-1000"
+                    className="h-full bg-[#1B6E77] rounded-full transition-all duration-1000"
                     style={{ width: `${Math.round(progress * 100)}%` }}
                   />
                 </div>
-                <span className="text-[12px] font-bold text-[#11676A] tabular-nums">{Math.round(progress * 100)}%</span>
+                <span className="text-[12px] font-bold text-[#1B6E77] tabular-nums">{Math.round(progress * 100)}%</span>
               </div>
             </div>
           </div>
@@ -210,8 +210,8 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
                   { label: 'Operador', value: 'M. García' },
                 ].map(({ label, value }) => (
                   <div key={label}>
-                    <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-0.5">{label}</p>
-                    <p className="text-[12px] font-medium text-[#1A1C1E] leading-snug">{value}</p>
+                    <PanelLabel>{label}</PanelLabel>
+                    <PanelText className="leading-snug mt-0.5">{value}</PanelText>
                   </div>
                 ))}
               </div>
@@ -234,12 +234,9 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
               </div>
             </div>
 
-            <div className="px-4 py-3 flex items-center gap-1.5 text-[11px] text-[#8A8C8E]">
-              <Wifi className="w-3 h-3 flex-none" />
+            <div className="px-4 py-3 flex items-center text-[11px] text-[#8A8C8E]">
               <span>Red_Obra_01</span>
-              <span className="ml-auto flex items-center gap-1 text-[#10B981] font-semibold">
-                <Battery className="w-3 h-3" />{battery}%
-              </span>
+              <span className="ml-auto text-[#10B981] font-semibold">{battery}%</span>
             </div>
           </div>
         </div>

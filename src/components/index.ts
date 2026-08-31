@@ -7,6 +7,7 @@ export { default as PrimaryButton }   from './PrimaryButton';
 export { default as SecondaryButton } from './SecondaryButton';
 export { default as TurquoiseCard }   from './TurquoiseCard';
 export { default as StatBlock }       from './StatBlock';
+export { PanelTitle, PanelLabel, PanelText } from './PanelText';
 
 // Layout
 export { default as TopNav }           from './TopNav';
