@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { BACKEND_URL } from './sesion';
+import { marcarConexionConfigurada } from './robots';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav, PanelLabel, PrimaryButton, SecondaryButton } from './components';
 import RobotConnectionSection, { ConnectionJsonPreview, defaultConnectionConfig } from './RobotConnectionConfig';
@@ -7,12 +9,14 @@ function Label({ children }: { children: React.ReactNode }) {
   return <PanelLabel className="mb-1.5">{children}</PanelLabel>;
 }
 
-function TextInput({ placeholder, defaultValue }: { placeholder: string; defaultValue?: string }) {
+function TextInput({ placeholder, defaultValue, value, onChange }: { placeholder: string; defaultValue?: string; value?: string; onChange?: (v: string) => void }) {
   return (
     <input
       type="text"
       placeholder={placeholder}
-      defaultValue={defaultValue}
+      defaultValue={value === undefined ? defaultValue : undefined}
+      value={value}
+      onChange={onChange ? e => onChange(e.target.value) : undefined}
       className="w-full px-4 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl border border-[#1B6E77]/15 focus:border-[#1B6E77]/40 text-[13px] text-[#1A1C1E] placeholder:text-[#A0A2A4] outline-none transition-colors"
     />
   );
@@ -26,6 +30,36 @@ interface NewRobotProps {
 
 export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotProps) {
   const [connectionConfig, setConnectionConfig] = useState(defaultConnectionConfig);
+  const [codigo, setCodigo] = useState('');
+  const [modelo, setModelo] = useState('Unitree G1');
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function guardar() {
+    if (!codigo.trim() || guardando) return;
+    setGuardando(true);
+    setError(null);
+    try {
+      const res = await fetch(`${BACKEND_URL}/nube/api/robots`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo: codigo.trim(), unidad: modelo.trim() || 'Unitree G1', estado: 'activo' }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const creado = await res.json();
+      // La conexión se guarda solo en esta PC y sin contraseñas.
+      marcarConexionConfigurada(creado.id, {
+        ...connectionConfig,
+        ssh: { user: connectionConfig.ssh.user },
+        webserver: { url: connectionConfig.webserver.url, user: connectionConfig.webserver.user },
+      });
+      onTabChange('inspeccion');
+    } catch {
+      setError('No se pudo guardar el robot. Revisa tu conexión e intenta de nuevo.');
+    } finally {
+      setGuardando(false);
+    }
+  }
 
   return (
     <div className="flex h-screen font-sans text-[#1A1C1E]">
@@ -51,11 +85,11 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
               <div className="w-[300px] flex-none space-y-4">
                 <div>
                   <Label>Nombre / ID del robot *</Label>
-                  <TextInput placeholder="Ej. HR-05 / Unidad 4" />
+                  <TextInput placeholder="Ej. HR-05 / Unidad 4" value={codigo} onChange={setCodigo} />
                 </div>
                 <div>
                   <Label>Modelo</Label>
-                  <TextInput placeholder="Unitree G1" defaultValue="Unitree G1" />
+                  <TextInput placeholder="Unitree G1" value={modelo} onChange={setModelo} />
                 </div>
               </div>
 
@@ -67,7 +101,8 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
 
                 {/* Actions */}
                 <div className="flex items-center gap-5 pt-6">
-                  <PrimaryButton onClick={() => onTabChange('inspeccion')}>Guardar robot</PrimaryButton>
+                  <PrimaryButton onClick={guardar} disabled={guardando || !codigo.trim()}>{guardando ? 'Guardando…' : 'Guardar robot'}</PrimaryButton>
+                  {error && <p className="text-[12px] text-[#991B1B]">{error}</p>}
                   <SecondaryButton onClick={onCancel}>Cancelar</SecondaryButton>
                 </div>
               </div>

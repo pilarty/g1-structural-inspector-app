@@ -12,6 +12,13 @@ export interface HistorialEntry {
   robot: string;
 }
 
+export interface UltimoRelevamiento {
+  id: number;
+  estado: string;
+  inicio: string | null;
+  fin: string | null;
+}
+
 export interface Building {
   id: string;
   name: string;
@@ -29,6 +36,7 @@ export interface Building {
   lastOperator: string;
   riskZones: RiskZone[];
   historial: HistorialEntry[];
+  ultimoRelevamiento?: UltimoRelevamiento;
 }
 
 export interface Project {

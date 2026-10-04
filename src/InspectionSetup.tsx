@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav, TurquoiseCard, PanelTitle, PanelLabel, PrimaryButton, SecondaryButton } from './components';
-import { mockProjects } from './data';
+import { useProyectos } from './proyectos';
+import { useRobots } from './robots';
+import { BACKEND_URL } from './sesion';
 import { ChevronDown, Check } from 'lucide-react';
 
 type RobotStatus = 'listo' | 'espera' | 'desconectado';
@@ -16,13 +18,31 @@ interface RobotOption {
   configured: boolean; // conexión (LAN/SSH/Webserver/ROS2) ya configurada desde "Añadir robot"
 }
 
-const robots: RobotOption[] = [
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+function fechaHoy() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function horaAhora() {
+  const d = new Date();
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+const ROBOT_VACIO: RobotOption = {
+  id: '', label: 'Sin robots registrados', status: 'desconectado',
+  battery: 0, sensorsOk: false, network: null, configured: false,
+};
+
+// Lista de ejemplo, ya no se usa: los robots vienen de AWS (useRobots).
+const robotsDeEjemplo: RobotOption[] = [
   { id: 'HR-04', label: 'HR-04 / Unidad 2', status: 'listo',        battery: 84, sensorsOk: true,  network: 'Red_Obra_01', configured: true },
   { id: 'HR-02', label: 'HR-02 / Unidad 1', status: 'espera',       battery: 61, sensorsOk: true,  network: 'Red_Obra_01', configured: true },
   { id: 'HR-01', label: 'HR-01 / Unidad 3', status: 'desconectado', battery: 12, sensorsOk: false, network: null,          configured: false },
 ];
 
-const buildings = mockProjects.flatMap(p => p.buildings);
+// Los edificios ahora vienen de AWS (useProyectos), dentro del componente.
 
 interface InspectionSetupProps {
   activeTab: NavTab;
@@ -30,16 +50,53 @@ interface InspectionSetupProps {
 }
 
 export default function InspectionSetup({ activeTab, onTabChange }: InspectionSetupProps) {
-  const [selectedRobotId, setSelectedRobotId] = useState(robots[0].id);
+  const { proyectos } = useProyectos();
+  const buildings = proyectos.flatMap(p => p.buildings);
+  const { robots: robotsNube } = useRobots();
+  const robots: RobotOption[] = robotsNube.map(r => ({
+    id: r.id,
+    label: r.label,
+    status: r.estado === 'activo' ? 'listo' : 'desconectado',
+    battery: 0,
+    sensorsOk: true,
+    network: null,
+    configured: r.configured,
+  }));
+  const [selectedRobotId, setSelectedRobotId] = useState('');
   const [selectedBuildingId, setSelectedBuildingId] = useState(buildings[0]?.id);
-  const [date, setDate] = useState('2026-08-15');
-  const [time, setTime] = useState('09:00');
+  const [date, setDate] = useState(fechaHoy);
+  const [time, setTime] = useState(horaAhora);
   const [robotMenuOpen, setRobotMenuOpen] = useState(false);
   const [buildingMenuOpen, setBuildingMenuOpen] = useState(false);
 
-  const robot = robots.find(r => r.id === selectedRobotId) ?? robots[0];
+  const robot = robots.find(r => r.id === selectedRobotId) ?? robots[0] ?? ROBOT_VACIO;
   const building = buildings.find(b => b.id === selectedBuildingId) ?? buildings[0];
   const canStart = robot.status === 'listo' && robot.configured;
+  const [iniciando, setIniciando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function iniciar() {
+    if (!canStart || !building || iniciando) return;
+    setIniciando(true);
+    setError(null);
+    try {
+      const res = await fetch(`${BACKEND_URL}/nube/relevamientos/iniciar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          edificacion_id: Number(building.id),
+          robot_id: Number(robot.id),
+          fecha_programada: date && time ? new Date(`${date}T${time}`).toISOString() : null,
+        }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      onTabChange('inspeccion-en-curso');
+    } catch {
+      setError('No se pudo iniciar la inspección. Revisa tu conexión e intenta de nuevo.');
+    } finally {
+      setIniciando(false);
+    }
+  }
 
   return (
     <div className="flex h-screen font-sans text-[#1A1C1E]">
@@ -95,7 +152,7 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                                 <p className="text-[12px] font-semibold text-[#1A1C1E] truncate">{b.name}</p>
                                 <p className="text-[11px] text-[#8A8C8E] truncate">{b.address}</p>
                               </div>
-                              {b.id === selectedBuildingId && <Check className="w-3.5 h-3.5 text-[#1B6E77] flex-none" />}
+                              {b.id === building?.id && <Check className="w-3.5 h-3.5 text-[#1B6E77] flex-none" />}
                             </button>
                           ))}
                         </div>
@@ -129,7 +186,7 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                               <span className="flex items-center gap-2 min-w-0">
                                 <span className="text-[12px] font-semibold text-[#1A1C1E] truncate">{r.label}</span>
                               </span>
-                              {r.id === selectedRobotId && <Check className="w-3.5 h-3.5 text-[#1B6E77] flex-none" />}
+                              {r.id === robot.id && <Check className="w-3.5 h-3.5 text-[#1B6E77] flex-none" />}
                             </button>
                           ))}
                         </div>
@@ -178,11 +235,12 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
             <div className="max-w-[420px] mt-6">
               <PrimaryButton
                 variant="full"
-                disabled={!canStart}
-                onClick={() => canStart && onTabChange('inspeccion-en-curso')}
+                disabled={!canStart || !building || iniciando}
+                onClick={iniciar}
               >
-                Iniciar configuración
+                {iniciando ? 'Iniciando…' : 'Iniciar inspección'}
               </PrimaryButton>
+              {error && <p className="text-[11px] text-[#991B1B] mt-2">{error}</p>}
               {!canStart && (
                 <p className="text-[11px] text-[#991B1B] mt-2">
                   {robot.status !== 'listo'

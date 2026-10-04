@@ -60,3 +60,17 @@
 ::-webkit-scrollbar-thumb:hover {
   background-color: var(--color-muted-foreground);
 }
+
+/* Gentle breathing halo on the recorrido map's end marker */
+@keyframes route-pulse {
+  0%, 100% { r: 12; opacity: 0.18; }
+  50%      { r: 17; opacity: 0.04; }
+}
+.route-end-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: route-pulse 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-end-pulse { animation: none; }
+}

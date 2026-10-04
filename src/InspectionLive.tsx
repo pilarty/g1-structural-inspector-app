@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav, StatBlock, PanelLabel, PanelText } from './components';
 import { Square } from 'lucide-react';
+import { BACKEND_URL } from './sesion';
+import { useProyectos } from './proyectos';
 
 const GRID_BG = {
   backgroundColor: '#FFFFFF',
@@ -50,6 +52,18 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
   const [progress, setProgress] = useState(0.38);
   const [detections] = useState(3);
   const battery = Math.max(76 - Math.floor((elapsed - 2533) / 120), 60);
+
+  const { recargar } = useProyectos();
+
+  async function detener() {
+    try {
+      await fetch(`${BACKEND_URL}/nube/relevamientos/detener`, { method: 'POST' });
+      recargar();
+    } catch {
+      // si falla la nube, igual volvemos a la pantalla anterior
+    }
+    onStop();
+  }
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -247,7 +261,7 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
             Inspección activa — el robot continúa recorriendo el edificio.
           </p>
           <button
-            onClick={onStop}
+            onClick={detener}
             className="flex items-center gap-2 px-5 py-2.5 bg-[#FEF2F2] hover:bg-[#FEE2E2] border border-[#EF4444]/25 text-[#991B1B] text-[13px] font-semibold rounded-xl transition-colors"
           >
             <Square className="w-3.5 h-3.5" />

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, ChevronDown, ChevronRight, ChevronLeft, Plus } from 'lucide-react';
-import { mockProjects } from '../data';
+import { useProyectos } from '../proyectos';
 import BuildingListItem from './BuildingListItem';
 import type { NavTab } from '../ActivityBar';
 
@@ -23,10 +23,11 @@ export default function ProjectsSidebar({
   onSelectBuilding,
   onNewBuilding,
 }: ProjectsSidebarProps) {
+  const { proyectos, cargando, error } = useProyectos();
   const [collapsed, setCollapsed] = useState(false);
   const [query, setQuery] = useState('');
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(
-    new Set(['p1', 'p2'])
+    new Set<string>() /* proyectos cerrados; por defecto todos abiertos */
   );
 
   const toggleProject = (id: string) => {
@@ -37,7 +38,7 @@ export default function ProjectsSidebar({
     });
   };
 
-  const filteredProjects = mockProjects
+  const filteredProjects = proyectos
     .map(p => ({
       ...p,
       buildings: p.buildings.filter(
@@ -105,9 +106,14 @@ export default function ProjectsSidebar({
           </button>
         </div>
 
+        {cargando && <p className="px-4 py-3 text-[12px] text-[#8A8C8E]">Cargando…</p>}
+        {error && <p className="px-4 py-3 text-[12px] text-[#991B1B]">{error}</p>}
+        {!cargando && !error && proyectos.length === 0 && (
+          <p className="px-4 py-3 text-[12px] text-[#8A8C8E]">Todavía no hay proyectos. Crea el primero con «Nuevo proyecto».</p>
+        )}
         {/* Project rows */}
         {filteredProjects.map(project => {
-          const isOpen = expandedProjects.has(project.id);
+          const isOpen = !expandedProjects.has(project.id);
           return (
             <div key={project.id}>
               {/* Project header */}

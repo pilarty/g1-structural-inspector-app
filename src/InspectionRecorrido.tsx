@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { duracion, etiquetaEstado, horaLocal } from './formato';
+import MapaHallazgos from './MapaHallazgos';
 import ActivityBar, { NavTab } from './ActivityBar';
-import { mockProjects, Building } from './data';
+import type { Building } from './data';
+import { useProyectos, EDIFICIO_VACIO } from './proyectos';
 import { TopNav, ProjectsSidebar, TurquoiseCard, PanelTitle, PanelLabel, PanelText, PrimaryButton } from './components';
 import {
   Map,
@@ -26,9 +29,21 @@ const START    = TRAJ_POINTS[0];
 const END      = TRAJ_POINTS[TRAJ_POINTS.length - 1];
 const trajStr  = TRAJ_POINTS.map(([x, y]) => `${x},${y}`).join(' ');
 
+// A handful of segments (by start-index) get a small direction chevron,
+// so the line reads as "robot travelling this way", not just a static trace
+const ARROW_SEGMENTS = [1, 6, 10, 13, 16];
+function segmentArrow(i: number) {
+  const [x1, y1] = TRAJ_POINTS[i];
+  const [x2, y2] = TRAJ_POINTS[i + 1];
+  return {
+    mx: (x1 + x2) / 2,
+    my: (y1 + y2) / 2,
+    angle: (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI,
+  };
+}
+
 // Default to first building that has relevamientos
-const defaultBuilding =
-  mockProjects.flatMap(p => p.buildings).find(b => b.relevamientos > 0)!;
+// El edificio por defecto ahora sale de los datos de AWS (useProyectos).
 
 type TabId = 'datos' | 'robot' | 'operador' | 'edificio';
 
@@ -42,10 +57,15 @@ interface InspectionRecorridoProps {
 
 export default function InspectionRecorrido({ activeTab, onTabChange, onViewDetails, selectedBuildingId, onSelectBuilding }: InspectionRecorridoProps) {
   const [infoTab, setInfoTab] = useState<TabId>('datos');
-  const currentBuildingId = selectedBuildingId ?? defaultBuilding.id;
+  const { proyectos, recargar } = useProyectos();
+  useEffect(() => {
+    recargar();
+  }, [recargar]);
+  const edificios = proyectos.flatMap(p => p.buildings);
+  const currentBuildingId = selectedBuildingId ?? edificios[0]?.id ?? '';
 
   const currentBuilding: Building =
-    mockProjects.flatMap(p => p.buildings).find(b => b.id === currentBuildingId) ?? defaultBuilding;
+    edificios.find(b => b.id === currentBuildingId) ?? EDIFICIO_VACIO;
 
   const infoTabs: { id: TabId; label: string }[] = [
     { id: 'datos',    label: 'Datos del recorrido' },
@@ -74,6 +94,11 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
         {/* Floor plan */}
         <div className="flex-1 relative overflow-hidden min-h-0" style={GRID_BG}>
           {currentBuilding.relevamientos > 0 ? (
+            <MapaHallazgos
+              relevamientoId={currentBuilding.ultimoRelevamiento?.id}
+              enCurso={currentBuilding.ultimoRelevamiento?.estado === 'en_curso'}
+            />
+          ) : false ? (
             <svg
               viewBox="0 0 800 600"
               className="w-full h-full"
@@ -92,6 +117,10 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                   <feGaussianBlur stdDeviation="3" result="blur" />
                   <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
                 </filter>
+                <linearGradient id="trajGradient" gradientUnits="userSpaceOnUse" x1={START[0]} y1={START[1]} x2={END[0]} y2={END[1]}>
+                  <stop offset="0%" stopColor="#10B981" />
+                  <stop offset="100%" stopColor="#1B6E77" />
+                </linearGradient>
               </defs>
 
               <rect width="800" height="600" fill="rgba(255,255,255,0.92)" />
@@ -110,7 +139,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
               <path d="M500 150 A50 50 0 0 1 550 200 L500 200" fill="none" stroke="#A0A2A4" strokeWidth="1.5" strokeDasharray="4 4" />
               <path d="M500 150 L500 200" stroke="#FFFFFF" strokeWidth="5" />
               {/* Room labels */}
-              <text x="145" y="210" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala A</text>
+              <text x="145" y="310" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala A</text>
               <text x="375" y="155" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala B</text>
               <text x="625" y="155" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala C</text>
               <text x="420" y="460" fill="#C8C5BF" fontSize="11" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala D</text>
@@ -130,12 +159,26 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
               <polyline
                 points={trajStr}
                 fill="none"
-                stroke="#1B6E77"
+                stroke="url(#trajGradient)"
                 strokeWidth="1.5"
-                strokeOpacity="0.85"
+                strokeOpacity="0.9"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
+
+              {/* Direction chevrons — reads as the robot's travel, not a static trace */}
+              {ARROW_SEGMENTS.map(i => {
+                const { mx, my, angle } = segmentArrow(i);
+                return (
+                  <path
+                    key={i}
+                    d="M -4 -3 L 5 0 L -4 3 Z"
+                    fill="#1B6E77"
+                    fillOpacity="0.5"
+                    transform={`translate(${mx} ${my}) rotate(${angle})`}
+                  />
+                );
+              })}
 
               {/* Start marker */}
               <g filter="url(#startGlow)">
@@ -145,13 +188,27 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
               </g>
               <text x={START[0] + 15} y={START[1] - 10} fill="#10B981" fontSize="9" fontFamily="IBM Plex Sans, sans-serif" fontWeight="700" letterSpacing="0.04em">INICIO</text>
 
-              {/* End marker */}
+              {/* End marker — gentle pulse marks it as the current/final position */}
               <g filter="url(#endGlow)">
-                <circle cx={END[0]} cy={END[1]} r="12" fill="#1B6E77" fillOpacity="0.18" />
+                <circle cx={END[0]} cy={END[1]} r="12" fill="#1B6E77" fillOpacity="0.18" className="route-end-pulse" />
                 <rect x={END[0] - 7} y={END[1] - 7} width="14" height="14" rx="3" fill="#1B6E77" />
                 <rect x={END[0] - 3} y={END[1] - 3} width="6"  height="6"  rx="1" fill="white" />
               </g>
               <text x={END[0] + 15} y={END[1] - 10} fill="#1B6E77" fontSize="9" fontFamily="IBM Plex Sans, sans-serif" fontWeight="700" letterSpacing="0.04em">FIN</text>
+
+              {/* North arrow */}
+              <g transform="translate(766,30)">
+                <path d="M0,-9 L5,4 L0,1 L-5,4 Z" fill="#A0A2A4" />
+                <text x="0" y="17" textAnchor="middle" fontSize="8" fontWeight="700" fill="#8A8C8E" fontFamily="IBM Plex Sans, sans-serif">N</text>
+              </g>
+
+              {/* Scale bar */}
+              <g>
+                <line x1="70" y1="575" x2="150" y2="575" stroke="#8A8C8E" strokeWidth="1.5" />
+                <line x1="70" y1="571" x2="70" y2="579" stroke="#8A8C8E" strokeWidth="1.5" />
+                <line x1="150" y1="571" x2="150" y2="579" stroke="#8A8C8E" strokeWidth="1.5" />
+                <text x="110" y="590" textAnchor="middle" fontSize="9" fill="#8A8C8E" fontFamily="IBM Plex Sans, sans-serif" fontWeight="500">5 m</text>
+              </g>
             </svg>
           ) : (
             /* No relevamientos empty state */
@@ -166,7 +223,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
             </div>
           )}
 
-          {currentBuilding.relevamientos > 0 && (
+          {false && (
             <>
               {/* Legend */}
               <TurquoiseCard size="overlay" className="absolute top-4 left-4">
@@ -237,41 +294,50 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
           {/* Tab content */}
           <div className="px-6 py-4">
             {infoTab === 'datos' && (
-              <div className="flex items-start gap-10">
-                <div>
+              <div className="flex items-start">
+                <div className="pr-8">
                   <PanelLabel>Inicio</PanelLabel>
-                  <PanelText className="font-semibold mt-0.5">{currentBuilding.lastRelevamientoDate !== '—' ? currentBuilding.lastRelevamientoDate : '—'}</PanelText>
-                  <p className="text-[11px] text-[#8A8C8E]">14:30 hs</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {currentBuilding.relevamientos > 0 && <span className="w-2 h-2 rounded-full bg-[#10B981] flex-none" />}
+                    <PanelText className="font-semibold">{currentBuilding.lastRelevamientoDate !== '—' ? currentBuilding.lastRelevamientoDate : '—'}</PanelText>
+                  </div>
+                  <p className="text-[11px] text-[#8A8C8E] mt-0.5">{horaLocal(currentBuilding.ultimoRelevamiento?.inicio)}</p>
                 </div>
-                <div>
+                <div className="px-8 border-l border-[#EDEBE6]">
                   <PanelLabel>Fin</PanelLabel>
-                  <PanelText className="font-semibold mt-0.5">{currentBuilding.lastRelevamientoDate !== '—' ? currentBuilding.lastRelevamientoDate : '—'}</PanelText>
-                  <p className="text-[11px] text-[#8A8C8E]">16:05 hs</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {currentBuilding.relevamientos > 0 && <span className="w-2 h-2 rounded-sm bg-[#1B6E77] flex-none" />}
+                    <PanelText className="font-semibold">{currentBuilding.lastRelevamientoDate !== '—' ? currentBuilding.lastRelevamientoDate : '—'}</PanelText>
+                  </div>
+                  <p className="text-[11px] text-[#8A8C8E] mt-0.5">{horaLocal(currentBuilding.ultimoRelevamiento?.fin)}</p>
                 </div>
-                <div>
+                <div className="px-8 border-l border-[#EDEBE6]">
                   <PanelLabel>Duración total</PanelLabel>
-                  <PanelText className="font-semibold mt-0.5">{currentBuilding.relevamientos > 0 ? '1h 35min' : '—'}</PanelText>
-                  <p className="text-[11px] text-[#8A8C8E]">Planta 1</p>
+                  <PanelText className="font-semibold mt-0.5">{currentBuilding.relevamientos > 0 ? duracion(currentBuilding.ultimoRelevamiento) : '—'}</PanelText>
+                  <p className="text-[11px] text-[#8A8C8E]">&nbsp;</p>
                 </div>
-                <div>
+                <div className="px-8 border-l border-[#EDEBE6]">
                   <PanelLabel>Cobertura</PanelLabel>
                   {currentBuilding.relevamientos > 0 ? (
                     <div className="flex items-center gap-2 mt-1">
-                      <div className="w-20 h-1.5 bg-[#E2DFD8] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#1B6E77] rounded-full w-full" />
+                      <div className="w-24 h-2 bg-[#E2DFD8] rounded-full overflow-hidden">
+                        <div className="h-full bg-[#1B6E77] rounded-full w-0" />
                       </div>
-                      <span className="text-[13px] font-bold text-[#1B6E77]">100%</span>
+                      <span className="text-[13px] font-bold text-[#1B6E77]">—</span>
                     </div>
                   ) : (
                     <PanelText className="font-semibold text-[#8A8C8E] mt-0.5">—</PanelText>
                   )}
                 </div>
-                <div>
+                <div className="pl-8 border-l border-[#EDEBE6]">
                   <PanelLabel>Estado</PanelLabel>
                   {currentBuilding.relevamientos > 0 ? (
-                    <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#104247] mt-0.5">
+                    <span
+                      className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#104247] mt-1 px-2 py-0.5 rounded-full"
+                      style={{ background: 'rgba(16,185,129,0.09)' }}
+                    >
                       <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] flex-none" />
-                      Completado
+                      {etiquetaEstado(currentBuilding.ultimoRelevamiento?.estado)}
                     </span>
                   ) : (
                     <PanelText className="font-semibold text-[#8A8C8E] mt-0.5">Sin recorridos</PanelText>
@@ -281,27 +347,27 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
             )}
 
             {infoTab === 'robot' && (
-              <div className="flex items-start gap-10">
-                <div>
+              <div className="flex items-start">
+                <div className="pr-8">
                   <PanelLabel>Identificación</PanelLabel>
                   <PanelText className="font-semibold mt-0.5">{currentBuilding.lastRobot}</PanelText>
                   <p className="text-[11px] text-[#8A8C8E]">Robot de inspección autónomo</p>
                 </div>
-                <div>
+                <div className="px-8 border-l border-[#EDEBE6]">
                   <PanelLabel>Batería al inicio</PanelLabel>
                   <PanelText className="font-semibold mt-0.5">100%</PanelText>
                   <p className="text-[11px] text-[#8A8C8E]">Carga completa</p>
                 </div>
-                <div>
+                <div className="px-8 border-l border-[#EDEBE6]">
                   <PanelLabel>Batería al fin</PanelLabel>
                   <div className="flex items-center gap-2 mt-1">
-                    <div className="w-20 h-1.5 bg-[#E2DFD8] rounded-full overflow-hidden">
+                    <div className="w-24 h-2 bg-[#E2DFD8] rounded-full overflow-hidden">
                       <div className="h-full bg-[#10B981] rounded-full" style={{ width: '72%' }} />
                     </div>
                     <span className="text-[13px] font-bold text-[#10B981]">72%</span>
                   </div>
                 </div>
-                <div>
+                <div className="pl-8 border-l border-[#EDEBE6]">
                   <PanelLabel>Sensores activos</PanelLabel>
                   <PanelText className="font-semibold mt-0.5">Cámara, LiDAR 3D, WiFi</PanelText>
                   <p className="text-[11px] text-[#8A8C8E]">Sin fallas registradas</p>
@@ -310,40 +376,40 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
             )}
 
             {infoTab === 'operador' && (
-              <div className="flex items-start gap-10">
-                <div>
+              <div className="flex items-start">
+                <div className="pr-8">
                   <PanelLabel>Nombre</PanelLabel>
                   <PanelText className="font-semibold mt-0.5">{currentBuilding.lastOperator}</PanelText>
                   <p className="text-[11px] text-[#8A8C8E]">Técnico de inspección</p>
                 </div>
-                <div>
+                <div className="px-8 border-l border-[#EDEBE6]">
                   <PanelLabel>Inicio de sesión</PanelLabel>
-                  <PanelText className="font-semibold mt-0.5">{currentBuilding.lastRelevamientoDate}, 14:25 hs</PanelText>
+                  <PanelText className="font-semibold mt-0.5">{currentBuilding.lastRelevamientoDate}, {horaLocal(currentBuilding.ultimoRelevamiento?.inicio)}</PanelText>
                 </div>
-                <div>
+                <div className="pl-8 border-l border-[#EDEBE6]">
                   <PanelLabel>Organización</PanelLabel>
-                  <PanelText className="font-semibold mt-0.5">Municipalidad CABA — Zona Norte</PanelText>
+                  <PanelText className="font-semibold mt-0.5">Sin asignar</PanelText>
                 </div>
               </div>
             )}
 
             {infoTab === 'edificio' && (
-              <div className="flex items-start gap-10">
-                <div>
+              <div className="flex items-start">
+                <div className="pr-8">
                   <PanelLabel>Edificio</PanelLabel>
                   <PanelText className="font-semibold mt-0.5">{currentBuilding.name}</PanelText>
                   <p className="text-[11px] text-[#8A8C8E]">{currentBuilding.address}</p>
                 </div>
-                <div>
+                <div className="px-8 border-l border-[#EDEBE6]">
                   <PanelLabel>Planta recorrida</PanelLabel>
-                  <PanelText className="font-semibold mt-0.5">Planta 1</PanelText>
+                  <PanelText className="font-semibold mt-0.5">—</PanelText>
                   <p className="text-[11px] text-[#8A8C8E]">de {currentBuilding.floors} plantas totales</p>
                 </div>
-                <div>
+                <div className="px-8 border-l border-[#EDEBE6]">
                   <PanelLabel>Año de construcción</PanelLabel>
                   <PanelText className="font-semibold mt-0.5">{currentBuilding.yearBuilt}</PanelText>
                 </div>
-                <div>
+                <div className="pl-8 border-l border-[#EDEBE6]">
                   <PanelLabel>Total relevamientos</PanelLabel>
                   <PanelText className="font-semibold mt-0.5">
                     {currentBuilding.relevamientos > 0 ? `${currentBuilding.relevamientos} relevamientos` : 'Sin relevamientos'}

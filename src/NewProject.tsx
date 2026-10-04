@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useProyectos } from './proyectos';
+import { BACKEND_URL } from './sesion';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav, PanelTitle, PanelLabel, SecondaryButton } from './components';
 import { Folder, ChevronDown } from 'lucide-react';
@@ -7,21 +9,24 @@ function Label({ children }: { children: React.ReactNode }) {
   return <PanelLabel className="mb-1.5">{children}</PanelLabel>;
 }
 
-function TextInput({ placeholder, type = 'text' }: { placeholder: string; type?: string }) {
+function TextInput({ placeholder, type = 'text', value, onChange }: { placeholder: string; type?: string; value?: string; onChange?: (v: string) => void }) {
   return (
     <input
       type={type}
       placeholder={placeholder}
+      value={value}
+      onChange={onChange ? e => onChange(e.target.value) : undefined}
       className="w-full px-4 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl border border-[#AD8F6E]/25 focus:border-[#AD8F6E]/50 text-[13px] text-[#1A1C1E] placeholder:text-[#A0A2A4] outline-none transition-colors"
     />
   );
 }
 
-function SelectInput({ placeholder, options }: { placeholder: string; options: string[] }) {
+function SelectInput({ placeholder, options, value, onChange }: { placeholder: string; options: string[]; value?: string; onChange?: (v: string) => void }) {
   return (
     <div className="relative">
       <select
-        defaultValue=""
+        value={value ?? ''}
+        onChange={e => onChange?.(e.target.value)}
         className="w-full appearance-none px-4 py-2.5 bg-white/60 hover:bg-white/80 rounded-xl border border-[#AD8F6E]/25 text-[13px] text-[#1A1C1E] outline-none transition-colors pr-10"
       >
         <option value="" disabled>{placeholder}</option>
@@ -39,6 +44,37 @@ interface NewProjectProps {
 }
 
 export default function NewProject({ activeTab, onTabChange, onCancel }: NewProjectProps) {
+  const { recargar } = useProyectos();
+  const [nombre, setNombre] = useState('');
+  const [tipoCliente, setTipoCliente] = useState('');
+  const [descripcion, setDescripcion] = useState('');
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function crear() {
+    if (!nombre.trim() || guardando) return;
+    setGuardando(true);
+    setError(null);
+    try {
+      const res = await fetch(`${BACKEND_URL}/nube/api/proyectos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: nombre.trim(),
+          tipo_cliente: tipoCliente || null,
+          descripcion: descripcion.trim() || null,
+        }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      await recargar();
+      onTabChange('dashboard');
+    } catch {
+      setError('No se pudo crear el proyecto. Revisa tu conexión e intenta de nuevo.');
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   return (
     <div className="flex h-screen font-sans text-[#1A1C1E]">
       <ActivityBar active={activeTab} onChange={onTabChange} />
@@ -71,7 +107,7 @@ export default function NewProject({ activeTab, onTabChange, onCancel }: NewProj
 
                 <div>
                   <Label>Nombre del proyecto *</Label>
-                  <TextInput placeholder="Ej. Consorcio Recoleta Sur" />
+                  <TextInput placeholder="Ej. Consorcio Recoleta Sur" value={nombre} onChange={setNombre} />
                 </div>
 
                 <div>
@@ -79,6 +115,8 @@ export default function NewProject({ activeTab, onTabChange, onCancel }: NewProj
                   <SelectInput
                     placeholder="Seleccionar"
                     options={['Municipal', 'Consorcio', 'Privado']}
+                    value={tipoCliente}
+                    onChange={setTipoCliente}
                   />
                 </div>
 
@@ -87,6 +125,8 @@ export default function NewProject({ activeTab, onTabChange, onCancel }: NewProj
                   <textarea
                     rows={3}
                     placeholder="Notas u observaciones sobre el proyecto..."
+                    value={descripcion}
+                    onChange={e => setDescripcion(e.target.value)}
                     className="w-full px-4 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl border border-[#AD8F6E]/25 focus:border-[#AD8F6E]/50 text-[13px] text-[#1A1C1E] placeholder:text-[#A0A2A4] outline-none transition-colors resize-none"
                   />
                 </div>
@@ -94,9 +134,15 @@ export default function NewProject({ activeTab, onTabChange, onCancel }: NewProj
               </div>
             </div>
 
+            {error && <p className="text-[12px] text-[#991B1B] text-center mt-4">{error}</p>}
+
             {/* Actions */}
             <div className="flex items-center justify-center gap-5 pt-6">
-              <button className="px-6 py-2.5 bg-[#AD8F6E] hover:bg-[#96795C] text-white text-[13px] font-semibold rounded-xl transition-colors">
+              <button
+                onClick={crear}
+                disabled={guardando || !nombre.trim()}
+                className="px-6 py-2.5 bg-[#AD8F6E] hover:bg-[#96795C] text-white text-[13px] font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 Crear proyecto
               </button>
               <SecondaryButton onClick={onCancel}>Cancelar</SecondaryButton>
