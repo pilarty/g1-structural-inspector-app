@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { TurquoiseCard, PanelTitle, PanelLabel } from './components';
-import { ChevronDown, Copy, Check, EthernetPort, Antenna, RefreshCw, Loader2 } from 'lucide-react';
+import { ChevronDown, Copy, Check, RefreshCw, Loader2 } from 'lucide-react';
 import {
-  DDS_DOMAIN_MAX, ROS_DOMAIN_MAX,
-  type CampoForm, type Errores, type EstadoDrivers, type InterfazRed, type RobotForm,
+  DDS_DOMAIN_MAX,
+  type CampoForm, type Errores, type EstadoRobot, type InterfazRed, type RobotForm,
 } from './robotConexion';
 
 // ─── Configuración de conexión — Unitree G1 ──────────────────────────────────
@@ -106,9 +106,9 @@ export function ConnectionJsonPreview({ datos }: { datos: object }) {
   );
 }
 
-const ESTILO_DRIVERS: Record<EstadoDrivers, { texto: string; chip: string; dot: string }> = {
-  activos:     { texto: 'Activos',     chip: 'bg-[#ECFDF5] text-[#065F46]', dot: '#10B981' },
-  apagados:    { texto: 'Apagados',    chip: 'bg-[#FFFBEB] text-[#92400E]', dot: '#FBBF24' },
+const ESTILO_ESTADO: Record<EstadoRobot, { texto: string; chip: string; dot: string }> = {
+  recibiendo:  { texto: 'Recibiendo',  chip: 'bg-[#ECFDF5] text-[#065F46]', dot: '#10B981' },
+  sin_datos:   { texto: 'Sin datos',   chip: 'bg-[#FFFBEB] text-[#92400E]', dot: '#FBBF24' },
   desconocido: { texto: 'Desconocido', chip: 'bg-black/5 text-[#66686A]',   dot: '#A0A2A4' },
 };
 
@@ -124,13 +124,13 @@ interface RobotConnectionSectionProps {
   interfaces: InterfazRed[] | null;
   detectandoInterfaces: boolean;
   onDetectarInterfaces: () => void;
-  drivers: { estado: EstadoDrivers; mensaje?: string; cargando: boolean };
-  onRefrescarDrivers: () => void;
+  estadoRobot: { estado: EstadoRobot; mensaje?: string; cargando: boolean };
+  onRefrescarEstado: () => void;
 }
 
 export default function RobotConnectionSection({
   form, onChange, errores, onBlur, completo, avisos, editando,
-  interfaces, detectandoInterfaces, onDetectarInterfaces, drivers, onRefrescarDrivers,
+  interfaces, detectandoInterfaces, onDetectarInterfaces, estadoRobot, onRefrescarEstado,
 }: RobotConnectionSectionProps) {
   const campo = (c: CampoForm, extra: { type?: string; placeholder?: string; inputMode?: 'numeric' } = {}) => (
     <TextField
@@ -142,7 +142,7 @@ export default function RobotConnectionSection({
     />
   );
   const clave = editando ? 'Sin cambios' : '';
-  const estiloDrivers = ESTILO_DRIVERS[drivers.estado];
+  const estilo = ESTILO_ESTADO[estadoRobot.estado];
   const interfazElegida = interfaces?.find(i => i.nombre === form.interfaz);
 
   return (
@@ -150,7 +150,7 @@ export default function RobotConnectionSection({
       <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#377DC0]/10">
         <div>
           <PanelTitle>Configuración de conexión</PanelTitle>
-          <p className="text-[11px] text-[#8A8C8E] mt-0.5">Red, SSH, webserver, DDS y ROS2 del Unitree G1</p>
+          <p className="text-[11px] text-[#8A8C8E] mt-0.5">Red, SSH y DDS del Unitree G1 · conexión por cable</p>
         </div>
         <span className={`flex-none text-[11px] font-semibold px-2.5 py-1 rounded-md ${completo ? 'bg-[#E3EEF8] text-[#14202B]' : 'bg-[#FEF2F2] text-[#991B1B]'}`}>
           {completo ? 'Completo' : 'Incompleto'}
@@ -183,35 +183,14 @@ export default function RobotConnectionSection({
         {/* ── Conexión de red ── */}
         <div className="space-y-2.5">
           <SectionLabel>Conexión de red</SectionLabel>
-          <Field label="Modo de conectividad" required>
-            <div className="flex bg-white/40 rounded-xl p-1 gap-1">
-              {([
-                { value: 'lan', label: 'LAN (Ethernet)', icon: <EthernetPort className="w-3.5 h-3.5" /> },
-                { value: 'wifi', label: 'WiFi', icon: <Antenna className="w-3.5 h-3.5" /> },
-              ] as const).map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  aria-pressed={form.modo === opt.value}
-                  onClick={() => onChange({ modo: opt.value })}
-                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg h-[42px] text-[12px] font-semibold transition-colors ${
-                    form.modo === opt.value ? 'bg-[#377DC0] text-white' : 'text-[#66686A] hover:bg-white/70'
-                  }`}
-                >
-                  {opt.icon}
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field
               label="IP o host del robot"
               required
               error={errores.host}
-              hint={form.modo === 'lan' ? 'Por cable, el G1 usa 192.168.123.164.' : 'En WiFi la IP la asigna el router: mirala en el router o en el robot.'}
+              hint="El G1 usa siempre 192.168.123.164."
             >
-              {campo('host', { placeholder: form.modo === 'wifi' ? 'Ej. 192.168.1.40' : '192.168.123.164' })}
+              {campo('host', { placeholder: '192.168.123.164' })}
             </Field>
             <Field
               label="Interfaz de red de esta PC"
@@ -247,9 +226,8 @@ export default function RobotConnectionSection({
             </Field>
           </div>
           <p className="text-[11px] text-[#8A8C8E] leading-relaxed">
-            {form.modo === 'lan'
-              ? 'Activá la interfaz eth1 en el robot y poné en esta PC una IP fija 192.168.123.x (por ejemplo 192.168.123.51).'
-              : 'Activá la interfaz eth0 en el robot. Requiere un hub o adaptador WiFi conectado físicamente al robot.'}
+            Conectá esta PC al robot con un cable de red y poné en esa tarjeta una IP fija 192.168.123.51,
+            máscara 255.255.255.0. No uses .161, .164 ni .120: ya las usa el robot.
           </p>
         </div>
 
@@ -267,62 +245,42 @@ export default function RobotConnectionSection({
 
         <Divisor />
 
-        {/* ── Webserver ── */}
+        {/* ── DDS ── */}
         <div className="space-y-2.5">
-          <SectionLabel>Acceso al webserver</SectionLabel>
-          <Field label="URL" hint={form.webUrlEditada ? 'Editada a mano: ya no sigue al host.' : 'Se arma a partir del host; podés editarla.'}>
-            {campo('webUrl', { placeholder: 'http://192.168.123.164:9000/' })}
-          </Field>
+          <SectionLabel>DDS del SDK de Unitree</SectionLabel>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Usuario">{campo('webUsuario')}</Field>
-            <Field label="Contraseña">{campo('webPassword', { type: 'password', placeholder: clave })}</Field>
-          </div>
-        </div>
-
-        <Divisor />
-
-        {/* ── ROS2 y DDS ── */}
-        <div className="space-y-2.5">
-          <SectionLabel>Identificación ROS2 y DDS</SectionLabel>
-          <div className="grid grid-cols-3 gap-3">
-            <Field label="Domain ID de DDS (SDK)" required error={errores.ddsDomainId} hint={`0 con un robot real. Entre 0 y ${DDS_DOMAIN_MAX}.`}>
+            <Field label="Domain ID" required error={errores.ddsDomainId} hint={`0 con un G1 real. Entre 0 y ${DDS_DOMAIN_MAX}.`}>
               {campo('ddsDomainId', { inputMode: 'numeric' })}
             </Field>
-            <Field label="ROS_DOMAIN_ID" error={errores.rosDomainId} hint={`Solo si la app usa ROS2 por separado (0–${ROS_DOMAIN_MAX}). Vacío: el del SDK.`}>
-              {campo('rosDomainId', { inputMode: 'numeric', placeholder: 'No se usa' })}
-            </Field>
-            <Field label="ID / Namespace del robot" required error={errores.namespace} hint="Minúsculas, números y _ (ej. g1_unit_001).">
-              {campo('namespace', { placeholder: 'g1_unit_001' })}
-            </Field>
           </div>
         </div>
 
         <Divisor />
 
-        {/* ── Drivers ROS2 ── */}
+        {/* ── Estado del robot ── */}
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <SectionLabel>Estado de drivers ROS2</SectionLabel>
+            <SectionLabel>Estado del robot</SectionLabel>
             <p className="text-[11px] text-[#8A8C8E] mt-1 leading-snug">
-              {drivers.mensaje ?? 'Se lee del robot. Los drivers se encienden desde el webserver con «Restart All».'}
+              {estadoRobot.mensaje ?? 'Se lee del robot: indica si está enviando el estado de sus motores por DDS.'}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-none">
-            <span className={`flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-md ${estiloDrivers.chip}`}>
-              {drivers.cargando
+            <span className={`flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-md ${estilo.chip}`}>
+              {estadoRobot.cargando
                 ? <Loader2 className="w-3 h-3 animate-spin" />
-                : <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ backgroundColor: estiloDrivers.dot }} />}
-              {drivers.cargando ? 'Consultando…' : estiloDrivers.texto}
+                : <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ backgroundColor: estilo.dot }} />}
+              {estadoRobot.cargando ? 'Consultando…' : estilo.texto}
             </span>
             <button
               type="button"
-              onClick={onRefrescarDrivers}
-              disabled={drivers.cargando}
-              title="Refrescar estado de drivers"
-              aria-label="Refrescar estado de drivers"
+              onClick={onRefrescarEstado}
+              disabled={estadoRobot.cargando}
+              title="Refrescar estado del robot"
+              aria-label="Refrescar estado del robot"
               className="w-7 h-7 flex items-center justify-center rounded-md text-[#377DC0] hover:bg-white/70 transition-colors disabled:opacity-50"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${drivers.cargando ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${estadoRobot.cargando ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>

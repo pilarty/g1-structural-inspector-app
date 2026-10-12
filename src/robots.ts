@@ -73,7 +73,7 @@ export interface GuardarRobotIn {
   unidad: string;
   conexion: ConexionGuardada;
   /** Solo las contraseñas que cambiaron; se cifran en el servidor */
-  credenciales: { ssh_password?: string; web_password?: string };
+  credenciales: { ssh_password?: string };
   ultima_prueba_fecha: string | null;
   ultima_prueba: Omit<ResultadoPrueba, 'fecha'> | null;
 }

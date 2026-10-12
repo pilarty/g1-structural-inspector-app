@@ -7,8 +7,7 @@ import type { RobotNube } from './robots';
 // ─── Pasos de la prueba ───────────────────────────────────────────────────────
 
 export const PASOS_BASE: Paso[] = ([
-  ['red', 'Red', 3], ['ssh', 'SSH', 6], ['webserver', 'Webserver', 5],
-  ['dds', 'DDS', 5], ['ros2', 'ROS2', 5], ['camara', 'Cámara', 0],
+  ['red', 'Red', 3], ['ssh', 'SSH', 6], ['dds', 'DDS', 5], ['camara', 'Cámara', 8],
 ] as [IdPaso, string, number][]).map(([id, nombre, limite_s]) => ({ id, nombre, limite_s, estado: 'espera' }));
 
 const ICONO: Record<EstadoPaso, { icono: React.ReactNode; color: string; texto: string }> = {
@@ -133,7 +132,7 @@ export function RobotsGuardados({ robots, cargando, error, seleccionado, conecta
               )}
             </div>
             <p className="text-[10px] text-[#8A8C8E] mt-0.5 truncate">
-              {r.conexion ? `${r.conexion.host} · ${r.conexion.modo === 'lan' ? 'LAN' : 'WiFi'} · DDS ${r.conexion.dds_domain_id}` : 'Sin perfil de conexión'}
+              {r.conexion ? `${r.conexion.host} · DDS ${r.conexion.dds_domain_id}` : 'Sin perfil de conexión'}
               {r.ultimaPruebaFecha ? ` · ${fechaCorta(r.ultimaPruebaFecha)}` : ''}
             </p>
             <div className="flex gap-3 mt-1.5">

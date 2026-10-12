@@ -5,10 +5,10 @@ import { TopNav, PrimaryButton, SecondaryButton } from './components';
 import RobotConnectionSection, { ConnectionJsonPreview } from './RobotConnectionConfig';
 import { PanelPrueba, RobotsGuardados, DialogoReconexion } from './RobotPrueba';
 import {
-  CAMPOS_CONEXION, aConexionGuardada, aplicarCambio, autorizarMovimiento, avisos as calcularAvisos,
-  consultarDrivers, detectarInterfaces, driversSegunPrueba, exportarDiagnostico, formularioDesdePerfil,
+  CAMPOS_CONEXION, aConexionGuardada, autorizarMovimiento, avisos as calcularAvisos,
+  consultarEstado, detectarInterfaces, estadoSegunPrueba, exportarDiagnostico, formularioDesdePerfil,
   formularioVacio, jsonEnmascarado, probarConexion, reconectar, validar,
-  type CampoForm, type Errores, type EstadoDrivers, type InterfazRed, type ResultadoPrueba, type RobotForm,
+  type CampoForm, type Errores, type EstadoRobot, type InterfazRed, type ResultadoPrueba, type RobotForm,
 } from './robotConexion';
 
 interface NewRobotProps {
@@ -17,12 +17,10 @@ interface NewRobotProps {
   onCancel: () => void;
 }
 
-const CAMPO_DUPLICADO: Record<string, CampoForm> = {
-  codigo: 'codigo', namespace: 'namespace', dds_domain_id: 'ddsDomainId', ros_domain_id: 'rosDomainId',
-};
+const CAMPO_DUPLICADO: Record<string, CampoForm> = { codigo: 'codigo' };
 
 /** Identifica la configuración probada: si cambia, la prueba anterior ya no vale. */
-const claveConexion = (f: RobotForm) => JSON.stringify([aConexionGuardada(f), f.sshPassword, f.webPassword]);
+const claveConexion = (f: RobotForm) => JSON.stringify([aConexionGuardada(f), f.sshPassword]);
 
 interface Reconexion {
   robot: RobotNube;
@@ -49,7 +47,7 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
   const [errorPrueba, setErrorPrueba] = useState<string | null>(null);
   const abortar = useRef<AbortController | null>(null);
 
-  const [drivers, setDrivers] = useState<{ estado: EstadoDrivers; mensaje?: string; cargando: boolean }>({ estado: 'desconocido', cargando: false });
+  const [estadoRobot, setEstadoRobot] = useState<{ estado: EstadoRobot; mensaje?: string; cargando: boolean }>({ estado: 'desconocido', cargando: false });
   const [guardando, setGuardando] = useState(false);
   const [mensajeGuardar, setMensajeGuardar] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
   const [reconexion, setReconexion] = useState<Reconexion | null>(null);
@@ -89,7 +87,7 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
 
   function cambiar(cambio: Partial<RobotForm>) {
     if ('interfaz' in cambio) interfazManual.current = true;
-    setForm(f => aplicarCambio(f, cambio));
+    setForm(f => ({ ...f, ...cambio }));
     setMensajeGuardar(null);
     const campos = Object.keys(cambio) as CampoForm[];
     if (campos.some(c => erroresServidor[c])) {
@@ -114,7 +112,7 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
     setErrorPrueba(null);
     setProbando(false);
     setMensajeGuardar(null);
-    setDrivers({ estado: 'desconocido', cargando: false });
+    setEstadoRobot({ estado: 'desconocido', cargando: false });
   }
 
   function editar(r: RobotNube) {
@@ -130,29 +128,29 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
     setProbando(true);
     setErrorPrueba(null);
     setClavePrueba(claveConexion(form));
-    setDrivers(d => ({ ...d, cargando: true }));
+    setEstadoRobot(d => ({ ...d, cargando: true }));
     try {
       const r = await probarConexion(form, editandoId ?? undefined, setPrueba, ctrl.signal);
-      setDrivers({ estado: driversSegunPrueba(r), mensaje: r.pasos.find(p => p.id === 'ros2')?.mensaje, cargando: false });
+      setEstadoRobot({ estado: estadoSegunPrueba(r), mensaje: r.pasos.find(p => p.id === 'dds')?.mensaje, cargando: false });
     } catch (e) {
       if ((e as Error).name !== 'AbortError') setErrorPrueba('No se pudo ejecutar la prueba. Revisá que el backend local esté funcionando.');
-      setDrivers(d => ({ ...d, cargando: false }));
+      setEstadoRobot(d => ({ ...d, cargando: false }));
     } finally {
       if (abortar.current === ctrl) setProbando(false);
     }
   }
 
-  async function refrescarDrivers() {
+  async function refrescarEstado() {
     if (!puedeProbar) {
-      setDrivers({ estado: 'desconocido', mensaje: 'Completá la IP, el usuario SSH y el namespace para consultar.', cargando: false });
+      setEstadoRobot({ estado: 'desconocido', mensaje: 'Completá la IP, el usuario SSH y el Domain ID para consultar.', cargando: false });
       return;
     }
-    setDrivers(d => ({ ...d, cargando: true }));
+    setEstadoRobot(d => ({ ...d, cargando: true }));
     try {
-      const r = await consultarDrivers(form, editandoId ?? undefined);
-      setDrivers({ ...r, cargando: false });
+      const r = await consultarEstado(form, editandoId ?? undefined);
+      setEstadoRobot({ ...r, cargando: false });
     } catch {
-      setDrivers({ estado: 'desconocido', mensaje: 'No se pudo consultar el estado al backend local.', cargando: false });
+      setEstadoRobot({ estado: 'desconocido', mensaje: 'No se pudo consultar el estado al backend local.', cargando: false });
     }
   }
 
@@ -162,9 +160,8 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
     setMensajeGuardar(null);
     if (!completo || guardando) return;
     setGuardando(true);
-    const credenciales: { ssh_password?: string; web_password?: string } = {};
+    const credenciales: { ssh_password?: string } = {};
     if (form.sshPassword || !editandoId) credenciales.ssh_password = form.sshPassword;
-    if (form.webPassword || !editandoId) credenciales.web_password = form.webPassword;
     const r = await guardarRobot({
       codigo: form.codigo.trim(),
       unidad: form.modelo,
@@ -178,7 +175,7 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
     setGuardando(false);
     if ('id' in r) {
       setEditandoId(r.id);
-      setForm(f => ({ ...f, sshPassword: '', webPassword: '' }));
+      setForm(f => ({ ...f, sshPassword: '' }));
       setClavePrueba(null);
       setMensajeGuardar({ tipo: 'ok', texto: 'Robot guardado. Podés conectarlo desde la lista de robots guardados.' });
       recargar();
@@ -271,8 +268,8 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
                   interfaces={interfaces}
                   detectandoInterfaces={detectando}
                   onDetectarInterfaces={() => detectar()}
-                  drivers={drivers}
-                  onRefrescarDrivers={refrescarDrivers}
+                  estadoRobot={estadoRobot}
+                  onRefrescarEstado={refrescarEstado}
                 />
 
                 <ConnectionJsonPreview datos={jsonEnmascarado(form, !!editandoId)} />
@@ -304,7 +301,7 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
                   prueba={prueba}
                   probando={probando}
                   puedeProbar={puedeProbar}
-                  motivoNoProbar="Completá la IP, el usuario SSH, los Domain ID y el namespace para probar."
+                  motivoNoProbar="Completá la IP, el usuario y el puerto SSH y el Domain ID para probar."
                   onProbar={probar}
                   onExportar={() => prueba && exportarDiagnostico(form, prueba, !!editandoId)}
                 />
