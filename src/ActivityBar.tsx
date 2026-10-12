@@ -45,7 +45,7 @@ function RailButton({ id, Icon, label, isActive, onClick }: { id: NavTab; Icon: 
 
 export default function ActivityBar({ active, onChange }: ActivityBarProps) {
   return (
-    <div className="flex-none w-[58px] h-full bg-[#10141A] flex flex-col items-center pt-2 z-30">
+    <div className="flex-none w-[58px] h-full bg-[#14202B] flex flex-col items-center pt-2 z-30">
       {navItems.map(item => (
         <RailButton key={item.id} {...item} isActive={active === item.id} onClick={() => onChange(item.id)} />
       ))}

@@ -276,7 +276,7 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
       <div
         className="flex-1 relative overflow-hidden bg-[#FAF9F7]"
         style={{
-          backgroundImage: `linear-gradient(rgba(27,110,119,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(27,110,119,0.04) 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(rgba(55,125,192,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(55,125,192,0.04) 1px, transparent 1px)`,
           backgroundSize: '24px 24px'
         }}
       >
@@ -341,7 +341,7 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
               >
                 <div className="relative flex items-center justify-center">
                   {isSelected && (
-                    <div className="absolute w-9 h-9 rounded-full border-2" style={{ borderColor: '#1B6E77' }} />
+                    <div className="absolute w-9 h-9 rounded-full border-2" style={{ borderColor: '#377DC0' }} />
                   )}
                   <div
                     className={`rounded-full transition-all duration-150 ${isSelected ? 'w-5 h-5' : isHovered ? 'w-4 h-4' : 'w-3.5 h-3.5'}`}
@@ -376,18 +376,18 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
                     onClick={() => toggleDamageType(type)}
                     className={`w-4 h-4 rounded flex items-center justify-center transition-colors flex-none ${
                       selectedDamageTypes.has(type)
-                        ? 'bg-[#1B6E77]/30'
+                        ? 'bg-[#377DC0]/30'
                         : 'bg-white/10'
                     }`}
                   >
-                    {selectedDamageTypes.has(type) && <Check className="w-2.5 h-2.5 text-[#104247]" />}
+                    {selectedDamageTypes.has(type) && <Check className="w-2.5 h-2.5 text-[#14202B]" />}
                   </div>
                   <PanelText className="leading-none">{type}</PanelText>
                 </label>
               ))}
             </div>
             {/* Filtro por severidad deshabilitado temporalmente.
-            <div className="h-px bg-[#1B6E77]/15 mx-3.5" />
+            <div className="h-px bg-[#377DC0]/15 mx-3.5" />
             <div className="px-3.5 pt-2.5 pb-3 space-y-2">
               <PanelLabel>Severidad</PanelLabel>
               {(Object.keys(severityColors) as Severity[]).map(sev => (
@@ -396,11 +396,11 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
                     onClick={() => toggleSeverity(sev)}
                     className={`w-4 h-4 rounded flex items-center justify-center transition-colors flex-none ${
                       selectedSeverities.has(sev)
-                        ? 'bg-[#1B6E77]/30'
+                        ? 'bg-[#377DC0]/30'
                         : 'bg-white/10'
                     }`}
                   >
-                    {selectedSeverities.has(sev) && <Check className="w-2.5 h-2.5 text-[#104247]" />}
+                    {selectedSeverities.has(sev) && <Check className="w-2.5 h-2.5 text-[#14202B]" />}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full flex-none" style={{ backgroundColor: severityColors[sev] }} />
@@ -431,7 +431,7 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
                 <PanelText className="mt-0.5">Av. Corrientes 1234, CABA</PanelText>
               </div>
             </div>
-            <div className="h-px bg-[#1B6E77]/15" />
+            <div className="h-px bg-[#377DC0]/15" />
             <div className="px-3.5 py-2.5 flex gap-5">
               <div>
                 <PanelLabel>Plantas</PanelLabel>
@@ -465,7 +465,7 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
                 <PanelText className="mt-0.5">1h 35min</PanelText>
               </div>
             </div>
-            <div className="h-px bg-[#1B6E77]/15" />
+            <div className="h-px bg-[#377DC0]/15" />
             <div className="px-3.5 py-2.5 space-y-2.5">
               <div>
                 <div className="flex items-center justify-between mb-1.5">
@@ -473,7 +473,7 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
                   <PanelText>100%</PanelText>
                 </div>
                 <div className="h-1.5 bg-white/30 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#1B6E77] rounded-full" style={{ width: '100%' }} />
+                  <div className="h-full bg-[#377DC0] rounded-full" style={{ width: '100%' }} />
                 </div>
               </div>
               <div>
@@ -485,22 +485,22 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
         </div>
 
         {/* Zoom controls — bottom left */}
-        <div className="absolute bottom-5 left-[228px] z-20 flex flex-col bg-[#1B6E77]/[0.18] overflow-hidden">
+        <div className="absolute bottom-5 left-[228px] z-20 flex flex-col bg-[#377DC0]/[0.18] overflow-hidden">
 
         </div>
 
         {/* Rotate button */}
         <button
           onClick={() => setRotation(r => (r + 90) % 360)}
-          className="absolute bottom-5 left-[276px] z-20 w-10 h-10 bg-[#1B6E77]/[0.18] flex items-center justify-center text-[#66686A] hover:bg-[#1B6E77]/10 hover:text-[#1B6E77] transition-colors"
+          className="absolute bottom-5 left-[276px] z-20 w-10 h-10 bg-[#377DC0]/[0.18] flex items-center justify-center text-[#66686A] hover:bg-[#377DC0]/10 hover:text-[#377DC0] transition-colors"
           title="Rotar 90°"
         >
           <RotateCw className="w-4 h-4" />
         </button>
 
         {rotation !== 0 && (
-          <div className="absolute bottom-5 left-[326px] z-20 bg-[#1B6E77]/[0.18] px-2.5 py-2">
-            <span className="text-[11px] font-bold text-[#1B6E77] tabular-nums">{rotation}°</span>
+          <div className="absolute bottom-5 left-[326px] z-20 bg-[#377DC0]/[0.18] px-2.5 py-2">
+            <span className="text-[11px] font-bold text-[#377DC0] tabular-nums">{rotation}°</span>
           </div>
         )}
       </div>
@@ -513,7 +513,7 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
             onClick={e => e.stopPropagation()}
           >
             {/* Image Area */}
-            <div className="w-full md:w-[380px] h-[280px] md:h-auto bg-[#F3F1ED] relative flex-none">
+            <div className="w-full md:w-[380px] h-[280px] md:h-auto bg-[#FFFFFF] relative flex-none">
               <img
                 src={selectedDetection.image}
                 alt="Foto de la detección"
@@ -539,7 +539,7 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
                 </div>
                 <button
                   onClick={() => setSelectedDetection(null)}
-                  className="p-2 hover:bg-[#F3F1ED] rounded-xl text-[#8A8C8E] hover:text-[#1A1C1E] transition-colors"
+                  className="p-2 hover:bg-[#FFFFFF] rounded-xl text-[#8A8C8E] hover:text-[#1A1C1E] transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -553,13 +553,13 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
                       <div key={i} className="bg-[#F8F7F5] p-4 rounded-xl">
                         <div className="flex justify-between items-center mb-2.5">
                           <span className="text-[13px] font-medium text-[#1A1C1E]">{t.label}</span>
-                          <span className="text-[12px] font-semibold text-[#1B6E77] bg-[#DDE9EC] px-2.5 py-0.5 rounded-md">
+                          <span className="text-[12px] font-semibold text-[#377DC0] bg-[#E3EEF8] px-2.5 py-0.5 rounded-md">
                             {t.probability}%
                           </span>
                         </div>
                         <div className="w-full bg-[#E2DFD8] h-1.5 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-[#1B6E77] rounded-full"
+                            className="h-full bg-[#377DC0] rounded-full"
                             style={{ width: `${t.probability}%` }}
                           />
                         </div>
@@ -581,11 +581,11 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
               <div className="mt-7 flex gap-2.5 pt-5 border-t border-[#F0EDE8]">
                 <button
                   onClick={() => setSelectedDetection(null)}
-                  className="flex-1 py-2.5 px-4 bg-[#F3F1ED] hover:bg-[#ECEAE5] text-[#1A1C1E] font-medium text-[13px] rounded-xl transition-colors flex items-center justify-center"
+                  className="flex-1 py-2.5 px-4 bg-[#FFFFFF] hover:bg-[#ECEAE5] text-[#1A1C1E] font-medium text-[13px] rounded-xl transition-colors flex items-center justify-center"
                 >
                   Ver en plano
                 </button>
-                <button className="flex-1 py-2.5 px-4 bg-[#1B6E77] hover:bg-[#165B62] text-white font-medium text-[13px] rounded-xl transition-colors flex items-center justify-center">
+                <button className="flex-1 py-2.5 px-4 bg-[#377DC0] hover:bg-[#2D69A6] text-white font-medium text-[13px] rounded-xl transition-colors flex items-center justify-center">
                   Descargar imagen
                 </button>
               </div>

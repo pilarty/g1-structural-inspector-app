@@ -13,7 +13,7 @@ interface LoginProps {
 }
 
 const inputClase =
-  'w-full px-4 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl border border-[#1B6E77]/15 focus:border-[#1B6E77]/40 text-[13px] text-[#1A1C1E] placeholder:text-[#A0A2A4] outline-none transition-colors';
+  'w-full px-4 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl border border-[#377DC0]/15 focus:border-[#377DC0]/40 text-[13px] text-[#1A1C1E] placeholder:text-[#A0A2A4] outline-none transition-colors';
 
 export default function Login({ estado, onLogin, onReintentar }: LoginProps) {
   const [usuario, setUsuario] = useState('');
@@ -35,11 +35,11 @@ export default function Login({ estado, onLogin, onReintentar }: LoginProps) {
   }
 
   return (
-    <div className="flex h-screen items-center justify-center bg-[#F3F1ED] font-sans text-[#1A1C1E] px-6">
+    <div className="flex h-screen items-center justify-center bg-[#FFFFFF] font-sans text-[#1A1C1E] px-6">
       <div className="w-full max-w-[400px]">
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-[#1B6E77]/10 flex items-center justify-center mb-4">
-            <ScanLine className="w-6 h-6 text-[#1B6E77]" />
+          <div className="w-12 h-12 rounded-2xl bg-[#377DC0]/10 flex items-center justify-center mb-4">
+            <ScanLine className="w-6 h-6 text-[#377DC0]" />
           </div>
           <h1 className="text-[22px] font-bold tracking-tight">G1 Structural Inspector</h1>
           <p className="text-[13px] text-[#8A8C8E] mt-1.5">Inicia sesión para continuar</p>

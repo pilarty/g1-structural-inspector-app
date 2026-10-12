@@ -87,7 +87,7 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
 
         <TopNav
           badge={
-            <span className="ml-3 flex items-center gap-1.5 text-[11px] font-semibold text-[#1B6E77] bg-white px-2.5 py-0.5 rounded-md">
+            <span className="ml-3 flex items-center gap-1.5 text-[11px] font-semibold text-[#377DC0] bg-white px-2.5 py-0.5 rounded-md">
               <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
               Inspección en curso
             </span>
@@ -101,7 +101,7 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
               label: 'Tiempo transcurrido',
               value: formatTime(elapsed),
               sub: 'hh:mm:ss',
-              color: '#1B6E77',
+              color: '#377DC0',
             },
             {
               label: 'Detecciones',
@@ -179,7 +179,7 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
                 <polyline
                   points={trailPoints}
                   fill="none"
-                  stroke="#1B6E77"
+                  stroke="#377DC0"
                   strokeWidth="0.8"
                   strokeOpacity="0.35"
                   strokeLinecap="round"
@@ -190,8 +190,8 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
 
               {/* Robot position */}
               <g transform={`translate(${rx}%, ${ry}%)`} filter="url(#robotGlow)">
-                <circle r="3" fill="rgba(27,110,119,0.15)" />
-                <circle r="1.8" fill="#1B6E77" />
+                <circle r="3" fill="rgba(55,125,192,0.15)" />
+                <circle r="1.8" fill="#377DC0" />
                 <circle r="0.8" fill="white" />
               </g>
             </svg>
@@ -202,11 +202,11 @@ export default function InspectionLive({ activeTab, onTabChange, onStop }: Inspe
               <div className="flex items-center gap-2">
                 <div className="w-24 h-1.5 bg-[#E2DFD8] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#1B6E77] rounded-full transition-all duration-1000"
+                    className="h-full bg-[#377DC0] rounded-full transition-all duration-1000"
                     style={{ width: `${Math.round(progress * 100)}%` }}
                   />
                 </div>
-                <span className="text-[12px] font-bold text-[#1B6E77] tabular-nums">{Math.round(progress * 100)}%</span>
+                <span className="text-[12px] font-bold text-[#377DC0] tabular-nums">{Math.round(progress * 100)}%</span>
               </div>
             </div>
           </div>

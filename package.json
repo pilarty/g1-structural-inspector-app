@@ -11,7 +11,8 @@
     "format": "oxfmt",
     "electron:dev": "concurrently -k \"vite --host 0.0.0.0\" \"wait-on http://localhost:8443 && electron .\"",
     "electron:preview": "cross-env ELECTRON_BUILD=true vite build && electron .",
-    "electron:build": "cross-env ELECTRON_BUILD=true vite build && electron-builder"
+    "electron:build": "cross-env ELECTRON_BUILD=true vite build && electron-builder",
+    "electron:appx": "cross-env ELECTRON_BUILD=true vite build && electron-builder --win appx"
   },
   "dependencies": {
     "lucide-react": "^1.31.0",
@@ -45,7 +46,33 @@
       "output": "release"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "extraResources": [
+      {
+        "from": "build/runtime/backend",
+        "to": "backend"
+      },
+      {
+        "from": "build/runtime/python",
+        "to": "python"
+      }
+    ],
+    "artifactName": "G1-Structural-Inspector-Setup-${version}.${ext}",
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false
+    },
+    "appx": {
+      "identityName": "structuralinspector.G1StructuralInspector",
+      "publisher": "CN=166404EC-CAEC-4778-BA83-9B48CDE1BCE7",
+      "publisherDisplayName": "structuralinspector",
+      "applicationId": "G1StructuralInspector",
+      "backgroundColor": "transparent"
     }
-  }
+  },
+  "description": "Inspección estructural de edificios con robot humanoide",
+  "author": "G1 Structural Inspector"
 }

@@ -119,7 +119,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                 </filter>
                 <linearGradient id="trajGradient" gradientUnits="userSpaceOnUse" x1={START[0]} y1={START[1]} x2={END[0]} y2={END[1]}>
                   <stop offset="0%" stopColor="#10B981" />
-                  <stop offset="100%" stopColor="#1B6E77" />
+                  <stop offset="100%" stopColor="#377DC0" />
                 </linearGradient>
               </defs>
 
@@ -149,7 +149,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
               <polyline
                 points={trajStr}
                 fill="none"
-                stroke="#1B6E77"
+                stroke="#377DC0"
                 strokeWidth="2.5"
                 strokeOpacity="0.45"
                 strokeLinecap="round"
@@ -173,7 +173,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                   <path
                     key={i}
                     d="M -4 -3 L 5 0 L -4 3 Z"
-                    fill="#1B6E77"
+                    fill="#377DC0"
                     fillOpacity="0.5"
                     transform={`translate(${mx} ${my}) rotate(${angle})`}
                   />
@@ -190,11 +190,11 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
 
               {/* End marker — gentle pulse marks it as the current/final position */}
               <g filter="url(#endGlow)">
-                <circle cx={END[0]} cy={END[1]} r="12" fill="#1B6E77" fillOpacity="0.18" className="route-end-pulse" />
-                <rect x={END[0] - 7} y={END[1] - 7} width="14" height="14" rx="3" fill="#1B6E77" />
+                <circle cx={END[0]} cy={END[1]} r="12" fill="#377DC0" fillOpacity="0.18" className="route-end-pulse" />
+                <rect x={END[0] - 7} y={END[1] - 7} width="14" height="14" rx="3" fill="#377DC0" />
                 <rect x={END[0] - 3} y={END[1] - 3} width="6"  height="6"  rx="1" fill="white" />
               </g>
-              <text x={END[0] + 15} y={END[1] - 10} fill="#1B6E77" fontSize="9" fontFamily="IBM Plex Sans, sans-serif" fontWeight="700" letterSpacing="0.04em">FIN</text>
+              <text x={END[0] + 15} y={END[1] - 10} fill="#377DC0" fontSize="9" fontFamily="IBM Plex Sans, sans-serif" fontWeight="700" letterSpacing="0.04em">FIN</text>
 
               {/* North arrow */}
               <g transform="translate(766,30)">
@@ -236,11 +236,11 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                     <PanelText className="leading-none">Punto de inicio</PanelText>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-sm bg-[#1B6E77] flex-none" />
+                    <div className="w-2 h-2 rounded-sm bg-[#377DC0] flex-none" />
                     <PanelText className="leading-none">Punto de fin</PanelText>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-0.5 border-t-2 border-dashed border-[#1B6E77]/60 flex-none" />
+                    <div className="w-6 h-0.5 border-t-2 border-dashed border-[#377DC0]/60 flex-none" />
                     <PanelText className="leading-none">Recorrido del robot</PanelText>
                   </div>
                 </div>
@@ -248,15 +248,15 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
 
               {/* Zoom controls */}
               <div className="absolute bottom-5 right-5 z-20 flex flex-col bg-white/80 backdrop-blur-md rounded-xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.08)]">
-                <button className="p-2.5 hover:bg-[#1B6E77]/10 text-[#66686A] hover:text-[#1B6E77] transition-colors" title="Acercar">
+                <button className="p-2.5 hover:bg-[#377DC0]/10 text-[#66686A] hover:text-[#377DC0] transition-colors" title="Acercar">
                   <ZoomIn className="w-4 h-4" />
                 </button>
-                <div className="h-px bg-[#1B6E77]/10" />
-                <button className="p-2.5 hover:bg-[#1B6E77]/10 text-[#66686A] hover:text-[#1B6E77] transition-colors" title="Alejar">
+                <div className="h-px bg-[#377DC0]/10" />
+                <button className="p-2.5 hover:bg-[#377DC0]/10 text-[#66686A] hover:text-[#377DC0] transition-colors" title="Alejar">
                   <ZoomOut className="w-4 h-4" />
                 </button>
-                <div className="h-px bg-[#1B6E77]/10" />
-                <button className="p-2.5 hover:bg-[#1B6E77]/10 text-[#66686A] hover:text-[#1B6E77] transition-colors" title="Restaurar">
+                <div className="h-px bg-[#377DC0]/10" />
+                <button className="p-2.5 hover:bg-[#377DC0]/10 text-[#66686A] hover:text-[#377DC0] transition-colors" title="Restaurar">
                   <Maximize className="w-4 h-4" />
                 </button>
               </div>
@@ -276,7 +276,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                   onClick={() => setInfoTab(tab.id)}
                   className={`px-4 py-3 text-[12px] font-semibold transition-colors border-b-2 -mb-px ${
                     infoTab === tab.id
-                      ? 'border-[#1B6E77] text-[#1B6E77]'
+                      ? 'border-[#377DC0] text-[#377DC0]'
                       : 'border-transparent text-[#8A8C8E] hover:text-[#1A1C1E]'
                   }`}
                 >
@@ -306,7 +306,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                 <div className="px-8 border-l border-[#EDEBE6]">
                   <PanelLabel>Fin</PanelLabel>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    {currentBuilding.relevamientos > 0 && <span className="w-2 h-2 rounded-sm bg-[#1B6E77] flex-none" />}
+                    {currentBuilding.relevamientos > 0 && <span className="w-2 h-2 rounded-sm bg-[#377DC0] flex-none" />}
                     <PanelText className="font-semibold">{currentBuilding.lastRelevamientoDate !== '—' ? currentBuilding.lastRelevamientoDate : '—'}</PanelText>
                   </div>
                   <p className="text-[11px] text-[#8A8C8E] mt-0.5">{horaLocal(currentBuilding.ultimoRelevamiento?.fin)}</p>
@@ -321,9 +321,9 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                   {currentBuilding.relevamientos > 0 ? (
                     <div className="flex items-center gap-2 mt-1">
                       <div className="w-24 h-2 bg-[#E2DFD8] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#1B6E77] rounded-full w-0" />
+                        <div className="h-full bg-[#377DC0] rounded-full w-0" />
                       </div>
-                      <span className="text-[13px] font-bold text-[#1B6E77]">—</span>
+                      <span className="text-[13px] font-bold text-[#377DC0]">—</span>
                     </div>
                   ) : (
                     <PanelText className="font-semibold text-[#8A8C8E] mt-0.5">—</PanelText>
@@ -333,7 +333,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                   <PanelLabel>Estado</PanelLabel>
                   {currentBuilding.relevamientos > 0 ? (
                     <span
-                      className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#104247] mt-1 px-2 py-0.5 rounded-full"
+                      className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#14202B] mt-1 px-2 py-0.5 rounded-full"
                       style={{ background: 'rgba(16,185,129,0.09)' }}
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] flex-none" />

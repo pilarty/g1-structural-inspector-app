@@ -17,7 +17,7 @@ function TextInput({ placeholder, defaultValue, value, onChange }: { placeholder
       defaultValue={value === undefined ? defaultValue : undefined}
       value={value}
       onChange={onChange ? e => onChange(e.target.value) : undefined}
-      className="w-full px-4 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl border border-[#1B6E77]/15 focus:border-[#1B6E77]/40 text-[13px] text-[#1A1C1E] placeholder:text-[#A0A2A4] outline-none transition-colors"
+      className="w-full px-4 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl border border-[#377DC0]/15 focus:border-[#377DC0]/40 text-[13px] text-[#1A1C1E] placeholder:text-[#A0A2A4] outline-none transition-colors"
     />
   );
 }
@@ -70,7 +70,7 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
         <TopNav />
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto bg-[#F3F1ED]">
+        <div className="flex-1 overflow-y-auto bg-[#FFFFFF]">
           <div className="w-full px-8 py-8">
 
             {/* Page header */}

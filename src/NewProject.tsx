@@ -84,7 +84,7 @@ export default function NewProject({ activeTab, onTabChange, onCancel }: NewProj
         <TopNav />
 
         {/* Content — single narrow column, centered: deliberately different shape from "Nuevo edificio" */}
-        <div className="flex-1 overflow-y-auto bg-[#F3F1ED]">
+        <div className="flex-1 overflow-y-auto bg-[#FFFFFF]">
           <div className="max-w-[560px] mx-auto px-8 py-14">
 
             {/* Page header */}

@@ -23,7 +23,7 @@ function TextInput({ placeholder, type = 'text', value, onChange }: { placeholde
       placeholder={placeholder}
       value={value}
       onChange={onChange ? e => onChange(e.target.value) : undefined}
-      className="w-full px-4 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl border border-[#1B6E77]/15 focus:border-[#1B6E77]/40 text-[13px] text-[#1A1C1E] placeholder:text-[#A0A2A4] outline-none transition-colors"
+      className="w-full px-4 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl border border-[#377DC0]/15 focus:border-[#377DC0]/40 text-[13px] text-[#1A1C1E] placeholder:text-[#A0A2A4] outline-none transition-colors"
     />
   );
 }
@@ -34,7 +34,7 @@ function SelectInput({ placeholder, options, value, onChange }: { placeholder: s
       <select
         value={value ?? ''}
         onChange={e => onChange?.(e.target.value)}
-        className="w-full appearance-none px-4 py-2.5 bg-white/60 hover:bg-white/80 rounded-xl border border-[#1B6E77]/15 text-[13px] text-[#1A1C1E] outline-none transition-colors pr-10"
+        className="w-full appearance-none px-4 py-2.5 bg-white/60 hover:bg-white/80 rounded-xl border border-[#377DC0]/15 text-[13px] text-[#1A1C1E] outline-none transition-colors pr-10"
       >
         <option value="" disabled>{placeholder}</option>
         {options.map(o => {
@@ -133,12 +133,12 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel }: NewBui
         <TopNav />
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto bg-[#F3F1ED]">
+        <div className="flex-1 overflow-y-auto bg-[#FFFFFF]">
           <div className="w-full px-8 py-8">
 
             {/* Page header */}
             <div className="mb-1">
-              <span className="text-[11px] font-semibold text-[#1B6E77] uppercase tracking-widest">Paso {step} de 2</span>
+              <span className="text-[11px] font-semibold text-[#377DC0] uppercase tracking-widest">Paso {step} de 2</span>
               <h1 className="text-[22px] font-bold text-[#1A1C1E] tracking-tight mt-1">Nueva edificación</h1>
               <p className="text-[13px] text-[#8A8C8E] mt-1">
                 {step === 1
@@ -167,7 +167,7 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel }: NewBui
                             onClick={() => setPropertyType(opt.value)}
                             className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold transition-colors ${
                               propertyType === opt.value
-                                ? 'bg-[#1B6E77] text-white'
+                                ? 'bg-[#377DC0] text-white'
                                 : 'text-[#66686A] hover:bg-white/70'
                             }`}
                           >
@@ -261,13 +261,13 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel }: NewBui
                       onDrop={handleDrop}
                       className={`relative flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-xl border-2 border-dashed transition-colors cursor-pointer ${
                         dragOver
-                          ? 'border-[#1B6E77]/60 bg-[#1B6E77]/10'
-                          : 'border-[#1B6E77]/20 bg-white/30 hover:bg-white/50 hover:border-[#1B6E77]/35'
+                          ? 'border-[#377DC0]/60 bg-[#377DC0]/10'
+                          : 'border-[#377DC0]/20 bg-white/30 hover:bg-white/50 hover:border-[#377DC0]/35'
                       }`}
                     >
-                      <Upload className="w-5 h-5 text-[#1B6E77]/60" />
+                      <Upload className="w-5 h-5 text-[#377DC0]/60" />
                       <p className="text-[12px] font-medium text-[#66686A] text-center">
-                        Arrastrá archivos aquí o <span className="text-[#1B6E77] font-semibold">buscá en tu dispositivo</span>
+                        Arrastrá archivos aquí o <span className="text-[#377DC0] font-semibold">buscá en tu dispositivo</span>
                       </p>
                       <p className="text-[10px] text-[#A0A2A4]">PDF, DWG, DXF, JPG, PNG — hasta 50 MB por archivo</p>
                       <input type="file" multiple className="absolute inset-0 opacity-0 cursor-pointer" accept=".pdf,.dwg,.dxf,.jpg,.jpeg,.png" onChange={e => {
@@ -296,7 +296,7 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel }: NewBui
                       placeholder="Observaciones relevantes sobre el edificio o el contexto del relevamiento..."
                       value={notas}
                       onChange={e => setNotas(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl border border-[#1B6E77]/15 focus:border-[#1B6E77]/40 text-[13px] text-[#1A1C1E] placeholder:text-[#A0A2A4] outline-none transition-colors resize-none"
+                      className="w-full px-4 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl border border-[#377DC0]/15 focus:border-[#377DC0]/40 text-[13px] text-[#1A1C1E] placeholder:text-[#A0A2A4] outline-none transition-colors resize-none"
                     />
                   </div>
 

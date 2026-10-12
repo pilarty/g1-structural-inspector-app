@@ -4,7 +4,7 @@ import { TopNav, PrimaryButton } from './components';
 import { Play } from 'lucide-react';
 
 const GRID_BG = {
-  backgroundColor: '#F3F1ED',
+  backgroundColor: '#FFFFFF',
   backgroundImage: `linear-gradient(rgba(229,231,235,0.17) 1px, transparent 1px), linear-gradient(90deg, rgba(229,231,235,0.17) 1px, transparent 1px)`,
   backgroundSize: '22px 22px',
 } as const;
@@ -30,7 +30,7 @@ export default function BuildingEmpty({ activeTab, onTabChange, onStartInspectio
 
             {/* Hero card — identical to BuildingDetail */}
             <div className="rounded-2xl overflow-hidden shadow-[0_2px_16px_rgba(0,0,0,0.08)]">
-              <div className="bg-[#1B6E77] px-8 py-8 flex items-start justify-between gap-8">
+              <div className="bg-[#377DC0] px-8 py-8 flex items-start justify-between gap-8">
                 <div>
                   <div className="flex items-center gap-2 mb-4">
                     <span className="text-[10px] font-semibold text-white/50 uppercase tracking-[0.12em]">Edificio</span>

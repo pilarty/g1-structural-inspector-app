@@ -29,12 +29,12 @@ export default function StatBlock(props: StatBlockProps) {
   const dividerClass = props.divider ? 'border-r border-[#F0EDE8]' : '';
 
   if (props.variant === 'summary') {
-    const { icon, label, value, valueColor = '#1A1C1E', iconColor = '#1B6E77' } = props;
+    const { icon, label, value, valueColor = '#1A1C1E', iconColor = '#377DC0' } = props;
     return (
       <div className={`flex-1 flex items-center gap-3 px-3 ${dividerClass}`}>
         <div
           className="w-8 h-8 rounded-lg flex items-center justify-center flex-none"
-          style={{ backgroundColor: 'rgba(27,110,119,0.07)' }}
+          style={{ backgroundColor: 'rgba(55,125,192,0.07)' }}
         >
           <span style={{ color: iconColor }}>{icon}</span>
         </div>

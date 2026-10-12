@@ -131,7 +131,7 @@ export function ConnectionJsonPreview({ config }: { config: RobotConnectionConfi
       <button
         type="button"
         onClick={() => setShowJson(s => !s)}
-        className="flex items-center gap-1.5 text-[11px] font-semibold text-[#1B6E77] hover:opacity-70 transition-opacity"
+        className="flex items-center gap-1.5 text-[11px] font-semibold text-[#377DC0] hover:opacity-70 transition-opacity"
       >
         <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showJson ? 'rotate-180' : ''}`} />
         {showJson ? 'Ocultar' : 'Ver'} JSON de configuración
@@ -144,7 +144,7 @@ export function ConnectionJsonPreview({ config }: { config: RobotConnectionConfi
           <button
             type="button"
             onClick={copyJson}
-            className="absolute top-2 right-2 flex items-center gap-1 text-[10px] font-semibold text-[#1B6E77] bg-white px-2 py-1 rounded-md shadow-sm hover:opacity-80 transition-opacity"
+            className="absolute top-2 right-2 flex items-center gap-1 text-[10px] font-semibold text-[#377DC0] bg-white px-2 py-1 rounded-md shadow-sm hover:opacity-80 transition-opacity"
           >
             {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
             {copied ? 'Copiado' : 'Copiar'}
@@ -167,12 +167,12 @@ export default function RobotConnectionSection({ config, onChange }: RobotConnec
 
   return (
     <TurquoiseCard size="lg" bordered className="mt-5">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#1B6E77]/10">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#377DC0]/10">
         <div>
           <PanelTitle>Configuración de conexión</PanelTitle>
           <p className="text-[11px] text-[#8A8C8E] mt-0.5">Setup del robot Unitree G1 — LAN, SSH, Webserver y ROS2</p>
         </div>
-        <span className={`flex-none text-[11px] font-semibold px-2.5 py-1 rounded-md ${errors.length ? 'bg-[#FEF2F2] text-[#991B1B]' : 'bg-[#DDE9EC] text-[#104247]'}`}>
+        <span className={`flex-none text-[11px] font-semibold px-2.5 py-1 rounded-md ${errors.length ? 'bg-[#FEF2F2] text-[#991B1B]' : 'bg-[#E3EEF8] text-[#14202B]'}`}>
           {errors.length ? 'Incompleto' : 'Completo'}
         </span>
       </div>
@@ -192,7 +192,7 @@ export default function RobotConnectionSection({ config, onChange }: RobotConnec
           </div>
         </div>
 
-        <div className="h-px bg-[#1B6E77]/10" />
+        <div className="h-px bg-[#377DC0]/10" />
 
         {/* ── Webserver ── */}
         <div className="space-y-2.5">
@@ -210,7 +210,7 @@ export default function RobotConnectionSection({ config, onChange }: RobotConnec
           </div>
         </div>
 
-        <div className="h-px bg-[#1B6E77]/10" />
+        <div className="h-px bg-[#377DC0]/10" />
 
         {/* ── Modo de conectividad ── */}
         <div className="space-y-2.5">
@@ -227,7 +227,7 @@ export default function RobotConnectionSection({ config, onChange }: RobotConnec
                   onClick={() => patch({ connectivityMode: opt.value })}
                   className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg h-[42px] text-[12px] font-semibold transition-colors ${
                     config.connectivityMode === opt.value
-                      ? 'bg-[#1B6E77] text-white'
+                      ? 'bg-[#377DC0] text-white'
                       : 'text-[#66686A] hover:bg-white/70'
                   }`}
                 >
@@ -244,7 +244,7 @@ export default function RobotConnectionSection({ config, onChange }: RobotConnec
           </p>
         </div>
 
-        <div className="h-px bg-[#1B6E77]/10" />
+        <div className="h-px bg-[#377DC0]/10" />
 
         {/* ── ROS2 ── */}
         <div className="space-y-2.5">
@@ -259,7 +259,7 @@ export default function RobotConnectionSection({ config, onChange }: RobotConnec
           </div>
         </div>
 
-        <div className="h-px bg-[#1B6E77]/10" />
+        <div className="h-px bg-[#377DC0]/10" />
 
         {/* ── Drivers ROS2 ── */}
         <div className="flex items-center justify-between gap-4">

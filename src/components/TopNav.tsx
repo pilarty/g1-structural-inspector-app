@@ -17,7 +17,7 @@ interface TopNavProps {
 export default function TopNav({ badge }: TopNavProps) {
   const { usuario, cerrar } = useSesion();
   return (
-    <nav className="flex-none h-12 bg-[#10141A] flex items-center justify-between px-6 z-20 border-b border-white/5">
+    <nav className="flex-none h-12 bg-[#14202B] flex items-center justify-between px-6 z-20 border-b border-white/5">
       {/* Left — optional badge */}
       <div className="flex items-center min-w-0">
         {badge}

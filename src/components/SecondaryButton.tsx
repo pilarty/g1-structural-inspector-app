@@ -20,7 +20,7 @@ export default function SecondaryButton({
     return (
       <button
         onClick={onClick}
-        className={`${base} px-5 py-2.5 bg-white text-[#1A1C1E] rounded-xl hover:bg-[#F3F1ED] shadow-[0_1px_4px_rgba(0,0,0,0.06)]`}
+        className={`${base} px-5 py-2.5 bg-white text-[#1A1C1E] rounded-xl hover:bg-[#FFFFFF] shadow-[0_1px_4px_rgba(0,0,0,0.06)]`}
       >
         {icon}
         {children}

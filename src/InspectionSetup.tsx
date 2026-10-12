@@ -107,7 +107,7 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
         <TopNav />
 
         {/* Content area */}
-        <div className="flex-1 overflow-y-auto bg-[#F3F1ED]">
+        <div className="flex-1 overflow-y-auto bg-[#FFFFFF]">
           <div className="w-full px-8 py-10">
 
             {/* Page header */}
@@ -118,7 +118,7 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
 
             {/* ── Card: Configuración del relevamiento ── */}
             <TurquoiseCard size="lg" bordered className="w-full">
-              <div className="px-5 pt-4 pb-3 border-b border-[#1B6E77]/10">
+              <div className="px-5 pt-4 pb-3 border-b border-[#377DC0]/10">
                 <PanelTitle>Configuración del relevamiento</PanelTitle>
               </div>
 
@@ -146,13 +146,13 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                             <button
                               key={b.id}
                               onClick={() => { setSelectedBuildingId(b.id); setBuildingMenuOpen(false); }}
-                              className="w-full flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-[#F3F1ED] transition-colors text-left"
+                              className="w-full flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-[#FFFFFF] transition-colors text-left"
                             >
                               <div className="min-w-0">
                                 <p className="text-[12px] font-semibold text-[#1A1C1E] truncate">{b.name}</p>
                                 <p className="text-[11px] text-[#8A8C8E] truncate">{b.address}</p>
                               </div>
-                              {b.id === building?.id && <Check className="w-3.5 h-3.5 text-[#1B6E77] flex-none" />}
+                              {b.id === building?.id && <Check className="w-3.5 h-3.5 text-[#377DC0] flex-none" />}
                             </button>
                           ))}
                         </div>
@@ -181,12 +181,12 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                             <button
                               key={r.id}
                               onClick={() => { setSelectedRobotId(r.id); setRobotMenuOpen(false); }}
-                              className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 hover:bg-[#F3F1ED] transition-colors text-left"
+                              className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 hover:bg-[#FFFFFF] transition-colors text-left"
                             >
                               <span className="flex items-center gap-2 min-w-0">
                                 <span className="text-[12px] font-semibold text-[#1A1C1E] truncate">{r.label}</span>
                               </span>
-                              {r.id === robot.id && <Check className="w-3.5 h-3.5 text-[#1B6E77] flex-none" />}
+                              {r.id === robot.id && <Check className="w-3.5 h-3.5 text-[#377DC0] flex-none" />}
                             </button>
                           ))}
                         </div>
