@@ -1,104 +1,52 @@
 import React, { useState } from 'react';
 import { TurquoiseCard, PanelTitle, PanelLabel } from './components';
-import { ChevronDown, Copy, Check, EthernetPort, Antenna } from 'lucide-react';
+import { ChevronDown, Copy, Check, EthernetPort, Antenna, RefreshCw, Loader2 } from 'lucide-react';
+import {
+  DDS_DOMAIN_MAX, ROS_DOMAIN_MAX,
+  type CampoForm, type Errores, type EstadoDrivers, type InterfazRed, type RobotForm,
+} from './robotConexion';
 
-// ─── Connection config — Unitree G1 setup (MYBOTSHOP/QUADRUPED official setup) ─
-
-export interface RobotConnectionConfigData {
-  network: {
-    pcStaticIp: string;
-    netmaskPrefix: number;
-  };
-  robotIps: {
-    mcu: string;
-    auxPcSsh: string;
-    webserver: string;
-    lidar: string;
-  };
-  ssh: {
-    user: string;
-    password: string;
-  };
-  webserver: {
-    url: string;
-    user: string;
-    password: string;
-  };
-  connectivityMode: 'lan' | 'wifi';
-  rosDomainId: number;
-  robotNamespace: string;
-  ros2DriversActive: boolean;
-}
-
-// Fixed robot-side addresses — read-only reference, never editable.
-const ROBOT_IPS = {
-  mcu: '192.168.123.161',
-  auxPcSsh: '192.168.123.164',
-  webserver: '192.168.123.164:9000',
-  lidar: '192.168.123.120',
-} as const;
-
-export const defaultConnectionConfig: RobotConnectionConfigData = {
-  network: { pcStaticIp: '192.168.123.51', netmaskPrefix: 24 },
-  robotIps: ROBOT_IPS,
-  ssh: { user: 'unitree', password: '123' },
-  webserver: { url: 'http://192.168.123.164:9000/', user: 'x', password: 'mybotshop' },
-  connectivityMode: 'wifi',
-  rosDomainId: 10,
-  robotNamespace: 'g1_unit_001',
-  ros2DriversActive: false,
-};
-
-/** Blocking — must be resolved before continuing/connecting. */
-export function getConnectionErrors(cfg: RobotConnectionConfigData): string[] {
-  const errors: string[] = [];
-  if (!cfg.webserver.url.trim()) errors.push('Falta la IP/URL del Webserver.');
-  if (cfg.rosDomainId === null || cfg.rosDomainId === undefined || Number.isNaN(cfg.rosDomainId)) {
-    errors.push('Falta el ROS_DOMAIN_ID.');
-  }
-  if (!cfg.robotNamespace.trim()) errors.push('Falta el ID/Namespace del robot.');
-  if (!cfg.connectivityMode) errors.push('Falta seleccionar el modo de conectividad.');
-  return errors;
-}
-
-/** Non-blocking — shown as a reminder, doesn't prevent continuing. */
-export function getConnectionWarnings(cfg: RobotConnectionConfigData): string[] {
-  const warnings: string[] = [];
-  if (cfg.connectivityMode === 'wifi') {
-    warnings.push('Verificá que el hub/adaptador WiFi esté conectado físicamente al robot.');
-  }
-  if (cfg.ssh.password === '123' || cfg.webserver.password === 'mybotshop') {
-    warnings.push('Estás usando credenciales por defecto — cambialas fuera de un entorno de pruebas.');
-  }
-  return warnings;
-}
+// ─── Configuración de conexión — Unitree G1 ──────────────────────────────────
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-[9px] font-semibold text-[#8A8C8E] uppercase tracking-widest">{children}</p>;
 }
 
-function Field({ label, hint, required, children }: { label: string; hint?: string; required?: boolean; children: React.ReactNode }) {
+function Field({ label, hint, required, error, children }: {
+  label: string; hint?: string; required?: boolean; error?: string; children: React.ReactNode;
+}) {
   return (
     <div>
       <PanelLabel className="mb-1.5">{label}{required ? ' *' : ''}</PanelLabel>
       {children}
-      {hint && <p className="text-[10px] text-[#8A8C8E] mt-1 leading-snug">{hint}</p>}
+      {error
+        ? <p className="text-[10px] text-[#991B1B] font-medium mt-1 leading-snug">{error}</p>
+        : hint && <p className="text-[10px] text-[#8A8C8E] mt-1 leading-snug">{hint}</p>}
     </div>
   );
 }
 
-function TextField({
-  value, onChange, type = 'text', disabled,
-}: { value: string; onChange?: (v: string) => void; type?: string; disabled?: boolean }) {
+const claseCampo = (error?: string, disabled?: boolean) =>
+  `w-full px-3 py-2.5 rounded-xl h-[42px] text-[12px] font-semibold text-[#1A1C1E] outline-none transition-colors border ${
+    error ? 'border-[#EF4444]/50' : 'border-transparent'
+  } ${disabled ? 'bg-black/5 text-[#8A8C8E] cursor-not-allowed' : 'bg-white/60 hover:bg-white/80 focus:bg-white/90'}`;
+
+function TextField({ value, onChange, onBlur, type = 'text', placeholder, error, inputMode }: {
+  value: string; onChange: (v: string) => void; onBlur?: () => void; type?: string; placeholder?: string;
+  error?: string; inputMode?: 'numeric' | 'text';
+}) {
   return (
     <input
       type={type}
       value={value}
-      disabled={disabled}
-      onChange={e => onChange?.(e.target.value)}
-      className={`w-full px-3 py-2.5 rounded-xl h-[42px] text-[12px] font-semibold text-[#1A1C1E] outline-none transition-colors ${
-        disabled ? 'bg-black/5 text-[#8A8C8E] cursor-not-allowed' : 'bg-white/60 hover:bg-white/80 focus:bg-white/90'
-      }`}
+      placeholder={placeholder}
+      inputMode={inputMode}
+      autoComplete={type === 'password' ? 'new-password' : 'off'}
+      spellCheck={false}
+      onChange={e => onChange(e.target.value)}
+      onBlur={onBlur}
+      aria-invalid={!!error}
+      className={`${claseCampo(error)} placeholder:text-[#A0A2A4] placeholder:font-normal`}
     />
   );
 }
@@ -115,13 +63,16 @@ function WarningRow({ tone, children }: { tone: 'error' | 'warning'; children: R
   );
 }
 
-/** Rendered outside any card, at the very end of the page — collapsed by default. */
-export function ConnectionJsonPreview({ config }: { config: RobotConnectionConfigData }) {
+const Divisor = () => <div className="h-px bg-[#377DC0]/10" />;
+
+/** Desplegado al pie de la página; las contraseñas ya llegan enmascaradas. */
+export function ConnectionJsonPreview({ datos }: { datos: object }) {
   const [showJson, setShowJson] = useState(false);
   const [copied, setCopied] = useState(false);
+  const texto = JSON.stringify(datos, null, 2);
 
   const copyJson = async () => {
-    await navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+    await navigator.clipboard.writeText(texto);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -139,7 +90,7 @@ export function ConnectionJsonPreview({ config }: { config: RobotConnectionConfi
       {showJson && (
         <div className="relative mt-2">
           <pre className="text-[11px] text-[#1A1C1E] bg-black/5 rounded-xl p-3.5 overflow-x-auto whitespace-pre" style={{ fontFamily: 'monospace' }}>
-            {JSON.stringify(config, null, 2)}
+            {texto}
           </pre>
           <button
             type="button"
@@ -155,80 +106,96 @@ export function ConnectionJsonPreview({ config }: { config: RobotConnectionConfi
   );
 }
 
+const ESTILO_DRIVERS: Record<EstadoDrivers, { texto: string; chip: string; dot: string }> = {
+  activos:     { texto: 'Activos',     chip: 'bg-[#ECFDF5] text-[#065F46]', dot: '#10B981' },
+  apagados:    { texto: 'Apagados',    chip: 'bg-[#FFFBEB] text-[#92400E]', dot: '#FBBF24' },
+  desconocido: { texto: 'Desconocido', chip: 'bg-black/5 text-[#66686A]',   dot: '#A0A2A4' },
+};
+
 interface RobotConnectionSectionProps {
-  config: RobotConnectionConfigData;
-  onChange: (cfg: RobotConnectionConfigData) => void;
+  form: RobotForm;
+  onChange: (cambio: Partial<RobotForm>) => void;
+  /** Errores a la vista (solo de campos tocados, o todos tras intentar guardar) */
+  errores: Errores;
+  onBlur: (campo: CampoForm) => void;
+  completo: boolean;
+  avisos: string[];
+  editando: boolean;
+  interfaces: InterfazRed[] | null;
+  detectandoInterfaces: boolean;
+  onDetectarInterfaces: () => void;
+  drivers: { estado: EstadoDrivers; mensaje?: string; cargando: boolean };
+  onRefrescarDrivers: () => void;
 }
 
-export default function RobotConnectionSection({ config, onChange }: RobotConnectionSectionProps) {
-  const errors = getConnectionErrors(config);
-  const warnings = getConnectionWarnings(config);
-  const patch = (partial: Partial<RobotConnectionConfigData>) => onChange({ ...config, ...partial });
+export default function RobotConnectionSection({
+  form, onChange, errores, onBlur, completo, avisos, editando,
+  interfaces, detectandoInterfaces, onDetectarInterfaces, drivers, onRefrescarDrivers,
+}: RobotConnectionSectionProps) {
+  const campo = (c: CampoForm, extra: { type?: string; placeholder?: string; inputMode?: 'numeric' } = {}) => (
+    <TextField
+      value={String(form[c])}
+      onChange={v => onChange({ [c]: v } as Partial<RobotForm>)}
+      onBlur={() => onBlur(c)}
+      error={errores[c]}
+      {...extra}
+    />
+  );
+  const clave = editando ? 'Sin cambios' : '';
+  const estiloDrivers = ESTILO_DRIVERS[drivers.estado];
+  const interfazElegida = interfaces?.find(i => i.nombre === form.interfaz);
 
   return (
-    <TurquoiseCard size="lg" bordered className="mt-5">
+    <TurquoiseCard size="lg" bordered>
       <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#377DC0]/10">
         <div>
           <PanelTitle>Configuración de conexión</PanelTitle>
-          <p className="text-[11px] text-[#8A8C8E] mt-0.5">Setup del robot Unitree G1 — LAN, SSH, Webserver y ROS2</p>
+          <p className="text-[11px] text-[#8A8C8E] mt-0.5">Red, SSH, webserver, DDS y ROS2 del Unitree G1</p>
         </div>
-        <span className={`flex-none text-[11px] font-semibold px-2.5 py-1 rounded-md ${errors.length ? 'bg-[#FEF2F2] text-[#991B1B]' : 'bg-[#E3EEF8] text-[#14202B]'}`}>
-          {errors.length ? 'Incompleto' : 'Completo'}
+        <span className={`flex-none text-[11px] font-semibold px-2.5 py-1 rounded-md ${completo ? 'bg-[#E3EEF8] text-[#14202B]' : 'bg-[#FEF2F2] text-[#991B1B]'}`}>
+          {completo ? 'Completo' : 'Incompleto'}
         </span>
       </div>
 
       <div className="px-5 py-5 space-y-6">
 
-        {/* ── Acceso SSH ── */}
+        {/* ── Datos generales ── */}
         <div className="space-y-2.5">
-          <SectionLabel>Acceso SSH</SectionLabel>
+          <SectionLabel>Datos generales</SectionLabel>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Usuario">
-              <TextField value={config.ssh.user} onChange={v => patch({ ssh: { ...config.ssh, user: v } })} />
+            <Field label="Nombre / ID del robot" required error={errores.codigo} hint="Único entre tus robots.">
+              {campo('codigo', { placeholder: 'Ej. HR-05 / Unidad 4' })}
             </Field>
-            <Field label="Contraseña">
-              <TextField type="password" value={config.ssh.password} onChange={v => patch({ ssh: { ...config.ssh, password: v } })} />
+            <Field label="Modelo">
+              <select
+                value={form.modelo}
+                onChange={() => onChange({ modelo: 'Unitree G1' })}
+                className={claseCampo()}
+              >
+                <option value="Unitree G1">Unitree G1</option>
+              </select>
             </Field>
           </div>
         </div>
 
-        <div className="h-px bg-[#377DC0]/10" />
+        <Divisor />
 
-        {/* ── Webserver ── */}
+        {/* ── Conexión de red ── */}
         <div className="space-y-2.5">
-          <SectionLabel>Acceso al Webserver</SectionLabel>
-          <Field label="URL">
-            <TextField value={config.webserver.url} onChange={v => patch({ webserver: { ...config.webserver, url: v } })} />
-          </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Usuario">
-              <TextField value={config.webserver.user} disabled />
-            </Field>
-            <Field label="Contraseña">
-              <TextField type="password" value={config.webserver.password} onChange={v => patch({ webserver: { ...config.webserver, password: v } })} />
-            </Field>
-          </div>
-        </div>
-
-        <div className="h-px bg-[#377DC0]/10" />
-
-        {/* ── Modo de conectividad ── */}
-        <div className="space-y-2.5">
-          <SectionLabel>Modo de conectividad para operación</SectionLabel>
-          <Field label="Conectividad" required>
+          <SectionLabel>Conexión de red</SectionLabel>
+          <Field label="Modo de conectividad" required>
             <div className="flex bg-white/40 rounded-xl p-1 gap-1">
               {([
-                { value: 'wifi', label: 'WiFi (recomendado)', icon: <Antenna className="w-3.5 h-3.5" /> },
                 { value: 'lan', label: 'LAN (Ethernet)', icon: <EthernetPort className="w-3.5 h-3.5" /> },
+                { value: 'wifi', label: 'WiFi', icon: <Antenna className="w-3.5 h-3.5" /> },
               ] as const).map(opt => (
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => patch({ connectivityMode: opt.value })}
+                  aria-pressed={form.modo === opt.value}
+                  onClick={() => onChange({ modo: opt.value })}
                   className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg h-[42px] text-[12px] font-semibold transition-colors ${
-                    config.connectivityMode === opt.value
-                      ? 'bg-[#377DC0] text-white'
-                      : 'text-[#66686A] hover:bg-white/70'
+                    form.modo === opt.value ? 'bg-[#377DC0] text-white' : 'text-[#66686A] hover:bg-white/70'
                   }`}
                 >
                   {opt.icon}
@@ -237,47 +204,132 @@ export default function RobotConnectionSection({ config, onChange }: RobotConnec
               ))}
             </div>
           </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field
+              label="IP o host del robot"
+              required
+              error={errores.host}
+              hint={form.modo === 'lan' ? 'Por cable, el G1 usa 192.168.123.164.' : 'En WiFi la IP la asigna el router: mirala en el router o en el robot.'}
+            >
+              {campo('host', { placeholder: form.modo === 'wifi' ? 'Ej. 192.168.1.40' : '192.168.123.164' })}
+            </Field>
+            <Field
+              label="Interfaz de red de esta PC"
+              hint={interfazElegida ? `IP ${interfazElegida.ips.join(', ')}` : 'Se detecta sola al conectar si no elegís ninguna.'}
+            >
+              <div className="flex gap-2">
+                <select
+                  value={form.interfaz}
+                  onChange={e => onChange({ interfaz: e.target.value })}
+                  className={`${claseCampo()} min-w-0`}
+                >
+                  <option value="">Detectar automáticamente</option>
+                  {(interfaces ?? []).map(i => (
+                    <option key={i.nombre} value={i.nombre}>
+                      {i.nombre} — {i.ips[0]}{i.activa ? '' : ' (desconectada)'}
+                    </option>
+                  ))}
+                  {form.interfaz && interfaces && !interfazElegida && (
+                    <option value={form.interfaz}>{form.interfaz} (no encontrada)</option>
+                  )}
+                </select>
+                <button
+                  type="button"
+                  onClick={onDetectarInterfaces}
+                  disabled={detectandoInterfaces}
+                  title="Volver a detectar interfaces"
+                  aria-label="Volver a detectar interfaces"
+                  className="flex-none w-[42px] h-[42px] flex items-center justify-center rounded-xl bg-white/60 hover:bg-white/90 text-[#377DC0] transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${detectandoInterfaces ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            </Field>
+          </div>
           <p className="text-[11px] text-[#8A8C8E] leading-relaxed">
-            {config.connectivityMode === 'lan'
-              ? 'Activá la interfaz eth1 en el robot.'
-              : 'Activá la interfaz eth0 en el robot. Requiere un hub/adaptador WiFi conectado físicamente al robot.'}
+            {form.modo === 'lan'
+              ? 'Activá la interfaz eth1 en el robot y poné en esta PC una IP fija 192.168.123.x (por ejemplo 192.168.123.51).'
+              : 'Activá la interfaz eth0 en el robot. Requiere un hub o adaptador WiFi conectado físicamente al robot.'}
           </p>
         </div>
 
-        <div className="h-px bg-[#377DC0]/10" />
+        <Divisor />
 
-        {/* ── ROS2 ── */}
+        {/* ── Acceso SSH ── */}
         <div className="space-y-2.5">
-          <SectionLabel>Identificación ROS2</SectionLabel>
+          <SectionLabel>Acceso SSH</SectionLabel>
+          <div className="grid grid-cols-[1fr_1fr_100px] gap-3">
+            <Field label="Usuario" required error={errores.sshUsuario}>{campo('sshUsuario')}</Field>
+            <Field label="Contraseña">{campo('sshPassword', { type: 'password', placeholder: clave })}</Field>
+            <Field label="Puerto" error={errores.sshPuerto}>{campo('sshPuerto', { inputMode: 'numeric' })}</Field>
+          </div>
+        </div>
+
+        <Divisor />
+
+        {/* ── Webserver ── */}
+        <div className="space-y-2.5">
+          <SectionLabel>Acceso al webserver</SectionLabel>
+          <Field label="URL" hint={form.webUrlEditada ? 'Editada a mano: ya no sigue al host.' : 'Se arma a partir del host; podés editarla.'}>
+            {campo('webUrl', { placeholder: 'http://192.168.123.164:9000/' })}
+          </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="ROS_DOMAIN_ID" required hint="Prefijo de todos los comandos ROS2. Debe ser único si hay más de un robot en la red.">
-              <TextField type="number" value={String(config.rosDomainId)} onChange={v => patch({ rosDomainId: Number(v) || 0 })} />
+            <Field label="Usuario">{campo('webUsuario')}</Field>
+            <Field label="Contraseña">{campo('webPassword', { type: 'password', placeholder: clave })}</Field>
+          </div>
+        </div>
+
+        <Divisor />
+
+        {/* ── ROS2 y DDS ── */}
+        <div className="space-y-2.5">
+          <SectionLabel>Identificación ROS2 y DDS</SectionLabel>
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Domain ID de DDS (SDK)" required error={errores.ddsDomainId} hint={`0 con un robot real. Entre 0 y ${DDS_DOMAIN_MAX}.`}>
+              {campo('ddsDomainId', { inputMode: 'numeric' })}
             </Field>
-            <Field label="ID / Namespace del robot" required hint="Se usa como namespace en tópicos y servicios ROS2.">
-              <TextField value={config.robotNamespace} onChange={v => patch({ robotNamespace: v })} />
+            <Field label="ROS_DOMAIN_ID" error={errores.rosDomainId} hint={`Solo si la app usa ROS2 por separado (0–${ROS_DOMAIN_MAX}). Vacío: el del SDK.`}>
+              {campo('rosDomainId', { inputMode: 'numeric', placeholder: 'No se usa' })}
+            </Field>
+            <Field label="ID / Namespace del robot" required error={errores.namespace} hint="Minúsculas, números y _ (ej. g1_unit_001).">
+              {campo('namespace', { placeholder: 'g1_unit_001' })}
             </Field>
           </div>
         </div>
 
-        <div className="h-px bg-[#377DC0]/10" />
+        <Divisor />
 
         {/* ── Drivers ROS2 ── */}
         <div className="flex items-center justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <SectionLabel>Estado de drivers ROS2</SectionLabel>
-            <p className="text-[11px] text-[#8A8C8E] mt-1 leading-snug">Vienen apagados por defecto. Se activan desde el Webserver con "Restart All".</p>
+            <p className="text-[11px] text-[#8A8C8E] mt-1 leading-snug">
+              {drivers.mensaje ?? 'Se lee del robot. Los drivers se encienden desde el webserver con «Restart All».'}
+            </p>
           </div>
-          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-[#8A8C8E] bg-black/5 px-2.5 py-1 rounded-md flex-none">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#A0A2A4] flex-none" />
-            {config.ros2DriversActive ? 'Activos' : 'Apagados'}
-          </span>
+          <div className="flex items-center gap-2 flex-none">
+            <span className={`flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-md ${estiloDrivers.chip}`}>
+              {drivers.cargando
+                ? <Loader2 className="w-3 h-3 animate-spin" />
+                : <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ backgroundColor: estiloDrivers.dot }} />}
+              {drivers.cargando ? 'Consultando…' : estiloDrivers.texto}
+            </span>
+            <button
+              type="button"
+              onClick={onRefrescarDrivers}
+              disabled={drivers.cargando}
+              title="Refrescar estado de drivers"
+              aria-label="Refrescar estado de drivers"
+              className="w-7 h-7 flex items-center justify-center rounded-md text-[#377DC0] hover:bg-white/70 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${drivers.cargando ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
 
-        {/* ── Errors / warnings (grouped, always last — before the page-level action button) ── */}
-        {(errors.length > 0 || warnings.length > 0) && (
+        {avisos.length > 0 && (
           <div className="space-y-2 pt-1">
-            {errors.map(err => <WarningRow key={err} tone="error">{err}</WarningRow>)}
-            {warnings.map(w => <WarningRow key={w} tone="warning">{w}</WarningRow>)}
+            {avisos.map(w => <WarningRow key={w} tone="warning">{w}</WarningRow>)}
           </div>
         )}
 

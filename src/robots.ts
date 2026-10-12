@@ -1,11 +1,15 @@
-﻿import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { BACKEND_URL } from './sesion';
+import type { ConexionGuardada, ResultadoPrueba } from './robotConexion';
 
 interface RobotApi {
   id: number;
   codigo: string | null;
   unidad: string | null;
   estado: string | null;
+  conexion?: ConexionGuardada | null;
+  ultima_prueba_fecha?: string | null;
+  ultima_prueba?: Pick<ResultadoPrueba, 'resultado' | 'tipo' | 'interfaz'> | null;
 }
 
 export interface RobotNube {
@@ -13,33 +17,21 @@ export interface RobotNube {
   label: string;
   modelo: string;
   estado: string;
-  /** true si la conexión del robot se configuró en ESTA PC */
+  /** Perfil de conexión guardado (sin contraseñas); null si nunca se configuró */
+  conexion: ConexionGuardada | null;
+  /** true si tiene un perfil de conexión guardado */
   configured: boolean;
-}
-
-const clave = (id: number | string) => `g1:robot:${id}:conexion`;
-
-/** Marca que el robot tiene su conexión configurada en esta PC (se guarda sin contraseñas). */
-export function marcarConexionConfigurada(id: number, config: unknown): void {
-  try {
-    localStorage.setItem(clave(id), JSON.stringify(config));
-  } catch {
-    // sin almacenamiento disponible
-  }
-}
-
-function tieneConexion(id: number): boolean {
-  try {
-    return localStorage.getItem(clave(id)) !== null;
-  } catch {
-    return false;
-  }
+  ultimaPruebaFecha: string | null;
+  ultimaPruebaResultado: 'ok' | 'error' | null;
 }
 
 export function useRobots() {
   const [robots, setRobots] = useState<RobotNube[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [version, setVersion] = useState(0);
+
+  const recargar = useCallback(() => setVersion(v => v + 1), []);
 
   useEffect(() => {
     let cancelado = false;
@@ -49,13 +41,17 @@ export function useRobots() {
         if (!res.ok) throw new Error(String(res.status));
         const data: RobotApi[] = await res.json();
         if (cancelado) return;
+        setError(null);
         setRobots(
           data.map(r => ({
             id: String(r.id),
             label: r.codigo ?? `Robot ${r.id}`,
             modelo: r.unidad ?? '',
             estado: r.estado ?? '',
-            configured: tieneConexion(r.id),
+            conexion: r.conexion ?? null,
+            configured: !!r.conexion,
+            ultimaPruebaFecha: r.ultima_prueba_fecha ?? null,
+            ultimaPruebaResultado: r.ultima_prueba?.resultado ?? null,
           })),
         );
       } catch {
@@ -67,7 +63,39 @@ export function useRobots() {
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [version]);
 
-  return { robots, cargando, error };
+  return { robots, cargando, error, recargar };
+}
+
+export interface GuardarRobotIn {
+  codigo: string;
+  unidad: string;
+  conexion: ConexionGuardada;
+  /** Solo las contraseñas que cambiaron; se cifran en el servidor */
+  credenciales: { ssh_password?: string; web_password?: string };
+  ultima_prueba_fecha: string | null;
+  ultima_prueba: Omit<ResultadoPrueba, 'fecha'> | null;
+}
+
+export type ErrorGuardar = { tipo: 'duplicado'; campo: string } | { tipo: 'red' };
+
+/** Crea (sin id) o actualiza el robot en la nube. No inicia ninguna conexión con el robot. */
+export async function guardarRobot(datos: GuardarRobotIn, id?: string): Promise<{ id: string } | ErrorGuardar> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/nube/api/robots${id ? `/${id}` : ''}`, {
+      method: id ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...datos, estado: 'activo' }),
+    });
+    if (res.status === 409) {
+      const d = await res.json().catch(() => ({}));
+      return { tipo: 'duplicado', campo: d.campo ?? '' };
+    }
+    if (!res.ok) return { tipo: 'red' };
+    const creado = await res.json();
+    return { id: String(creado.id ?? id) };
+  } catch {
+    return { tipo: 'red' };
+  }
 }

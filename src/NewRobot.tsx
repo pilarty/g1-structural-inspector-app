@@ -1,26 +1,15 @@
-import React, { useState } from 'react';
-import { BACKEND_URL } from './sesion';
-import { marcarConexionConfigurada } from './robots';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useRobots, guardarRobot, type RobotNube } from './robots';
 import ActivityBar, { NavTab } from './ActivityBar';
-import { TopNav, PanelLabel, PrimaryButton, SecondaryButton } from './components';
-import RobotConnectionSection, { ConnectionJsonPreview, defaultConnectionConfig } from './RobotConnectionConfig';
-
-function Label({ children }: { children: React.ReactNode }) {
-  return <PanelLabel className="mb-1.5">{children}</PanelLabel>;
-}
-
-function TextInput({ placeholder, defaultValue, value, onChange }: { placeholder: string; defaultValue?: string; value?: string; onChange?: (v: string) => void }) {
-  return (
-    <input
-      type="text"
-      placeholder={placeholder}
-      defaultValue={value === undefined ? defaultValue : undefined}
-      value={value}
-      onChange={onChange ? e => onChange(e.target.value) : undefined}
-      className="w-full px-4 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl border border-[#377DC0]/15 focus:border-[#377DC0]/40 text-[13px] text-[#1A1C1E] placeholder:text-[#A0A2A4] outline-none transition-colors"
-    />
-  );
-}
+import { TopNav, PrimaryButton, SecondaryButton } from './components';
+import RobotConnectionSection, { ConnectionJsonPreview } from './RobotConnectionConfig';
+import { PanelPrueba, RobotsGuardados, DialogoReconexion } from './RobotPrueba';
+import {
+  CAMPOS_CONEXION, aConexionGuardada, aplicarCambio, autorizarMovimiento, avisos as calcularAvisos,
+  consultarDrivers, detectarInterfaces, driversSegunPrueba, exportarDiagnostico, formularioDesdePerfil,
+  formularioVacio, jsonEnmascarado, probarConexion, reconectar, validar,
+  type CampoForm, type Errores, type EstadoDrivers, type InterfazRed, type ResultadoPrueba, type RobotForm,
+} from './robotConexion';
 
 interface NewRobotProps {
   activeTab: NavTab;
@@ -28,91 +17,319 @@ interface NewRobotProps {
   onCancel: () => void;
 }
 
-export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotProps) {
-  const [connectionConfig, setConnectionConfig] = useState(defaultConnectionConfig);
-  const [codigo, setCodigo] = useState('');
-  const [modelo, setModelo] = useState('Unitree G1');
-  const [guardando, setGuardando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const CAMPO_DUPLICADO: Record<string, CampoForm> = {
+  codigo: 'codigo', namespace: 'namespace', dds_domain_id: 'ddsDomainId', ros_domain_id: 'rosDomainId',
+};
 
-  async function guardar() {
-    if (!codigo.trim() || guardando) return;
-    setGuardando(true);
-    setError(null);
+/** Identifica la configuración probada: si cambia, la prueba anterior ya no vale. */
+const claveConexion = (f: RobotForm) => JSON.stringify([aConexionGuardada(f), f.sshPassword, f.webPassword]);
+
+interface Reconexion {
+  robot: RobotNube;
+  prueba: ResultadoPrueba | null;
+  conectando: boolean;
+  autorizado: boolean;
+}
+
+export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotProps) {
+  const { robots, cargando, error: errorRobots, recargar } = useRobots();
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [form, setForm] = useState<RobotForm>(formularioVacio);
+  const [tocados, setTocados] = useState<Set<CampoForm>>(new Set());
+  const [intentoGuardar, setIntentoGuardar] = useState(false);
+  const [erroresServidor, setErroresServidor] = useState<Errores>({});
+
+  const [interfaces, setInterfaces] = useState<InterfazRed[] | null>(null);
+  const [detectando, setDetectando] = useState(false);
+  const interfazManual = useRef(false);
+
+  const [prueba, setPrueba] = useState<ResultadoPrueba | null>(null);
+  const [clavePrueba, setClavePrueba] = useState<string | null>(null);
+  const [probando, setProbando] = useState(false);
+  const [errorPrueba, setErrorPrueba] = useState<string | null>(null);
+  const abortar = useRef<AbortController | null>(null);
+
+  const [drivers, setDrivers] = useState<{ estado: EstadoDrivers; mensaje?: string; cargando: boolean }>({ estado: 'desconocido', cargando: false });
+  const [guardando, setGuardando] = useState(false);
+  const [mensajeGuardar, setMensajeGuardar] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+  const [reconexion, setReconexion] = useState<Reconexion | null>(null);
+
+  useEffect(() => () => abortar.current?.abort(), []);
+
+  const otros = useMemo(() => robots.filter(r => r.id !== editandoId), [robots, editandoId]);
+  const errores = useMemo(() => ({ ...validar(form, otros), ...erroresServidor }), [form, otros, erroresServidor]);
+  const completo = Object.keys(errores).length === 0;
+  const puedeProbar = CAMPOS_CONEXION.every(c => !errores[c]);
+  const erroresVisibles = useMemo(() => {
+    const v: Errores = {};
+    for (const [c, msg] of Object.entries(errores) as [CampoForm, string][]) {
+      if (intentoGuardar || tocados.has(c) || erroresServidor[c]) v[c] = msg;
+    }
+    return v;
+  }, [errores, tocados, intentoGuardar, erroresServidor]);
+  const pruebaVigente = prueba && clavePrueba === claveConexion(form) ? prueba : null;
+
+  // ── Interfaces de red: se detectan al abrir y cuando cambia el host ──
+  async function detectar(host = form.host) {
+    setDetectando(true);
     try {
-      const res = await fetch(`${BACKEND_URL}/nube/api/robots`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ codigo: codigo.trim(), unidad: modelo.trim() || 'Unitree G1', estado: 'activo' }),
-      });
-      if (!res.ok) throw new Error(String(res.status));
-      const creado = await res.json();
-      // La conexión se guarda solo en esta PC y sin contraseñas.
-      marcarConexionConfigurada(creado.id, {
-        ...connectionConfig,
-        ssh: { user: connectionConfig.ssh.user },
-        webserver: { url: connectionConfig.webserver.url, user: connectionConfig.webserver.user },
-      });
-      onTabChange('inspeccion');
+      const r = await detectarInterfaces(host);
+      setInterfaces(r.interfaces);
+      if (!interfazManual.current) setForm(f => ({ ...f, interfaz: r.sugerida ?? '' }));
     } catch {
-      setError('No se pudo guardar el robot. Revisa tu conexión e intenta de nuevo.');
+      setInterfaces([]);
     } finally {
-      setGuardando(false);
+      setDetectando(false);
     }
   }
+  useEffect(() => {
+    const t = setTimeout(() => detectar(form.host), 400);
+    return () => clearTimeout(t);
+  }, [form.host]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function cambiar(cambio: Partial<RobotForm>) {
+    if ('interfaz' in cambio) interfazManual.current = true;
+    setForm(f => aplicarCambio(f, cambio));
+    setMensajeGuardar(null);
+    const campos = Object.keys(cambio) as CampoForm[];
+    if (campos.some(c => erroresServidor[c])) {
+      setErroresServidor(e => Object.fromEntries(Object.entries(e).filter(([c]) => !campos.includes(c as CampoForm))));
+    }
+  }
+
+  function tocar(c: CampoForm) {
+    setTocados(t => (t.has(c) ? t : new Set(t).add(c)));
+  }
+
+  function cargarFormulario(f: RobotForm, id: string | null) {
+    abortar.current?.abort();
+    interfazManual.current = !!f.interfaz;
+    setForm(f);
+    setEditandoId(id);
+    setTocados(new Set());
+    setIntentoGuardar(false);
+    setErroresServidor({});
+    setPrueba(null);
+    setClavePrueba(null);
+    setErrorPrueba(null);
+    setProbando(false);
+    setMensajeGuardar(null);
+    setDrivers({ estado: 'desconocido', cargando: false });
+  }
+
+  function editar(r: RobotNube) {
+    if (r.conexion) cargarFormulario(formularioDesdePerfil(r.label, r.conexion), r.id);
+    else cargarFormulario({ ...formularioVacio(), codigo: r.label }, r.id);
+  }
+
+  // ── Prueba de conexión ──
+  async function probar() {
+    abortar.current?.abort();
+    const ctrl = new AbortController();
+    abortar.current = ctrl;
+    setProbando(true);
+    setErrorPrueba(null);
+    setClavePrueba(claveConexion(form));
+    setDrivers(d => ({ ...d, cargando: true }));
+    try {
+      const r = await probarConexion(form, editandoId ?? undefined, setPrueba, ctrl.signal);
+      setDrivers({ estado: driversSegunPrueba(r), mensaje: r.pasos.find(p => p.id === 'ros2')?.mensaje, cargando: false });
+    } catch (e) {
+      if ((e as Error).name !== 'AbortError') setErrorPrueba('No se pudo ejecutar la prueba. Revisá que el backend local esté funcionando.');
+      setDrivers(d => ({ ...d, cargando: false }));
+    } finally {
+      if (abortar.current === ctrl) setProbando(false);
+    }
+  }
+
+  async function refrescarDrivers() {
+    if (!puedeProbar) {
+      setDrivers({ estado: 'desconocido', mensaje: 'Completá la IP, el usuario SSH y el namespace para consultar.', cargando: false });
+      return;
+    }
+    setDrivers(d => ({ ...d, cargando: true }));
+    try {
+      const r = await consultarDrivers(form, editandoId ?? undefined);
+      setDrivers({ ...r, cargando: false });
+    } catch {
+      setDrivers({ estado: 'desconocido', mensaje: 'No se pudo consultar el estado al backend local.', cargando: false });
+    }
+  }
+
+  // ── Guardar (no abre ninguna conexión con el robot) ──
+  async function guardar() {
+    setIntentoGuardar(true);
+    setMensajeGuardar(null);
+    if (!completo || guardando) return;
+    setGuardando(true);
+    const credenciales: { ssh_password?: string; web_password?: string } = {};
+    if (form.sshPassword || !editandoId) credenciales.ssh_password = form.sshPassword;
+    if (form.webPassword || !editandoId) credenciales.web_password = form.webPassword;
+    const r = await guardarRobot({
+      codigo: form.codigo.trim(),
+      unidad: form.modelo,
+      conexion: aConexionGuardada(form),
+      credenciales,
+      ultima_prueba_fecha: pruebaVigente?.fecha ?? null,
+      ultima_prueba: pruebaVigente
+        ? { resultado: pruebaVigente.resultado, tipo: pruebaVigente.tipo, interfaz: pruebaVigente.interfaz, pasos: pruebaVigente.pasos }
+        : null,
+    }, editandoId ?? undefined);
+    setGuardando(false);
+    if ('id' in r) {
+      setEditandoId(r.id);
+      setForm(f => ({ ...f, sshPassword: '', webPassword: '' }));
+      setClavePrueba(null);
+      setMensajeGuardar({ tipo: 'ok', texto: 'Robot guardado. Podés conectarlo desde la lista de robots guardados.' });
+      recargar();
+    } else if (r.tipo === 'duplicado' && CAMPO_DUPLICADO[r.campo]) {
+      setErroresServidor({ [CAMPO_DUPLICADO[r.campo]]: 'Ya existe otro de tus robots con este valor.' });
+    } else {
+      setMensajeGuardar({ tipo: 'error', texto: 'No se pudo guardar el robot. Revisá tu conexión e intentá de nuevo.' });
+    }
+  }
+
+  // ── Reconexión con un perfil guardado ──
+  async function conectar(robot: RobotNube) {
+    abortar.current?.abort();
+    const ctrl = new AbortController();
+    abortar.current = ctrl;
+    setReconexion({ robot, prueba: null, conectando: true, autorizado: false });
+    try {
+      await reconectar(robot.id, p => setReconexion(r => (r && r.robot.id === robot.id ? { ...r, prueba: p } : r)), ctrl.signal);
+      recargar();
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return;
+      setReconexion(r => r && {
+        ...r,
+        prueba: {
+          fecha: new Date().toISOString(), resultado: 'error', tipo: 'rapida', interfaz: null,
+          pasos: [{ id: 'red', nombre: 'Perfil', limite_s: 0, estado: 'error', mensaje: 'No se pudo leer el perfil guardado en la nube.' }],
+        },
+      });
+    } finally {
+      setReconexion(r => (r && r.robot.id === robot.id ? { ...r, conectando: false } : r));
+    }
+  }
+
+  function cerrarReconexion() {
+    if (reconexion?.conectando) abortar.current?.abort();
+    setReconexion(null);
+  }
+
+  const editandoRobot = robots.find(r => r.id === editandoId);
+  const avisosForm = calcularAvisos(form);
+  const advertenciaPrueba = !pruebaVigente
+    ? prueba ? 'Cambiaste la configuración después de la última prueba.' : 'Todavía no probaste la conexión.'
+    : pruebaVigente.resultado === 'error' ? 'La última prueba de conexión tuvo fallos.' : null;
 
   return (
     <div className="flex h-screen font-sans text-[#1A1C1E]">
       <ActivityBar active={activeTab} onChange={onTabChange} />
 
       <div className="flex flex-col flex-1 overflow-hidden">
-
         <TopNav />
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto bg-[#FFFFFF]">
           <div className="w-full px-8 py-8">
 
-            {/* Page header */}
             <div className="mb-6">
-              <h1 className="text-[22px] font-bold text-[#1A1C1E] tracking-tight">Añadir robot</h1>
-              <p className="text-[13px] text-[#8A8C8E] mt-1">Registrá un nuevo robot Unitree G1 y configurá su conexión.</p>
+              <h1 className="text-[22px] font-bold text-[#1A1C1E] tracking-tight">
+                {editandoId ? `Editar ${editandoRobot?.label ?? 'robot'}` : 'Añadir robot'}
+              </h1>
+              <p className="text-[13px] text-[#8A8C8E] mt-1">
+                Registrá un Unitree G1, probá que la conexión funciona y guardá el perfil para reconectarlo sin volver a cargar nada.
+              </p>
             </div>
 
             <div className="flex items-start gap-6">
 
-              {/* Left — datos del robot */}
-              <div className="w-[300px] flex-none space-y-4">
-                <div>
-                  <Label>Nombre / ID del robot *</Label>
-                  <TextInput placeholder="Ej. HR-05 / Unidad 4" value={codigo} onChange={setCodigo} />
-                </div>
-                <div>
-                  <Label>Modelo</Label>
-                  <TextInput placeholder="Unitree G1" value={modelo} onChange={setModelo} />
+              {/* Izquierda — robots guardados */}
+              <div className="w-[230px] flex-none">
+                <RobotsGuardados
+                  robots={robots}
+                  cargando={cargando}
+                  error={errorRobots}
+                  seleccionado={editandoId}
+                  conectandoId={reconexion?.conectando ? reconexion.robot.id : null}
+                  onConectar={conectar}
+                  onEditar={editar}
+                  onNuevo={() => cargarFormulario(formularioVacio(), null)}
+                />
+              </div>
+
+              {/* Centro — formulario */}
+              <div className="flex-1 min-w-0">
+                <RobotConnectionSection
+                  form={form}
+                  onChange={cambiar}
+                  errores={erroresVisibles}
+                  onBlur={tocar}
+                  completo={completo}
+                  avisos={avisosForm}
+                  editando={!!editandoId}
+                  interfaces={interfaces}
+                  detectandoInterfaces={detectando}
+                  onDetectarInterfaces={() => detectar()}
+                  drivers={drivers}
+                  onRefrescarDrivers={refrescarDrivers}
+                />
+
+                <ConnectionJsonPreview datos={jsonEnmascarado(form, !!editandoId)} />
+
+                <div className="pt-6 space-y-3">
+                  {advertenciaPrueba && completo && (
+                    <p className="text-[11px] font-medium text-[#92400E] bg-[#FFFBEB] px-3.5 py-2.5 rounded-xl">
+                      {advertenciaPrueba} Podés guardar igual, pero conviene probarla antes.
+                    </p>
+                  )}
+                  <div className="flex items-center gap-5">
+                    <PrimaryButton onClick={guardar} disabled={guardando}>
+                      {guardando ? 'Guardando…' : editandoId ? 'Guardar cambios' : 'Guardar robot'}
+                    </PrimaryButton>
+                    <SecondaryButton onClick={onCancel}>Cancelar</SecondaryButton>
+                  </div>
+                  {intentoGuardar && !completo && (
+                    <p className="text-[12px] text-[#991B1B]">Corregí los campos marcados para poder guardar.</p>
+                  )}
+                  {mensajeGuardar && (
+                    <p className={`text-[12px] ${mensajeGuardar.tipo === 'ok' ? 'text-[#065F46]' : 'text-[#991B1B]'}`}>{mensajeGuardar.texto}</p>
+                  )}
                 </div>
               </div>
 
-              {/* Right — configuración de conexión */}
-              <div className="flex-1 min-w-0">
-                <RobotConnectionSection config={connectionConfig} onChange={setConnectionConfig} />
-
-                <ConnectionJsonPreview config={connectionConfig} />
-
-                {/* Actions */}
-                <div className="flex items-center gap-5 pt-6">
-                  <PrimaryButton onClick={guardar} disabled={guardando || !codigo.trim()}>{guardando ? 'Guardando…' : 'Guardar robot'}</PrimaryButton>
-                  {error && <p className="text-[12px] text-[#991B1B]">{error}</p>}
-                  <SecondaryButton onClick={onCancel}>Cancelar</SecondaryButton>
-                </div>
+              {/* Derecha — prueba de conexión */}
+              <div className="w-[340px] flex-none sticky top-0 space-y-2">
+                <PanelPrueba
+                  prueba={prueba}
+                  probando={probando}
+                  puedeProbar={puedeProbar}
+                  motivoNoProbar="Completá la IP, el usuario SSH, los Domain ID y el namespace para probar."
+                  onProbar={probar}
+                  onExportar={() => prueba && exportarDiagnostico(form, prueba, !!editandoId)}
+                />
+                {errorPrueba && <p className="text-[12px] text-[#991B1B] px-1">{errorPrueba}</p>}
               </div>
 
             </div>
-
           </div>
         </div>
-
       </div>
+
+      {reconexion && (
+        <DialogoReconexion
+          robot={reconexion.robot}
+          prueba={reconexion.prueba}
+          conectando={reconexion.conectando}
+          autorizado={reconexion.autorizado}
+          onEditar={() => { const r = reconexion.robot; setReconexion(null); editar(r); }}
+          onAutorizar={async c => {
+            await autorizarMovimiento(c);
+            setReconexion(r => r && { ...r, autorizado: true });
+          }}
+          onCerrar={cerrarReconexion}
+        />
+      )}
     </div>
   );
 }
