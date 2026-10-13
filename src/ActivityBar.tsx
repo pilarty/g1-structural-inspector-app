@@ -12,7 +12,7 @@ const navItems: { id: NavTab; Icon: React.ElementType; label: string }[] = [
 
 const actionItems: { id: NavTab; Icon: React.ElementType; label: string }[] = [
   { id: 'nuevo-proyecto', Icon: FolderPlus, label: 'Nuevo proyecto' },
-  { id: 'nuevo-robot',    Icon: Bot,        label: 'Añadir robot' },
+  { id: 'nuevo-robot',    Icon: Bot,        label: 'Robot' },
 ];
 
 interface ActivityBarProps {

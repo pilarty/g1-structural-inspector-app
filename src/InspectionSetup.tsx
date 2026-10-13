@@ -15,7 +15,7 @@ interface RobotOption {
   battery: number;
   sensorsOk: boolean;
   network: string | null; // null = sin conexión
-  configured: boolean; // conexión (red, SSH y DDS) ya configurada desde "Añadir robot"
+  configured: boolean; // conexión (red, SSH y DDS) ya configurada desde la pantalla "Robot"
 }
 
 const pad2 = (n: number) => String(n).padStart(2, '0');

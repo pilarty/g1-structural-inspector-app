@@ -1,5 +1,4 @@
 import { BACKEND_URL } from './sesion';
-import { name as nombreApp, version as versionApp } from '../package.json';
 
 // ─── Perfil de conexión de un Unitree G1 ─────────────────────────────────────
 // Un G1 de fábrica ofrece dos canales: SSH a su computadora de desarrollo
@@ -78,6 +77,9 @@ function errorHost(host: string): string | undefined {
   return RE_HOST.test(h) ? undefined : 'El host no tiene un formato válido.';
 }
 
+/** Se muestra apenas se escribe, sin esperar a salir del campo. */
+export const NOMBRE_REPETIDO = 'Ya tenés un robot con ese nombre. Elegí otro.';
+
 export interface RobotExistente {
   id: string;
   label: string;
@@ -93,7 +95,7 @@ export function validar(f: RobotForm, otros: RobotExistente[]): Errores {
 
   if (!f.codigo.trim()) e.codigo = 'Falta el nombre o ID del robot.';
   else if (otros.some(r => r.label.trim().toLowerCase() === f.codigo.trim().toLowerCase())) {
-    e.codigo = 'Ya tenés un robot con ese nombre.';
+    e.codigo = NOMBRE_REPETIDO;
   }
 
   const host = errorHost(f.host);
@@ -112,13 +114,13 @@ export function validar(f: RobotForm, otros: RobotExistente[]): Errores {
 /** Los campos que hacen falta para probar la conexión (el nombre no). */
 export const CAMPOS_CONEXION: CampoForm[] = ['host', 'sshUsuario', 'sshPuerto', 'ddsDomainId'];
 
-export function avisos(f: RobotForm): string[] {
-  const a: string[] = [];
-  if (f.sshUsuario === CREDENCIALES_POR_DEFECTO.usuario && f.sshPassword === CREDENCIALES_POR_DEFECTO.clave) {
-    a.push('Estás usando credenciales por defecto (unitree / 123). Cambialas fuera de un entorno de pruebas.');
-  }
+/** Advertencias que no impiden guardar; se muestran debajo de su campo. */
+export type Avisos = Partial<Record<CampoForm, string>>;
+
+export function avisos(f: RobotForm): Avisos {
+  const a: Avisos = {};
   if (entero(f.ddsDomainId) !== null && entero(f.ddsDomainId) !== DDS_DOMAIN_ROBOT) {
-    a.push(`Un G1 real usa el Domain ID ${DDS_DOMAIN_ROBOT}. Otro valor solo sirve para el robot simulado.`);
+    a.ddsDomainId = `Un G1 real usa ${DDS_DOMAIN_ROBOT}. Otro valor solo sirve para el robot simulado.`;
   }
   return a;
 }
@@ -140,18 +142,6 @@ function cuerpoPrueba(f: RobotForm, robotId?: string) {
     ...aConexionGuardada(f),
     ssh_password: f.sshPassword,
     robot_id: robotId ? Number(robotId) : null,
-  };
-}
-
-const MASCARA = '••••••';
-
-/** Lo que muestra "Ver JSON de configuración": nunca la contraseña. */
-export function jsonEnmascarado(f: RobotForm, editando: boolean) {
-  return {
-    nombre: f.codigo.trim(),
-    modelo: f.modelo,
-    ...aConexionGuardada(f),
-    ssh_password: f.sshPassword ? MASCARA : editando ? `${MASCARA} (guardada)` : '',
   };
 }
 
@@ -251,26 +241,22 @@ export async function detectarInterfaces(host: string): Promise<{ interfaces: In
   return res.json();
 }
 
-export type EstadoRobot = 'recibiendo' | 'sin_datos' | 'desconocido';
-
-/** Si el robot está enviando su estado por DDS. Solo escucha: no le envía nada. */
-export async function consultarEstado(f: RobotForm, robotId?: string): Promise<{ estado: EstadoRobot; mensaje: string }> {
-  const res = await fetch(`${BACKEND_URL}/robot/estado`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(cuerpoPrueba(f, robotId)),
-  });
+export async function consultarActivo(): Promise<{ conectado: boolean; id?: number; codigo?: string | null }> {
+  const res = await fetch(`${BACKEND_URL}/robot/activo`);
   if (!res.ok) throw new Error(String(res.status));
   return res.json();
 }
 
-/** El estado del robot que se deduce de una prueba ya hecha. */
-export function estadoSegunPrueba(r: ResultadoPrueba): EstadoRobot {
-  const red = r.pasos.find(p => p.id === 'red');
-  const dds = r.pasos.find(p => p.id === 'dds');
-  if (!red || red.estado !== 'ok' || !dds) return 'desconocido';
-  if (dds.estado === 'ok') return 'recibiendo';
-  return dds.estado === 'error' ? 'sin_datos' : 'desconocido';
+/** Parada de emergencia: modo amortiguado (como L2 + B en el mando). Es la única orden sin confirmación. */
+export async function pararEmergencia(): Promise<{ ok: boolean; confirmada: boolean; detalle: string }> {
+  const res = await fetch(`${BACKEND_URL}/robot/parada`, { method: 'POST' });
+  if (!res.ok) throw new Error(String(res.status));
+  return res.json();
+}
+
+/** Olvida el robot conectado en el backend local (no le envía nada al robot). */
+export async function desconectarRobot() {
+  await fetch(`${BACKEND_URL}/robot/desconectar`, { method: 'POST' });
 }
 
 export async function autorizarMovimiento(confirmaciones: {
@@ -284,35 +270,4 @@ export async function autorizarMovimiento(confirmaciones: {
     body: JSON.stringify(confirmaciones),
   });
   if (!res.ok) throw new Error(String(res.status));
-}
-
-// ─── Registro de diagnóstico ─────────────────────────────────────────────────
-
-export async function exportarDiagnostico(f: RobotForm, prueba: ResultadoPrueba, editando: boolean) {
-  const [versiones, interfaces] = await Promise.all([
-    fetch(`${BACKEND_URL}/robot/version`).then(r => r.json()).catch(() => null),
-    detectarInterfaces(f.host).catch(() => null),
-  ]);
-  const registro = {
-    generado: new Date().toISOString(),
-    aplicacion: { nombre: nombreApp, version: versionApp, navegador: navigator.userAgent },
-    versiones,
-    interfaz_usada: prueba.interfaz,
-    interfaces_detectadas: interfaces?.interfaces ?? null,
-    configuracion: jsonEnmascarado(f, editando),
-    prueba: {
-      fecha: prueba.fecha,
-      tipo: prueba.tipo,
-      resultado: prueba.resultado,
-      pasos: prueba.pasos.map(({ id, nombre, estado, mensaje, ms, limite_s }) => ({ id, nombre, estado, mensaje, ms, limite_s })),
-    },
-    errores: prueba.pasos.filter(p => p.estado === 'error').map(p => ({ paso: p.nombre, mensaje: p.mensaje })),
-  };
-  const nombre = `diagnostico-g1-${(f.codigo.trim() || 'robot').replace(/[^\w-]+/g, '_')}-${prueba.fecha.slice(0, 19).replace(/[:T]/g, '-')}.json`;
-  const url = URL.createObjectURL(new Blob([JSON.stringify(registro, null, 2)], { type: 'application/json' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = nombre;
-  a.click();
-  URL.revokeObjectURL(url);
 }

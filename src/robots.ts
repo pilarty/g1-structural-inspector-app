@@ -78,6 +78,22 @@ export interface GuardarRobotIn {
   ultima_prueba: Omit<ResultadoPrueba, 'fecha'> | null;
 }
 
+export type ResultadoEliminar = { ok: true } | { ok: false; motivo: 'en_uso'; relevamientos: number } | { ok: false; motivo: 'red' };
+
+/** Borra el robot de la nube. Si ya se usó en relevamientos, la nube no lo borra. */
+export async function eliminarRobot(id: string): Promise<ResultadoEliminar> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/nube/api/robots/${id}`, { method: 'DELETE' });
+    if (res.status === 409) {
+      const d = await res.json().catch(() => ({}));
+      return { ok: false, motivo: 'en_uso', relevamientos: Number(d.relevamientos) || 0 };
+    }
+    return res.ok ? { ok: true } : { ok: false, motivo: 'red' };
+  } catch {
+    return { ok: false, motivo: 'red' };
+  }
+}
+
 export type ErrorGuardar = { tipo: 'duplicado'; campo: string } | { tipo: 'red' };
 
 /** Crea (sin id) o actualiza el robot en la nube. No inicia ninguna conexión con el robot. */

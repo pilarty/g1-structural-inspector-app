@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bell, User, ChevronDown, LogOut } from 'lucide-react';
 import { useSesion } from '../sesion';
+import ParadaEmergencia from './ParadaEmergencia';
 
 interface TopNavProps {
   /**
@@ -25,6 +26,9 @@ export default function TopNav({ badge }: TopNavProps) {
 
       {/* Right — notifications + user */}
       <div className="flex items-center gap-1 flex-none">
+        <div className="mr-3">
+          <ParadaEmergencia />
+        </div>
         <button
           aria-label="Notificaciones"
           className="p-2 text-white/55 hover:text-white hover:bg-white/10 rounded-md transition-colors"

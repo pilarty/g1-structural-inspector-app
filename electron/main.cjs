@@ -126,6 +126,8 @@ function crearVentana() {
       nodeIntegration: false,
     },
   })
+  // Sin la barra de menú de Electron (File, Edit, View, Window)
+  ventana.removeMenu()
   // La app no abre ventanas nuevas ni navega fuera de sus propias pantallas
   ventana.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   ventana.webContents.on('will-navigate', (e, url) => {

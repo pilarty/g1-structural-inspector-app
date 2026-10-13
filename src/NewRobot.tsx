@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useRobots, guardarRobot, type RobotNube } from './robots';
+import { useRobots, guardarRobot, eliminarRobot, type RobotNube } from './robots';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav, PrimaryButton, SecondaryButton } from './components';
-import RobotConnectionSection, { ConnectionJsonPreview } from './RobotConnectionConfig';
-import { PanelPrueba, RobotsGuardados, DialogoReconexion } from './RobotPrueba';
+import RobotConnectionSection from './RobotConnectionConfig';
+import { PanelPrueba, PruebaEnRecuadro, RobotsGuardados, DialogoReconexion, DialogoEliminar, CabeceraRobot, DatosConexion, SinRobots } from './RobotPrueba';
 import {
-  CAMPOS_CONEXION, aConexionGuardada, autorizarMovimiento, avisos as calcularAvisos,
-  consultarEstado, detectarInterfaces, estadoSegunPrueba, exportarDiagnostico, formularioDesdePerfil,
-  formularioVacio, jsonEnmascarado, probarConexion, reconectar, validar,
-  type CampoForm, type Errores, type EstadoRobot, type InterfazRed, type ResultadoPrueba, type RobotForm,
+  CAMPOS_CONEXION, aConexionGuardada, autorizarMovimiento, avisos as calcularAvisos, consultarActivo, desconectarRobot,
+  detectarInterfaces, formularioDesdePerfil,
+  formularioVacio, NOMBRE_REPETIDO, probarConexion, reconectar, validar,
+  type CampoForm, type Errores, type InterfazRed, type ResultadoPrueba, type RobotForm,
 } from './robotConexion';
 
 interface NewRobotProps {
@@ -29,8 +29,12 @@ interface Reconexion {
   autorizado: boolean;
 }
 
-export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotProps) {
+/** 'ver': robots guardados + conexión del elegido. 'formulario': añadir o editar un robot. */
+type Modo = 'ver' | 'formulario';
+
+export default function NewRobot({ activeTab, onTabChange }: NewRobotProps) {
   const { robots, cargando, error: errorRobots, recargar } = useRobots();
+  const [modo, setModo] = useState<Modo>('ver');
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [form, setForm] = useState<RobotForm>(formularioVacio);
   const [tocados, setTocados] = useState<Set<CampoForm>>(new Set());
@@ -47,10 +51,10 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
   const [errorPrueba, setErrorPrueba] = useState<string | null>(null);
   const abortar = useRef<AbortController | null>(null);
 
-  const [estadoRobot, setEstadoRobot] = useState<{ estado: EstadoRobot; mensaje?: string; cargando: boolean }>({ estado: 'desconocido', cargando: false });
   const [guardando, setGuardando] = useState(false);
   const [mensajeGuardar, setMensajeGuardar] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
   const [reconexion, setReconexion] = useState<Reconexion | null>(null);
+  const [eliminando, setEliminando] = useState<{ robot: RobotNube; enviando: boolean; error: string | null } | null>(null);
 
   useEffect(() => () => abortar.current?.abort(), []);
 
@@ -61,7 +65,7 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
   const erroresVisibles = useMemo(() => {
     const v: Errores = {};
     for (const [c, msg] of Object.entries(errores) as [CampoForm, string][]) {
-      if (intentoGuardar || tocados.has(c) || erroresServidor[c]) v[c] = msg;
+      if (intentoGuardar || tocados.has(c) || erroresServidor[c] || msg === NOMBRE_REPETIDO) v[c] = msg;
     }
     return v;
   }, [errores, tocados, intentoGuardar, erroresServidor]);
@@ -112,13 +116,42 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
     setErrorPrueba(null);
     setProbando(false);
     setMensajeGuardar(null);
-    setEstadoRobot({ estado: 'desconocido', cargando: false });
   }
 
-  function editar(r: RobotNube) {
+  function cargarRobot(r: RobotNube) {
     if (r.conexion) cargarFormulario(formularioDesdePerfil(r.label, r.conexion), r.id);
     else cargarFormulario({ ...formularioVacio(), codigo: r.label }, r.id);
   }
+
+  /** Muestra la conexión del robot (sin formulario). */
+  function seleccionar(r: RobotNube) {
+    cargarRobot(r);
+    setModo('ver');
+  }
+
+  function editar(r: RobotNube) {
+    cargarRobot(r);
+    setModo('formulario');
+  }
+
+  function nuevo() {
+    cargarFormulario(formularioVacio(), null);
+    setModo('formulario');
+  }
+
+  function cancelarFormulario() {
+    const r = robots.find(x => x.id === editandoId) ?? robots[0];
+    if (r) seleccionar(r);
+    else {
+      cargarFormulario(formularioVacio(), null);
+      setModo('ver');
+    }
+  }
+
+  // Al abrir la pantalla (o si se borra el elegido) se muestra el primer robot guardado
+  useEffect(() => {
+    if (modo === 'ver' && robots.length && !robots.some(r => r.id === editandoId)) seleccionar(robots[0]);
+  }, [robots, modo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Prueba de conexión ──
   async function probar() {
@@ -128,29 +161,12 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
     setProbando(true);
     setErrorPrueba(null);
     setClavePrueba(claveConexion(form));
-    setEstadoRobot(d => ({ ...d, cargando: true }));
     try {
-      const r = await probarConexion(form, editandoId ?? undefined, setPrueba, ctrl.signal);
-      setEstadoRobot({ estado: estadoSegunPrueba(r), mensaje: r.pasos.find(p => p.id === 'dds')?.mensaje, cargando: false });
+      await probarConexion(form, editandoId ?? undefined, setPrueba, ctrl.signal);
     } catch (e) {
       if ((e as Error).name !== 'AbortError') setErrorPrueba('No se pudo ejecutar la prueba. Revisá que el backend local esté funcionando.');
-      setEstadoRobot(d => ({ ...d, cargando: false }));
     } finally {
       if (abortar.current === ctrl) setProbando(false);
-    }
-  }
-
-  async function refrescarEstado() {
-    if (!puedeProbar) {
-      setEstadoRobot({ estado: 'desconocido', mensaje: 'Completá la IP, el usuario SSH y el Domain ID para consultar.', cargando: false });
-      return;
-    }
-    setEstadoRobot(d => ({ ...d, cargando: true }));
-    try {
-      const r = await consultarEstado(form, editandoId ?? undefined);
-      setEstadoRobot({ ...r, cargando: false });
-    } catch {
-      setEstadoRobot({ estado: 'desconocido', mensaje: 'No se pudo consultar el estado al backend local.', cargando: false });
     }
   }
 
@@ -177,10 +193,10 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
       setEditandoId(r.id);
       setForm(f => ({ ...f, sshPassword: '' }));
       setClavePrueba(null);
-      setMensajeGuardar({ tipo: 'ok', texto: 'Robot guardado. Podés conectarlo desde la lista de robots guardados.' });
+      setModo('ver');
       recargar();
     } else if (r.tipo === 'duplicado' && CAMPO_DUPLICADO[r.campo]) {
-      setErroresServidor({ [CAMPO_DUPLICADO[r.campo]]: 'Ya existe otro de tus robots con este valor.' });
+      setErroresServidor({ [CAMPO_DUPLICADO[r.campo]]: NOMBRE_REPETIDO });
     } else {
       setMensajeGuardar({ tipo: 'error', texto: 'No se pudo guardar el robot. Revisá tu conexión e intentá de nuevo.' });
     }
@@ -209,6 +225,28 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
     }
   }
 
+  // ── Eliminar (pide confirmación; si el robot estaba conectado, la app lo olvida) ──
+  async function confirmarEliminar() {
+    if (!eliminando) return;
+    const { robot } = eliminando;
+    setEliminando({ robot, enviando: true, error: null });
+    const r = await eliminarRobot(robot.id);
+    if (r.ok) {
+      const activo = await consultarActivo().catch(() => null);
+      if (activo?.conectado && String(activo.id) === robot.id) await desconectarRobot().catch(() => {});
+      setEliminando(null);
+      recargar();
+      return;
+    }
+    setEliminando({
+      robot,
+      enviando: false,
+      error: r.motivo === 'en_uso'
+        ? `No se puede eliminar: ya se usó en ${r.relevamientos} relevamiento${r.relevamientos === 1 ? '' : 's'} y se perdería ese historial.`
+        : 'No se pudo eliminar. Revisá tu conexión e intentá de nuevo.',
+    });
+  }
+
   function cerrarReconexion() {
     if (reconexion?.conectando) abortar.current?.abort();
     setReconexion(null);
@@ -227,91 +265,122 @@ export default function NewRobot({ activeTab, onTabChange, onCancel }: NewRobotP
       <div className="flex flex-col flex-1 overflow-hidden">
         <TopNav />
 
-        <div className="flex-1 overflow-y-auto bg-[#FFFFFF]">
+        <div className="flex-1 overflow-y-auto bg-[#F3F6F9]">
           <div className="w-full px-8 py-8">
 
             <div className="mb-6">
-              <h1 className="text-[22px] font-bold text-[#1A1C1E] tracking-tight">
-                {editandoId ? `Editar ${editandoRobot?.label ?? 'robot'}` : 'Añadir robot'}
-              </h1>
+              <h1 className="text-[22px] font-bold text-[#1A1C1E] tracking-tight">Robot</h1>
               <p className="text-[13px] text-[#8A8C8E] mt-1">
-                Registrá un Unitree G1, probá que la conexión funciona y guardá el perfil para reconectarlo sin volver a cargar nada.
+                {modo === 'formulario'
+                  ? editandoId ? `Editando ${editandoRobot?.label ?? 'robot'}.` : 'Nuevo robot: completá sus datos, probá la conexión y guardalo.'
+                  : 'Tus Unitree G1 guardados. Elegí uno para probar su conexión o conectarlo.'}
               </p>
             </div>
 
-            <div className="flex items-start gap-6">
+            <div className="grid grid-cols-[260px_minmax(0,1fr)] items-start gap-6">
 
-              {/* Izquierda — robots guardados */}
-              <div className="w-[230px] flex-none">
+              {/* Izquierda — robots guardados (siempre visible) */}
+              <div className="sticky top-0">
                 <RobotsGuardados
                   robots={robots}
                   cargando={cargando}
                   error={errorRobots}
                   seleccionado={editandoId}
-                  conectandoId={reconexion?.conectando ? reconexion.robot.id : null}
-                  onConectar={conectar}
-                  onEditar={editar}
-                  onNuevo={() => cargarFormulario(formularioVacio(), null)}
+                  creando={modo === 'formulario' && editandoId === null}
+                  onSeleccionar={seleccionar}
+                  onNuevo={nuevo}
                 />
               </div>
 
-              {/* Centro — formulario */}
-              <div className="flex-1 min-w-0">
-                <RobotConnectionSection
-                  form={form}
-                  onChange={cambiar}
-                  errores={erroresVisibles}
-                  onBlur={tocar}
-                  completo={completo}
-                  avisos={avisosForm}
-                  editando={!!editandoId}
-                  interfaces={interfaces}
-                  detectandoInterfaces={detectando}
-                  onDetectarInterfaces={() => detectar()}
-                  estadoRobot={estadoRobot}
-                  onRefrescarEstado={refrescarEstado}
-                />
+              {/* Derecha — el robot elegido, o el formulario al añadir / editar */}
+              <div className="min-w-0 space-y-6">
+                {modo === 'ver' && !editandoRobot && <SinRobots cargando={cargando} onNuevo={nuevo} />}
 
-                <ConnectionJsonPreview datos={jsonEnmascarado(form, !!editandoId)} />
+                {modo === 'ver' && editandoRobot && (
+                  <>
+                    <CabeceraRobot
+                      robot={editandoRobot}
+                      conectando={!!reconexion?.conectando}
+                      onConectar={() => conectar(editandoRobot)}
+                      onEditar={() => editar(editandoRobot)}
+                      onEliminar={() => setEliminando({ robot: editandoRobot, enviando: false, error: null })}
+                    >
+                      <PruebaEnRecuadro
+                        prueba={prueba}
+                        probando={probando}
+                        puedeProbar={puedeProbar && !!editandoRobot.conexion}
+                        motivoNoProbar="Este robot todavía no tiene datos de conexión. Pulsá «Configurar»."
+                        onProbar={probar}
+                      />
+                    </CabeceraRobot>
+                    {errorPrueba && <p className="text-[12px] text-[#991B1B] px-1">{errorPrueba}</p>}
+                    <DatosConexion robot={editandoRobot} />
+                  </>
+                )}
 
-                <div className="pt-6 space-y-3">
-                  {advertenciaPrueba && completo && (
-                    <p className="text-[11px] font-medium text-[#92400E] bg-[#FFFBEB] px-3.5 py-2.5 rounded-xl">
-                      {advertenciaPrueba} Podés guardar igual, pero conviene probarla antes.
-                    </p>
-                  )}
-                  <div className="flex items-center gap-5">
-                    <PrimaryButton onClick={guardar} disabled={guardando}>
-                      {guardando ? 'Guardando…' : editandoId ? 'Guardar cambios' : 'Guardar robot'}
-                    </PrimaryButton>
-                    <SecondaryButton onClick={onCancel}>Cancelar</SecondaryButton>
+                {modo === 'formulario' && (
+                  <div className="grid grid-cols-[minmax(0,1fr)_340px] items-start gap-6">
+                    <RobotConnectionSection
+                      key={editandoId ?? 'nuevo'}
+                      form={form}
+                      onChange={cambiar}
+                      errores={erroresVisibles}
+                      onBlur={tocar}
+                      avisos={avisosForm}
+                      editando={!!editandoId}
+                      interfaces={interfaces}
+                      detectandoInterfaces={detectando}
+                      onDetectarInterfaces={() => detectar()}
+                      pie={
+                        <div className="space-y-3">
+                          {advertenciaPrueba && completo && (
+                            <p className="text-[11px] font-medium text-[#92400E] bg-[#FFFBEB] px-3.5 py-2.5 rounded-xl">
+                              {advertenciaPrueba} Podés guardar igual, pero conviene probarla antes.
+                            </p>
+                          )}
+                          {intentoGuardar && !completo && (
+                            <p className="text-[12px] text-[#991B1B]">Corregí los campos marcados para poder guardar.</p>
+                          )}
+                          {mensajeGuardar && (
+                            <p className={`text-[12px] ${mensajeGuardar.tipo === 'ok' ? 'text-[#065F46]' : 'text-[#991B1B]'}`}>{mensajeGuardar.texto}</p>
+                          )}
+                          <div className="flex items-center justify-end gap-5">
+                            <SecondaryButton onClick={cancelarFormulario}>Cancelar</SecondaryButton>
+                            <PrimaryButton onClick={guardar} disabled={guardando} shadow>
+                              {guardando ? 'Guardando…' : editandoId ? 'Guardar cambios' : 'Guardar robot'}
+                            </PrimaryButton>
+                          </div>
+                        </div>
+                      }
+                    />
+                    <div className="sticky top-0 space-y-2 min-w-0">
+                      <PanelPrueba
+                        prueba={prueba}
+                        probando={probando}
+                        puedeProbar={puedeProbar}
+                        motivoNoProbar="Completá la IP, el usuario y el puerto SSH y el Domain ID para probar."
+                        onProbar={probar}
+                      />
+                      {errorPrueba && <p className="text-[12px] text-[#991B1B] px-1">{errorPrueba}</p>}
+                    </div>
                   </div>
-                  {intentoGuardar && !completo && (
-                    <p className="text-[12px] text-[#991B1B]">Corregí los campos marcados para poder guardar.</p>
-                  )}
-                  {mensajeGuardar && (
-                    <p className={`text-[12px] ${mensajeGuardar.tipo === 'ok' ? 'text-[#065F46]' : 'text-[#991B1B]'}`}>{mensajeGuardar.texto}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Derecha — prueba de conexión */}
-              <div className="w-[340px] flex-none sticky top-0 space-y-2">
-                <PanelPrueba
-                  prueba={prueba}
-                  probando={probando}
-                  puedeProbar={puedeProbar}
-                  motivoNoProbar="Completá la IP, el usuario y el puerto SSH y el Domain ID para probar."
-                  onProbar={probar}
-                  onExportar={() => prueba && exportarDiagnostico(form, prueba, !!editandoId)}
-                />
-                {errorPrueba && <p className="text-[12px] text-[#991B1B] px-1">{errorPrueba}</p>}
+                )}
               </div>
 
             </div>
           </div>
         </div>
       </div>
+
+      {eliminando && (
+        <DialogoEliminar
+          robot={eliminando.robot}
+          enviando={eliminando.enviando}
+          error={eliminando.error}
+          onConfirmar={confirmarEliminar}
+          onCerrar={() => setEliminando(null)}
+        />
+      )}
 
       {reconexion && (
         <DialogoReconexion
