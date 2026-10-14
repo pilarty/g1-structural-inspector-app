@@ -318,9 +318,9 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
               <button
                 type="button"
                 onClick={() => onVerFicha(currentBuilding.id)}
-                className="mr-3 flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold text-[#377DC0] bg-[#E3EEF8] hover:bg-[#D3E4F4] transition-colors"
+                className="mr-3 flex items-center justify-center gap-2 h-9 px-3.5 rounded-[3px] text-[13px] font-medium transition-colors bg-white text-[#1A1C1E] border border-[#D4D4D4] hover:bg-[#F3F4F6]"
               >
-                <FileText className="w-3.5 h-3.5" /> Ficha del inmueble
+                <FileText className="w-4 h-4 text-[#66686A]" /> Ficha del inmueble
               </button>
             )}
             {currentBuilding.relevamientos > 0 && (

@@ -17,12 +17,12 @@ export default function BuildingListItem({ building, isSelected, onClick }: Buil
     <button
       onClick={onClick}
       aria-current={isSelected ? 'page' : undefined}
-      className={`w-full flex items-center gap-1.5 h-[26px] pl-[38px] pr-9 text-left ${
+      className={`w-full flex items-center gap-1.5 h-[32px] pl-[40px] pr-9 text-left ${
         isSelected ? 'bg-[#D6E6F5] outline outline-1 -outline-offset-1 outline-[#377DC0]' : 'hover:bg-black/[0.045]'
       }`}
     >
       <Building2 className="w-4 h-4 flex-none text-[#377DC0]" />
-      <span className="text-[13px] truncate min-w-0 flex-1 text-[#1A1C1E]">{building.name}</span>
+      <span className="text-[14px] truncate min-w-0 flex-1 text-[#1A1C1E]">{building.name}</span>
     </button>
   );
 }

@@ -201,7 +201,7 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                       type="date"
                       value={date}
                       onChange={e => setDate(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl h-[42px] text-[12px] font-semibold text-[#1A1C1E] outline-none transition-colors"
+                      className="w-full px-3 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-md h-[42px] text-[12px] font-semibold text-[#1A1C1E] outline-none transition-colors"
                     />
                   </div>
 
@@ -212,7 +212,7 @@ export default function InspectionSetup({ activeTab, onTabChange }: InspectionSe
                       type="time"
                       value={time}
                       onChange={e => setTime(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl h-[42px] text-[12px] font-semibold text-[#1A1C1E] outline-none transition-colors"
+                      className="w-full px-3 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-md h-[42px] text-[12px] font-semibold text-[#1A1C1E] outline-none transition-colors"
                     />
                   </div>
 

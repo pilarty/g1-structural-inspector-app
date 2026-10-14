@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { LucideProvider } from 'lucide-react'
 import App from './App'
+import DialogoSalir from './components/DialogoSalir'
 import { SesionProvider } from './sesion'
 import { ProyectosProvider } from './proyectos'
 import './index.css'
@@ -14,6 +15,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <SesionProvider>
         <ProyectosProvider>
           <App />
+          <DialogoSalir />
         </ProyectosProvider>
       </SesionProvider>
     </LucideProvider>

@@ -257,7 +257,7 @@ export function CabeceraRobot({ robot, conectando, onConectar, onEditar, onElimi
           <Trash2 className="w-4 h-4" />
         </button>
         <button type="button" onClick={onEditar}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-[#377DC0] bg-[#E3EEF8] hover:bg-[#D3E4F4] transition-colors">
+          className="flex items-center justify-center gap-2 h-9 px-3.5 rounded-[3px] text-[13px] font-medium transition-colors bg-white text-[#1A1C1E] border border-[#D4D4D4] hover:bg-[#F3F4F6]">
           <Pencil className="w-3.5 h-3.5" />
           {robot.conexion ? 'Editar' : 'Configurar'}
         </button>
@@ -412,7 +412,7 @@ export function DialogoEliminar({ robot, enviando, error, onConfirmar, onCerrar 
             Cancelar
           </button>
           <button type="button" onClick={onConfirmar} disabled={enviando}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold bg-[#DC2626] text-white hover:bg-[#B91C1C] transition-colors disabled:opacity-50">
+            className="flex items-center justify-center gap-2 h-9 px-3.5 rounded-[3px] text-[13px] font-medium transition-colors bg-[#DC2626] text-white hover:bg-[#B91C1C] disabled:opacity-50">
             {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
             {enviando ? 'Eliminando…' : 'Eliminar'}
           </button>

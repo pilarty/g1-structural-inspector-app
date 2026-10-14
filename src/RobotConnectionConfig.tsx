@@ -44,7 +44,7 @@ function Field({ label, hint, required, error, aviso, children }: {
 }
 
 const claseCampo = (error?: string) =>
-  `w-full px-3 rounded-xl h-[42px] text-[12px] font-semibold text-[#1A1C1E] bg-[#F8FAFC] focus:bg-white outline-none transition-shadow border ${
+  `w-full px-3 rounded-md h-[42px] text-[12px] font-semibold text-[#1A1C1E] bg-[#F8FAFC] focus:bg-white outline-none transition-shadow border ${
     error
       ? 'border-[#EF4444]/60 focus:ring-2 focus:ring-[#EF4444]/15'
       : 'border-[#377DC0]/15 hover:border-[#377DC0]/35 focus:border-[#377DC0] focus:ring-2 focus:ring-[#377DC0]/15'
@@ -175,7 +175,7 @@ export default function RobotConnectionSection({
                     disabled={detectandoInterfaces}
                     title="Volver a detectar tarjetas de red"
                     aria-label="Volver a detectar tarjetas de red"
-                    className="flex-none w-[42px] h-[42px] flex items-center justify-center rounded-xl bg-[#F8FAFC] border border-[#377DC0]/15 hover:border-[#377DC0]/35 text-[#377DC0] transition-colors disabled:opacity-50"
+                    className="flex-none w-[42px] h-[42px] flex items-center justify-center rounded-md bg-[#F8FAFC] border border-[#377DC0]/15 hover:border-[#377DC0]/35 text-[#377DC0] transition-colors disabled:opacity-50"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${detectandoInterfaces ? 'animate-spin' : ''}`} />
                   </button>

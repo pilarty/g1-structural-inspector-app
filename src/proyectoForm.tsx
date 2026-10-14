@@ -233,7 +233,7 @@ export function DialogoNuevoProyecto({ nombresExistentes, onCreado, onCerrar }: 
 
   return (
     <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-6" role="dialog" aria-modal="true" aria-label="Nuevo proyecto">
-      <div className="w-full max-w-[600px] bg-white rounded-2xl shadow-[0_8px_48px_rgba(0,0,0,0.16)] overflow-hidden">
+      <div className="w-full max-w-[600px] bg-white rounded-lg shadow-[0_8px_48px_rgba(0,0,0,0.16)] overflow-hidden">
         <div className="flex items-start gap-3 px-6 pt-5 pb-4 border-b border-[#14202B]/[0.06]">
           <span className="flex-none w-8 h-8 rounded-lg bg-[#E3EEF8] text-[#377DC0] flex items-center justify-center"><Folder className="w-4 h-4" /></span>
           <div className="flex-1 min-w-0">
@@ -257,7 +257,7 @@ export function DialogoNuevoProyecto({ nombresExistentes, onCreado, onCerrar }: 
         <div className="flex items-center justify-end gap-5 px-6 py-4 bg-[#F8FAFC] border-t border-[#14202B]/[0.06]">
           <button type="button" onClick={onCerrar} className="text-[13px] font-medium text-[#8A8C8E] hover:text-[#1A1C1E]">Cancelar</button>
           <button type="button" onClick={crear} disabled={enviando}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold bg-[#377DC0] text-white hover:bg-[#2D69A6] transition-colors disabled:opacity-50 shadow-[0_2px_12px_rgba(55,125,192,0.30)]">
+            className="flex items-center justify-center gap-2 h-9 px-3.5 rounded-[3px] text-[13px] font-medium transition-colors bg-[#377DC0] text-white hover:bg-[#2F6CA8] disabled:opacity-50">
             {enviando && <Loader2 className="w-4 h-4 animate-spin" />}
             {enviando ? 'Creando…' : 'Crear proyecto'}
           </button>

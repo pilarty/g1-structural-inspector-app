@@ -103,7 +103,7 @@ export const whitePlanBg = {
 
 // Tarjeta blanca sobre fondo gris claro (pantalla Añadir robot)
 export const tarjetaBlanca =
-  'bg-white rounded-2xl border border-[#14202B]/[0.07] shadow-[0_1px_2px_rgba(20,32,43,0.04),0_8px_24px_rgba(20,32,43,0.05)] overflow-hidden';
+  'bg-white rounded-lg border border-[#14202B]/[0.07] shadow-[0_1px_2px_rgba(20,32,43,0.04),0_8px_24px_rgba(20,32,43,0.05)] overflow-hidden';
 
 // Nav bar height
 export const navHeight = '48px'; // h-12

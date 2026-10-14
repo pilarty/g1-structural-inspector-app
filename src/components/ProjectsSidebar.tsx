@@ -25,9 +25,9 @@ interface ProjectsSidebarProps {
 /** Fila resaltada para lo que se está creando. */
 function FilaBorrador({ texto, sangria }: { texto: string; sangria: boolean }) {
   return (
-    <div className={`w-full flex items-center gap-1.5 h-[26px] ${sangria ? 'pl-[38px]' : 'pl-[22px]'} pr-3 bg-[#D6E6F5] outline outline-1 -outline-offset-1 outline-[#377DC0]`} aria-current="page">
+    <div className={`w-full flex items-center gap-1.5 h-[32px] ${sangria ? 'pl-[40px]' : 'pl-[22px]'} pr-3 bg-[#D6E6F5] outline outline-1 -outline-offset-1 outline-[#377DC0]`} aria-current="page">
       {sangria ? <Plus className="w-4 h-4 text-[#377DC0] flex-none" /> : <FolderPlus className="w-4 h-4 text-[#377DC0] flex-none" />}
-      <span className="text-[13px] text-[#1A1C1E] truncate flex-1 italic">{texto}</span>
+      <span className="text-[14px] text-[#1A1C1E] truncate flex-1 italic">{texto}</span>
       <span className="flex-none text-[10px] font-semibold uppercase tracking-wide text-[#377DC0]">Nuevo</span>
     </div>
   );
@@ -109,33 +109,45 @@ export default function ProjectsSidebar({
   // ── Expanded state ────────────────────────────────────────────────────────
   return (
     <aside className="flex-none w-[280px] flex flex-col bg-[#F8F9FA] border-r border-[#E5E7EB] overflow-hidden">
-      {/* Encabezado de la sección, con sus acciones */}
-      <div className="flex-none h-9 pl-5 pr-2 flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-[#616161] uppercase tracking-[0.08em]">Proyectos</span>
-        <div className="flex items-center gap-0.5">
-          <AccionIcono titulo="Nuevo proyecto" onClick={nuevoProyecto}><FolderPlus className="w-4 h-4" /></AccionIcono>
+      {/* Encabezado: título, acciones y buscador */}
+      <div className="flex-none bg-white border-b border-[#E5E7EB] px-4 pt-4 pb-3.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="text-[16px] font-semibold text-[#1A1C1E] tracking-[-0.01em]">Proyectos</h2>
+            <span className="h-5 min-w-[22px] px-1.5 rounded-full bg-[#F1F3F5] text-[11px] font-semibold text-[#66686A] flex items-center justify-center tabular-nums">
+              {proyectos.length}
+            </span>
+          </div>
           <AccionIcono titulo="Ocultar el panel" onClick={() => setCollapsed(true)}><ChevronsLeft className="w-4 h-4" /></AccionIcono>
         </div>
-      </div>
-      <div className="flex-none px-3 pb-2">
-        <div className="flex items-center gap-1.5 h-7 px-2 bg-white rounded-[3px] border border-[#D4D4D4] focus-within:border-[#377DC0] focus-within:outline focus-within:outline-1 focus-within:outline-[#377DC0]">
-          <Search className="w-3.5 h-3.5 text-[#8A8C8E] flex-none" />
-          <input
-            type="text"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Buscar proyecto o edificación"
-            className="bg-transparent text-[13px] text-[#1A1C1E] placeholder:text-[#8A8C8E] outline-none w-full min-w-0"
-          />
+        <div className="mt-3 flex items-center gap-2">
+          <div className="flex items-center gap-2 h-9 px-2.5 flex-1 min-w-0 bg-white rounded-[3px] border border-[#D4D4D4] focus-within:border-[#377DC0] focus-within:outline focus-within:outline-1 focus-within:outline-[#377DC0]">
+            <Search className="w-4 h-4 text-[#8A8C8E] flex-none" />
+            <input
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Buscar"
+              className="bg-transparent text-[14px] text-[#1A1C1E] placeholder:text-[#8A8C8E] outline-none w-full min-w-0"
+            />
+            {query && (
+              <button type="button" onClick={() => setQuery('')} title="Borrar búsqueda" aria-label="Borrar búsqueda"
+                className="flex-none text-[#8A8C8E] hover:text-[#1A1C1E] text-[16px] leading-none">×</button>
+            )}
+          </div>
+          <button type="button" onClick={nuevoProyecto} title="Nuevo proyecto" aria-label="Nuevo proyecto"
+            className="flex-none w-9 h-9 flex items-center justify-center rounded-[3px] bg-white border border-[#D4D4D4] text-[#C09553] hover:bg-[#F3F4F6] transition-colors">
+            <FolderPlus className="w-[18px] h-[18px]" />
+          </button>
         </div>
       </div>
 
       {/* Árbol de proyectos */}
-      <div className="flex-1 overflow-y-auto pb-2">
-        {cargando && <p className="px-5 py-2 text-[13px] text-[#8A8C8E]">Cargando…</p>}
-        {error && <p className="px-5 py-2 text-[13px] text-[#991B1B]">{error}</p>}
+      <div className="flex-1 overflow-y-auto pt-2 pb-2">
+        {cargando && <p className="px-5 py-2 text-[14px] text-[#8A8C8E]">Cargando…</p>}
+        {error && <p className="px-5 py-2 text-[14px] text-[#991B1B]">{error}</p>}
         {!cargando && !error && proyectos.length === 0 && (
-          <p className="px-5 py-2 text-[13px] text-[#8A8C8E]">Todavía no hay proyectos. Creá el primero con el ícono de carpeta de arriba.</p>
+          <p className="px-5 py-2 text-[14px] text-[#8A8C8E]">Todavía no hay proyectos. Creá el primero con el ícono de carpeta de arriba.</p>
         )}
         {/* Proyecto que se está creando */}
         {borrador?.tipo === 'proyecto' && <FilaBorrador texto={borrador.nombre.trim() || 'Nuevo proyecto'} sangria={false} />}
@@ -151,7 +163,7 @@ export default function ProjectsSidebar({
           return (
             <div key={project.id}>
               {/* Project header */}
-              <div className={`group relative flex items-center h-[26px] ${
+              <div className={`group relative flex items-center h-[32px] ${
                 proyectoSeleccionado === project.id ? 'bg-[#D6E6F5]' : 'hover:bg-black/[0.045]'
               }`}>
                 {/* La flecha despliega; el nombre abre la ficha del proyecto */}
@@ -171,8 +183,8 @@ export default function ProjectsSidebar({
                   {isOpen
                     ? <FolderOpen className="w-4 h-4 flex-none text-[#C09553]" />
                     : <Folder className="w-4 h-4 flex-none text-[#C09553]" />}
-                  <span className="text-[13px] flex-1 truncate text-[#1A1C1E]">{project.name}</span>
-                  <span className="text-[11px] text-[#8A8C8E] flex-none tabular-nums group-hover:hidden">{project.buildings.length}</span>
+                  <span className="text-[14px] flex-1 truncate text-[#1A1C1E]">{project.name}</span>
+                  <span className="text-[12px] text-[#8A8C8E] flex-none tabular-nums group-hover:hidden">{project.buildings.length}</span>
                 </button>
                 <button
                   onClick={() => nuevoEdificioEn(project.id)}
@@ -199,7 +211,7 @@ export default function ProjectsSidebar({
                     <div className="absolute right-2 top-full z-30 mt-1 w-[190px] rounded-[5px] bg-white border border-[#D4D4D4] shadow-[0_2px_8px_rgba(0,0,0,0.16)] p-1">
                       <button
                         onClick={() => { setMenuDe(null); editarElemento('proyecto', project.id); }}
-                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[3px] text-left text-[13px] text-[#1A1C1E] hover:bg-[#377DC0] hover:text-white"
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[3px] text-left text-[14px] text-[#1A1C1E] hover:bg-[#377DC0] hover:text-white"
                       >
                         <Pencil className="w-3.5 h-3.5" /> Editar proyecto
                       </button>
@@ -209,7 +221,7 @@ export default function ProjectsSidebar({
                           setBorrando({ tipo: 'proyecto', id: project.id, nombre: project.name, edificios: project.buildings.length,
                             inspecciones: project.buildings.reduce((n, b) => n + b.relevamientos, 0), enviando: false, error: null });
                         }}
-                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[3px] text-left text-[13px] text-[#B91C1C] hover:bg-[#B91C1C] hover:text-white"
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[3px] text-left text-[14px] text-[#B91C1C] hover:bg-[#B91C1C] hover:text-white"
                       >
                         <Trash2 className="w-3.5 h-3.5" /> Eliminar proyecto
                       </button>
@@ -249,7 +261,7 @@ export default function ProjectsSidebar({
                         <div className="absolute right-2 top-full z-30 mt-1 w-[200px] rounded-[5px] bg-white border border-[#D4D4D4] shadow-[0_2px_8px_rgba(0,0,0,0.16)] p-1">
                           <button
                             onClick={() => { setMenuDe(null); editarElemento('edificio', building.id); }}
-                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[3px] text-left text-[13px] text-[#1A1C1E] hover:bg-[#377DC0] hover:text-white"
+                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[3px] text-left text-[14px] text-[#1A1C1E] hover:bg-[#377DC0] hover:text-white"
                           >
                             <Pencil className="w-3.5 h-3.5" /> Editar edificación
                           </button>
@@ -258,7 +270,7 @@ export default function ProjectsSidebar({
                               setMenuDe(null);
                               setBorrando({ tipo: 'edificio', id: building.id, nombre: building.name, edificios: 0, inspecciones: building.relevamientos, enviando: false, error: null });
                             }}
-                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[3px] text-left text-[13px] text-[#B91C1C] hover:bg-[#B91C1C] hover:text-white"
+                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[3px] text-left text-[14px] text-[#B91C1C] hover:bg-[#B91C1C] hover:text-white"
                           >
                             <Trash2 className="w-3.5 h-3.5" /> Eliminar edificación
                           </button>
@@ -273,7 +285,7 @@ export default function ProjectsSidebar({
                 <button
                   onClick={() => nuevoEdificioEn(project.id)}
                   title={`Agregar una edificación a ${project.name}`}
-                  className="w-full flex items-center gap-1.5 h-[26px] pl-[38px] pr-3 text-left text-[12px] text-[#377DC0] hover:bg-black/[0.045]"
+                  className="w-full flex items-center gap-1.5 h-[32px] pl-[40px] pr-3 text-left text-[13px] text-[#377DC0] hover:bg-black/[0.045]"
                 >
                   <Plus className="w-3.5 h-3.5" /> Nueva edificación
                 </button>

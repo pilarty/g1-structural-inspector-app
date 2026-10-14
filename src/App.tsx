@@ -716,11 +716,11 @@ function FloorPlan({ activeTab, onTabChange, selectedBuildingId, onSelectBuildin
               <div className="mt-7 flex gap-2.5 pt-5 border-t border-[#F0EDE8]">
                 <button
                   onClick={() => setSelectedDetection(null)}
-                  className="flex-1 py-2.5 px-4 bg-[#FFFFFF] hover:bg-[#ECEAE5] text-[#1A1C1E] font-medium text-[13px] rounded-xl transition-colors flex items-center justify-center"
+                  className="flex-1 flex items-center justify-center gap-2 h-9 px-3.5 rounded-[3px] text-[13px] font-medium transition-colors bg-white text-[#1A1C1E] border border-[#D4D4D4] hover:bg-[#F3F4F6]"
                 >
                   Ver en plano
                 </button>
-                <button className="flex-1 py-2.5 px-4 bg-[#377DC0] hover:bg-[#2D69A6] text-white font-medium text-[13px] rounded-xl transition-colors flex items-center justify-center">
+                <button className="flex-1 flex items-center justify-center gap-2 h-9 px-3.5 rounded-[3px] text-[13px] font-medium transition-colors bg-[#377DC0] text-white hover:bg-[#2F6CA8]">
                   Descargar imagen
                 </button>
               </div>

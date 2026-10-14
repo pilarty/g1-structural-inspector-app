@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Plus } from 'lucide-react';
 
 // ─── Piezas de formulario con el estilo de la pantalla Robot ─────────────────
 
@@ -8,9 +8,9 @@ export function Seccion({ id, icono, titulo, descripcion, children }: {
   id?: string; icono: React.ReactNode; titulo: string; descripcion: string; children: React.ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-6 bg-white rounded-2xl border border-[#14202B]/[0.07] shadow-[0_1px_2px_rgba(20,32,43,0.04),0_8px_24px_rgba(20,32,43,0.05)]">
+    <section id={id} className="scroll-mt-6 bg-white rounded-lg border border-[#14202B]/[0.07] shadow-[0_1px_2px_rgba(20,32,43,0.04),0_8px_24px_rgba(20,32,43,0.05)]">
       <div className="flex items-start gap-3 px-6 pt-5 pb-4 border-b border-[#14202B]/[0.06]">
-        <span className="flex-none w-8 h-8 rounded-lg bg-[#E3EEF8] text-[#377DC0] flex items-center justify-center">{icono}</span>
+        <span className="flex-none w-8 h-8 rounded-md bg-[#E3EEF8] text-[#377DC0] flex items-center justify-center">{icono}</span>
         <div className="min-w-0">
           <h2 className="text-[15px] font-bold text-[#1A1C1E] leading-tight">{titulo}</h2>
           <p className="text-[12px] text-[#8A8C8E] mt-0.5 leading-snug">{descripcion}</p>
@@ -28,7 +28,7 @@ export function Campo({ etiqueta, obligatorio, ayuda, error, children, className
     <div className={className}>
       <p className="mb-1.5 text-[13px] font-medium text-[#14202B]">
         {etiqueta}
-        {obligatorio ? <span className="text-[#991B1B]"> *</span> : <span className="text-[#A0A2A4] font-normal"> (opcional)</span>}
+        {obligatorio && <span className="text-[#DC2626] font-semibold"> *</span>}
       </p>
       {children}
       {error
@@ -39,7 +39,7 @@ export function Campo({ etiqueta, obligatorio, ayuda, error, children, className
 }
 
 export const claseEntrada = (error?: string) =>
-  `w-full px-3 rounded-xl h-[42px] text-[13px] font-semibold text-[#1A1C1E] bg-[#F8FAFC] focus:bg-white outline-none transition-shadow border placeholder:text-[#A0A2A4] placeholder:font-normal ${
+  `w-full px-3 rounded-md h-[42px] text-[13px] font-semibold text-[#1A1C1E] bg-[#F8FAFC] focus:bg-white outline-none transition-shadow border placeholder:text-[#A0A2A4] placeholder:font-normal ${
     error
       ? 'border-[#EF4444]/60 focus:ring-2 focus:ring-[#EF4444]/15'
       : 'border-[#377DC0]/15 hover:border-[#377DC0]/35 focus:border-[#377DC0] focus:ring-2 focus:ring-[#377DC0]/15'
@@ -99,7 +99,7 @@ export function AreaTexto({ valor, onCambio, placeholder, filas = 3 }: {
       value={valor}
       onChange={e => onCambio(e.target.value)}
       placeholder={placeholder}
-      className="w-full px-3 py-2.5 rounded-xl text-[13px] font-semibold text-[#1A1C1E] bg-[#F8FAFC] focus:bg-white outline-none transition-shadow border border-[#377DC0]/15 hover:border-[#377DC0]/35 focus:border-[#377DC0] focus:ring-2 focus:ring-[#377DC0]/15 placeholder:text-[#A0A2A4] placeholder:font-normal resize-none"
+      className="w-full px-3 py-2.5 rounded-md text-[13px] font-semibold text-[#1A1C1E] bg-[#F8FAFC] focus:bg-white outline-none transition-shadow border border-[#377DC0]/15 hover:border-[#377DC0]/35 focus:border-[#377DC0] focus:ring-2 focus:ring-[#377DC0]/15 placeholder:text-[#A0A2A4] placeholder:font-normal resize-none"
     />
   );
 }
@@ -109,7 +109,7 @@ export function Segmentado<T extends string>({ valor, onCambio, opciones, error 
   valor: T | ''; onCambio: (v: T) => void; opciones: { valor: T; etiqueta: string; icono?: React.ReactNode }[]; error?: string;
 }) {
   return (
-    <div className={`flex bg-[#F3F6F9] rounded-xl p-1 gap-1 border ${error ? 'border-[#EF4444]/60' : 'border-transparent'}`} role="radiogroup">
+    <div className={`flex bg-[#F3F6F9] rounded-md p-1 gap-1 border ${error ? 'border-[#EF4444]/60' : 'border-transparent'}`} role="radiogroup">
       {opciones.map(o => (
         <button
           key={o.valor}
@@ -163,11 +163,20 @@ export function Solapa({ id, numero, titulo, descripcion, abierta, onAlternar, c
     <section id={id} className="scroll-mt-32 border-b border-[#14202B]/[0.06]">
       <button type="button" onClick={onAlternar} aria-expanded={abierta}
         className="w-full flex items-center gap-4 px-6 py-5 text-left hover:bg-[#F8FAFC] transition-colors">
-        <div className="flex-1 min-w-0"><Cabecera numero={numero} titulo={titulo} descripcion={descripcion} /></div>
-        <span className="flex-none text-[12px] font-medium text-[#8A8C8E]">
-          {cargados > 0 ? <span className="text-[#377DC0] font-semibold">{cargados} cargado{cargados === 1 ? '' : 's'}</span> : abierta ? '' : 'Opcional · Agregar'}
+        <div className="flex-1 min-w-0 flex items-center gap-2.5">
+          <div className="min-w-0"><Cabecera numero={numero} titulo={titulo} descripcion={descripcion} /></div>
+          <span className="flex-none h-[22px] px-2 rounded-[4px] border border-dashed border-[#A0A2A4] text-[11px] font-semibold uppercase tracking-wide text-[#66686A] flex items-center">
+            Opcional
+          </span>
+          {cargados > 0 && (
+            <span className="flex-none text-[12px] font-semibold text-[#377DC0]">{cargados} cargado{cargados === 1 ? '' : 's'}</span>
+          )}
+        </div>
+        <span className="flex-none flex items-center gap-1.5 h-8 px-3 rounded-[3px] bg-white border border-[#D4D4D4] text-[13px] font-medium text-[#1A1C1E]">
+          {abierta
+            ? <><ChevronDown className="w-4 h-4 rotate-180 text-[#66686A]" /> Ocultar</>
+            : <><Plus className="w-4 h-4 text-[#377DC0]" /> {cargados > 0 ? 'Ver' : 'Agregar'}</>}
         </span>
-        <ChevronDown className={`flex-none w-4 h-4 text-[#8A8C8E] transition-transform ${abierta ? 'rotate-180' : ''}`} />
       </button>
       {abierta && <div className="px-6 pb-6">{children}</div>}
     </section>
@@ -196,9 +205,9 @@ export function MasDatos({ id, titulo, abierta, onAlternar, cargados, children }
 /** La tarjeta blanca que contiene todas las secciones; `pie` va fijo abajo (botones). */
 export function TarjetaFormulario({ children, pie }: { children: React.ReactNode; pie: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl border border-[#14202B]/[0.07] shadow-[0_1px_2px_rgba(20,32,43,0.04),0_8px_24px_rgba(20,32,43,0.05)]">
+    <div className="bg-white rounded-lg border border-[#14202B]/[0.07] shadow-[0_1px_2px_rgba(20,32,43,0.04),0_8px_24px_rgba(20,32,43,0.05)]">
       {children}
-      <div className="sticky bottom-0 rounded-b-2xl bg-white/95 backdrop-blur-sm border-t border-[#14202B]/[0.06] px-6 py-4 flex items-center gap-4">
+      <div className="sticky bottom-0 rounded-b-lg bg-white/95 backdrop-blur-sm border-t border-[#14202B]/[0.06] px-6 py-4 flex items-center gap-4">
         {pie}
       </div>
     </div>

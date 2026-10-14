@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Building2, ChevronRight, MapPin, MapPinOff } from 'lucide-react';
+import { Building2, ChevronRight, Folder, MapPin, MapPinOff, Search, X } from 'lucide-react';
 import { useProyectos } from './proyectos';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav, PrimaryButton } from './components';
@@ -30,6 +30,7 @@ const colorDe = (b: Building) =>
 export default function Mapa({ activeTab, onTabChange, onAbrir, onEditar }: MapaProps) {
   const { proyectos, recargar } = useProyectos();
   const [elegido, setElegido] = useState<string | null>(null);
+  const [texto, setTexto] = useState('');
   const caja = useRef<HTMLDivElement>(null);
   const mapa = useRef<L.Map | null>(null);
   const capa = useRef<L.LayerGroup | null>(null);
@@ -95,41 +96,69 @@ export default function Mapa({ activeTab, onTabChange, onAbrir, onEditar }: Mapa
         <TopNav />
         <div className="flex flex-1 overflow-hidden">
 
-          {/* Lista */}
-          <aside className="flex-none w-[320px] bg-white border-r border-[#14202B]/[0.07] flex flex-col overflow-hidden">
-            <div className="px-5 pt-6 pb-4 border-b border-[#14202B]/[0.06]">
-              <h1 className="text-[20px] font-bold tracking-tight">Mapa</h1>
-              <p className="text-[13px] text-[#8A8C8E] mt-0.5">
-                {ubicados.length} de {todos.length} edificaci{todos.length === 1 ? 'ón' : 'ones'} en el mapa
-              </p>
+          {/* Lista (mismo estilo que el panel de proyectos) */}
+          <aside className="flex-none w-[300px] bg-[#F8F9FA] border-r border-[#E5E7EB] flex flex-col overflow-hidden">
+            <div className="flex-none bg-white border-b border-[#E5E7EB] px-4 pt-4 pb-3.5">
+              <div className="flex items-center gap-2">
+                <h1 className="text-[16px] font-semibold text-[#1A1C1E] tracking-[-0.01em]">Mapa</h1>
+                <span className="h-5 px-1.5 rounded-full bg-[#F1F3F5] text-[11px] font-semibold text-[#66686A] flex items-center tabular-nums">
+                  {ubicados.length} de {todos.length}
+                </span>
+              </div>
+              <div className="mt-3 flex items-center gap-2 h-9 px-2.5 bg-white rounded-[3px] border border-[#D4D4D4] focus-within:border-[#377DC0] focus-within:outline focus-within:outline-1 focus-within:outline-[#377DC0]">
+                <Search className="w-4 h-4 text-[#8A8C8E] flex-none" />
+                <input value={texto} onChange={e => setTexto(e.target.value)} placeholder="Buscar"
+                  className="bg-transparent text-[14px] text-[#1A1C1E] placeholder:text-[#8A8C8E] outline-none w-full min-w-0" />
+                {texto && (
+                  <button type="button" onClick={() => setTexto('')} aria-label="Borrar búsqueda" className="flex-none text-[#8A8C8E] hover:text-[#1A1C1E]">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto">
-              <ul className="py-2">
-                {ubicados.map(b => (
-                  <li key={b.id}>
-                    <button type="button" onClick={() => setElegido(b.id)}
-                      className={`w-full flex items-center gap-3 px-5 py-2.5 text-left transition-colors ${b.id === elegido ? 'bg-[#E3EEF8]' : 'hover:bg-[#F8FAFC]'}`}>
-                      <span className="flex-none w-3 h-3 rounded-full ring-2 ring-white shadow" style={{ backgroundColor: colorDe(b) }} />
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-[14px] font-semibold truncate">{b.name}</span>
-                        <span className="block text-[12px] text-[#8A8C8E] truncate">{b.proyecto}</span>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+
+            <div className="flex-1 overflow-y-auto pt-2 pb-2">
+              {proyectos.map(p => {
+                const q = texto.trim().toLowerCase();
+                const suyos = ubicados.filter(b => b.proyecto === p.name &&
+                  (!q || b.name.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)));
+                if (suyos.length === 0) return null;
+                return (
+                  <div key={p.id}>
+                    <div className="flex items-center gap-1.5 h-[32px] pl-3 pr-3">
+                      <Folder className="w-4 h-4 flex-none text-[#C09553]" />
+                      <span className="text-[14px] flex-1 truncate text-[#1A1C1E]">{p.name}</span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-[20px] top-0 bottom-0 w-px bg-black/[0.12] pointer-events-none" />
+                      {suyos.map(b => (
+                        <button key={b.id} type="button" onClick={() => setElegido(b.id)}
+                          aria-current={b.id === elegido ? 'true' : undefined}
+                          className={`w-full flex items-center gap-1.5 h-[32px] pl-[34px] pr-3 text-left ${
+                            b.id === elegido ? 'bg-[#D6E6F5] outline outline-1 -outline-offset-1 outline-[#377DC0]' : 'hover:bg-black/[0.045]'
+                          }`}>
+                          <Building2 className="w-4 h-4 flex-none text-[#377DC0]" />
+                          <span className="text-[14px] truncate min-w-0 flex-1 text-[#1A1C1E]">{b.name}</span>
+                          <span className="flex-none w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colorDe(b) }} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              {ubicados.length === 0 && (
+                <p className="px-4 py-2 text-[13px] text-[#8A8C8E]">Ninguna edificación tiene la dirección ubicada todavía.</p>
+              )}
+
               {sinUbicar.length > 0 && (
-                <div className="border-t border-[#14202B]/[0.06] py-2">
-                  <p className="px-5 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[#8A8C8E]">Sin ubicar</p>
+                <div className="mt-3 pt-3 border-t border-[#E5E7EB]">
+                  <p className="px-4 pb-1 text-[12px] font-semibold text-[#616161]">Sin ubicar · {sinUbicar.length}</p>
                   {sinUbicar.map(b => (
                     <button key={b.id} type="button" onClick={() => onEditar(b.id)} title="Completar la dirección"
-                      className="w-full flex items-center gap-3 px-5 py-2.5 text-left hover:bg-[#F8FAFC] transition-colors">
+                      className="group w-full flex items-center gap-1.5 h-[32px] pl-3 pr-3 text-left hover:bg-black/[0.045]">
                       <MapPinOff className="flex-none w-4 h-4 text-[#A0A2A4]" />
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-[14px] font-semibold text-[#66686A] truncate">{b.name}</span>
-                        <span className="block text-[12px] text-[#8A8C8E] truncate">Completar la dirección</span>
-                      </span>
-                      <ChevronRight className="flex-none w-4 h-4 text-[#A0A2A4]" />
+                      <span className="text-[14px] truncate min-w-0 flex-1 text-[#66686A]">{b.name}</span>
+                      <span className="flex-none text-[12px] text-[#377DC0] opacity-0 group-hover:opacity-100">Completar</span>
                     </button>
                   ))}
                 </div>
@@ -142,48 +171,52 @@ export default function Mapa({ activeTab, onTabChange, onAbrir, onEditar }: Mapa
             <div ref={caja} className="absolute inset-0 z-0" />
 
             {/* Referencias */}
-            <div className="absolute top-4 right-4 z-[500] bg-white/95 rounded-xl shadow-[0_4px_16px_rgba(20,32,43,0.12)] px-4 py-3 text-[12px]">
-              <p className="font-semibold text-[#1A1C1E] mb-1.5">Última inspección</p>
+            <div className="absolute top-4 right-4 z-[500] bg-white rounded-lg border border-[#D4D4D4] shadow-[0_2px_8px_rgba(20,32,43,0.10)] px-4 py-3 text-[13px]">
+              <p className="text-[12px] font-semibold text-[#616161] mb-1.5">Última inspección</p>
               {NIVELES.map(n => (
-                <p key={n} className="flex items-center gap-2 py-0.5 text-[#66686A]">
+                <p key={n} className="flex items-center gap-2 py-0.5 text-[#1A1C1E]">
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: severity[n].dot }} />{severity[n].label}
                 </p>
               ))}
-              <p className="flex items-center gap-2 py-0.5 text-[#66686A]"><span className="w-2.5 h-2.5 rounded-full bg-[#377DC0]" />Sin hallazgos</p>
-              <p className="flex items-center gap-2 py-0.5 text-[#66686A]"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: SIN_INSPECCION }} />Sin inspeccionar</p>
+              <p className="flex items-center gap-2 py-0.5 text-[#1A1C1E]"><span className="w-2.5 h-2.5 rounded-full bg-[#377DC0]" />Sin hallazgos</p>
+              <p className="flex items-center gap-2 py-0.5 text-[#1A1C1E]"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: SIN_INSPECCION }} />Sin inspeccionar</p>
             </div>
 
             {/* Edificación elegida */}
             {actual && (
-              <div className="absolute left-4 bottom-4 z-[500] w-[360px] bg-white rounded-2xl shadow-[0_8px_32px_rgba(20,32,43,0.18)] p-5">
-                <div className="flex items-start gap-3">
-                  <span className="flex-none w-10 h-10 rounded-xl bg-[#E3EEF8] text-[#377DC0] flex items-center justify-center">
-                    <Building2 className="w-5 h-5" />
-                  </span>
+              <div className="absolute left-4 bottom-4 z-[500] w-[360px] bg-white rounded-lg border border-[#D4D4D4] shadow-[0_8px_24px_rgba(20,32,43,0.16)] overflow-hidden">
+                <div className="flex items-start gap-3 px-5 pt-4 pb-3">
+                  <Building2 className="w-5 h-5 flex-none mt-0.5 text-[#377DC0]" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[16px] font-bold truncate">{actual.name}</p>
-                    <p className="text-[12px] text-[#8A8C8E] truncate">{actual.proyecto}</p>
+                    <p className="text-[16px] font-semibold text-[#1A1C1E] truncate">{actual.name}</p>
+                    <p className="text-[12px] text-[#8A8C8E] truncate">
+                      {actual.proyecto}
+                    </p>
                   </div>
                   <button type="button" onClick={() => setElegido(null)} aria-label="Cerrar"
-                    className="flex-none text-[#A0A2A4] hover:text-[#1A1C1E] text-[20px] leading-none">×</button>
+                    className="flex-none w-7 h-7 -mr-1.5 flex items-center justify-center rounded-[4px] text-[#616161] hover:bg-black/[0.06]">
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-                <p className="flex items-start gap-1.5 mt-3 text-[13px] text-[#66686A]">
-                  <MapPin className="w-4 h-4 flex-none mt-0.5 text-[#377DC0]" />{actual.address || 'Sin dirección'}
-                </p>
-                <div className="flex items-center gap-2 mt-3 text-[13px]">
-                  {actual.relevamientos === 0 ? (
-                    <span className="text-[#8A8C8E]">Todavía no se inspeccionó</span>
-                  ) : (
-                    <>
-                      <span className="text-[#66686A]">Última: <b className="text-[#1A1C1E]">{actual.lastRelevamientoDate}</b></span>
-                      {actual.lastDetections > 0
-                        ? <SeverityBadge level={actual.highestSeverity} count={actual.lastDetections} />
-                        : <span className="text-[12px] font-semibold text-[#15803D]">Sin hallazgos</span>}
-                    </>
-                  )}
+                <div className="px-5 pb-4 space-y-2">
+                  <p className="flex items-start gap-1.5 text-[13px] text-[#66686A]">
+                    <MapPin className="w-4 h-4 flex-none mt-0.5 text-[#8A8C8E]" />{actual.address || 'Sin dirección'}
+                  </p>
+                  <div className="flex items-center gap-2 text-[13px]">
+                    {actual.relevamientos === 0 ? (
+                      <span className="text-[#8A8C8E]">Todavía no se inspeccionó</span>
+                    ) : (
+                      <>
+                        <span className="text-[#66686A]">Última inspección: <b className="font-semibold text-[#1A1C1E]">{actual.lastRelevamientoDate}</b></span>
+                        {actual.lastDetections > 0
+                          ? <SeverityBadge level={actual.highestSeverity} count={actual.lastDetections} />
+                          : <span className="text-[12px] font-medium text-[#377DC0]">Sin hallazgos</span>}
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div className="mt-4">
-                  <PrimaryButton onClick={() => onAbrir(actual.id)} icon={<ChevronRight className="w-4 h-4" />}>Abrir edificación</PrimaryButton>
+                <div className="flex justify-end px-5 py-3 bg-[#F8F9FA] border-t border-[#E5E7EB]">
+                  <PrimaryButton onClick={() => onAbrir(actual.id)} iconRight={<ChevronRight className="w-4 h-4" />}>Abrir edificación</PrimaryButton>
                 </div>
               </div>
             )}

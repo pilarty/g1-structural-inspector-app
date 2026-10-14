@@ -95,11 +95,11 @@ export default function Inspecciones({ activeTab, onTabChange, onVer }: Inspecci
               </div>
               <div className="flex items-center gap-2">
                 <button type="button" onClick={exportar} disabled={filtradas.length === 0}
-                  className="flex items-center gap-2 h-8 px-3 rounded-[3px] text-[13px] font-medium text-[#1A1C1E] bg-white border border-[#D4D4D4] hover:bg-[#F3F4F6] disabled:opacity-40 transition-colors">
+                  className="flex items-center justify-center gap-2 h-9 px-3.5 rounded-[3px] text-[13px] font-medium transition-colors bg-white text-[#1A1C1E] border border-[#D4D4D4] hover:bg-[#F3F4F6] disabled:opacity-40">
                   <Download className="w-4 h-4 text-[#66686A]" /> Exportar CSV
                 </button>
                 <button type="button" onClick={() => onTabChange('inspeccion')}
-                  className="flex items-center gap-2 h-8 px-3 rounded-[3px] text-[13px] font-medium text-white bg-[#377DC0] hover:bg-[#2F6CA8] transition-colors">
+                  className="flex items-center justify-center gap-2 h-9 px-3.5 rounded-[3px] text-[13px] font-medium transition-colors bg-[#377DC0] text-white hover:bg-[#2F6CA8]">
                   <Plus className="w-4 h-4" /> Nueva inspección
                 </button>
               </div>

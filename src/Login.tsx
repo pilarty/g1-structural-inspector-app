@@ -13,7 +13,7 @@ interface LoginProps {
 }
 
 const inputClase =
-  'w-full px-4 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-xl border border-[#377DC0]/15 focus:border-[#377DC0]/40 text-[13px] text-[#1A1C1E] placeholder:text-[#A0A2A4] outline-none transition-colors';
+  'w-full px-4 py-2.5 bg-white/60 hover:bg-white/80 focus:bg-white/90 rounded-md border border-[#377DC0]/15 focus:border-[#377DC0]/40 text-[13px] text-[#1A1C1E] placeholder:text-[#A0A2A4] outline-none transition-colors';
 
 export default function Login({ estado, onLogin, onReintentar }: LoginProps) {
   const [usuario, setUsuario] = useState('');

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useProyectos } from './proyectos';
 import { useSesion } from './sesion';
-import { puedeSalir, registrarCambiosSinGuardar } from './navegacion';
+import { registrarCambiosSinGuardar, salirSiSePuede } from './navegacion';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav, PrimaryButton, SecondaryButton, ProjectsSidebar } from './components';
 import { Bloque, Solapa, Campo, Entrada, Selector, AreaTexto, Fecha, TarjetaFormulario } from './components/Formulario';
@@ -110,7 +110,7 @@ export default function NewProject({ activeTab, onTabChange, onCancel, onCreado,
 
   return (
     <div className="flex h-screen font-sans text-[#1A1C1E]">
-      <ActivityBar active={activeTab} onChange={t => puedeSalir() && onTabChange(t)} />
+      <ActivityBar active={activeTab} onChange={t => salirSiSePuede(() => onTabChange(t))} />
 
       <div className="flex flex-col flex-1 overflow-hidden">
         <TopNav />
@@ -118,7 +118,7 @@ export default function NewProject({ activeTab, onTabChange, onCancel, onCreado,
         <div className="flex flex-1 overflow-hidden">
         <ProjectsSidebar
           selectedBuildingId={null}
-          onSelectBuilding={id => puedeSalir() && onAbrirEdificio(id)}
+          onSelectBuilding={id => salirSiSePuede(() => onAbrirEdificio(id))}
           borrador={editando ? undefined : { tipo: 'proyecto', nombre: f.nombre }}
         />
         <div className="flex-1 overflow-y-auto bg-[#F3F6F9]">
@@ -140,7 +140,7 @@ export default function NewProject({ activeTab, onTabChange, onCancel, onCreado,
                       : intento && Object.keys(errores).length ? <span className="text-[#991B1B] font-medium">Revisá los campos marcados en rojo.</span>
                       : null}
                   </div>
-                  <SecondaryButton onClick={() => puedeSalir() && onCancel()}>Cancelar</SecondaryButton>
+                  <SecondaryButton onClick={() => salirSiSePuede(onCancel)}>Cancelar</SecondaryButton>
                   <PrimaryButton onClick={crear} disabled={guardando} shadow icon={guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : undefined}>
                     {guardando ? (editando ? 'Guardando…' : 'Creando…') : editando ? 'Guardar cambios' : 'Crear proyecto'}
                   </PrimaryButton>
@@ -179,7 +179,7 @@ export default function NewProject({ activeTab, onTabChange, onCancel, onCreado,
                   <Campo etiqueta="Tipo de cliente">
                     <Selector valor={f.tipoCliente} onCambio={v => cambiar({ tipoCliente: v })} opciones={TIPOS_CLIENTE} />
                   </Campo>
-                  <Campo etiqueta="CUIT" error={visibles.cuit} ayuda="Útil si después facturás o emitís informes formales.">
+                  <Campo etiqueta="CUIT" error={visibles.cuit}>
                     <Entrada valor={f.cuit} onCambio={v => cambiar({ cuit: v })} onSalir={tocar('cuit')} placeholder="30-71234567-1" error={visibles.cuit} />
                   </Campo>
                   <Campo etiqueta="Teléfono" error={visibles.telefono}>

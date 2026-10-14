@@ -97,7 +97,7 @@ export default function FichaEdificio({ activeTab, onTabChange, edificioId, onVo
             )}
 
             {e && (
-              <div className="bg-white rounded-2xl border border-[#14202B]/[0.07] shadow-[0_1px_2px_rgba(20,32,43,0.04),0_8px_24px_rgba(20,32,43,0.05)]">
+              <div className="bg-white rounded-lg border border-[#14202B]/[0.07] shadow-[0_1px_2px_rgba(20,32,43,0.04),0_8px_24px_rgba(20,32,43,0.05)]">
 
                 {/* Cabecera */}
                 <div className="px-6 py-6 flex items-center gap-4 border-b border-[#14202B]/[0.06]">
@@ -112,7 +112,7 @@ export default function FichaEdificio({ activeTab, onTabChange, edificioId, onVo
                     </p>
                   </div>
                   <button type="button" onClick={() => setBorrando({ enviando: false, error: null, inspecciones: proyectos.flatMap(p => p.buildings).find(b => b.id === edificioId)?.relevamientos ?? 0 })}
-                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-[#991B1B] hover:bg-[#FEF2F2] transition-colors">
+                    className="flex items-center justify-center gap-2 h-9 px-3.5 rounded-[3px] text-[13px] font-medium transition-colors bg-white text-[#B91C1C] border border-[#D4D4D4] hover:bg-[#FEF2F2] hover:border-[#FCA5A5]">
                     <Trash2 className="w-4 h-4" /> Eliminar
                   </button>
                   <PrimaryButton onClick={onEditar} shadow icon={<Pencil className="w-4 h-4" />}>Editar</PrimaryButton>

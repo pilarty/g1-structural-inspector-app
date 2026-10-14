@@ -8,7 +8,7 @@ import { TopNav, PrimaryButton, SecondaryButton, ProjectsSidebar } from './compo
 import { Campo, Entrada, Selector, AreaTexto, Segmentado, Bloque, Solapa, MasDatos } from './components/Formulario';
 import { DialogoNuevoProyecto } from './proyectoForm';
 import DialogoConfirmar from './components/DialogoConfirmar';
-import { puedeSalir, registrarCambiosSinGuardar } from './navegacion';
+import { registrarCambiosSinGuardar, salirSiSePuede } from './navegacion';
 import {
   DESTINOS, DOCUMENTOS, DOCUMENTO_PLANO_PH, EXTENSIONES_PERMITIDAS, MAX_MB, PRECISIONES_ANIO, PROVINCIAS, SECCIONES,
   TIPOS_PROPIEDAD, NOMBRE_DOCUMENTO, aEdificacionApi, actualizarEdificacion, crearEdificacion, desdeApi, edificioVacio, enlaceDocumento,
@@ -272,7 +272,6 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
   }, [guardado, guardando, fallidos]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sinProyectos = proyectos.length === 0;
-  const numero = (id: string) => secciones.findIndex(s => s.id === id) + 1;
   const zona = (tipo: TipoDocumento, etiqueta: string, ayuda: string) => (
     <ZonaDocumentos key={tipo} tipo={tipo} etiqueta={etiqueta} ayuda={ayuda}
       archivos={archivos.filter(a => a.tipo === tipo)} onAgregar={agregarArchivos} onQuitar={quitarArchivo} bloqueado={guardando} />
@@ -280,7 +279,7 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
 
   return (
     <div className="flex h-screen font-sans text-[#1A1C1E]">
-      <ActivityBar active={activeTab} onChange={t => puedeSalir() && onTabChange(t)} />
+      <ActivityBar active={activeTab} onChange={t => salirSiSePuede(() => onTabChange(t))} />
 
       <div className="flex flex-col flex-1 overflow-hidden">
         <TopNav />
@@ -288,7 +287,7 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
         <div className="flex flex-1 overflow-hidden">
         <ProjectsSidebar
           selectedBuildingId={edificioId ?? null}
-          onSelectBuilding={id => puedeSalir() && onAbrirEdificio(id)}
+          onSelectBuilding={id => salirSiSePuede(() => onAbrirEdificio(id))}
           borrador={editando ? undefined : { tipo: 'edificio', nombre: f.nombre, proyectoId: f.proyectoId }}
         />
         <div className="flex-1 overflow-y-auto bg-[#F3F6F9]">
@@ -308,9 +307,9 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
             </div>
 
             {/* Una sola tarjeta con todas las secciones */}
-            <div className="mt-2 bg-white rounded-2xl border border-[#14202B]/[0.07] shadow-[0_1px_2px_rgba(20,32,43,0.04),0_8px_24px_rgba(20,32,43,0.05)]">
+            <div className="mt-2 bg-white rounded-lg border border-[#14202B]/[0.07] shadow-[0_1px_2px_rgba(20,32,43,0.04),0_8px_24px_rgba(20,32,43,0.05)]">
 
-              <Bloque id="identificacion" numero={numero('identificacion')} titulo="Identificación" descripcion="Cómo vas a reconocer el inmueble y a qué proyecto pertenece.">
+              <Bloque id="identificacion" titulo="Identificación" descripcion="Cómo vas a reconocer el inmueble y a qué proyecto pertenece.">
                 <div className="grid grid-cols-2 gap-4">
                   <Campo etiqueta="Nombre de referencia" obligatorio error={visibles.nombre} className="col-span-2">
                     <Entrada valor={f.nombre} onCambio={v => cambiar({ nombre: v })} onSalir={tocar('nombre')} placeholder="Ej. Edificio Corrientes 1234" error={visibles.nombre} />
@@ -331,7 +330,7 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
                           placeholder={sinProyectos ? 'Sin proyectos' : 'Seleccionar proyecto'} error={visibles.proyectoId} />
                       </div>
                       <button type="button" onClick={() => setDialogoProyecto(true)} title="Crear un proyecto nuevo"
-                        className="flex-none flex items-center gap-1.5 h-[42px] px-3 rounded-xl text-[13px] font-semibold text-[#377DC0] hover:bg-[#E3EEF8] transition-colors">
+                        className="flex-none flex items-center justify-center gap-2 h-[42px] px-3.5 rounded-[3px] text-[13px] font-medium transition-colors bg-white text-[#1A1C1E] border border-[#D4D4D4] hover:bg-[#F3F4F6]">
                         <Plus className="w-3.5 h-3.5" /> Nuevo
                       </button>
                     </div>
@@ -343,7 +342,7 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
                 </div>
               </Bloque>
 
-              <Bloque id="ubicacion" numero={numero('ubicacion')} titulo="Ubicación" descripcion="Dirección del inmueble. Las coordenadas se completan solas.">
+              <Bloque id="ubicacion" titulo="Ubicación" descripcion="Dirección del inmueble. Las coordenadas se completan solas.">
                 <div className="grid grid-cols-3 gap-4">
                   <Campo etiqueta="Calle y número" obligatorio error={visibles.calleNumero} className="col-span-3">
                     <Entrada valor={f.calleNumero} onCambio={v => cambiar({ calleNumero: v })} onSalir={tocar('calleNumero')} placeholder="Ej. Av. Corrientes 1234" error={visibles.calleNumero} />
@@ -370,7 +369,7 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
                 </MasDatos>
               </Bloque>
 
-              <Bloque id="edificio" numero={numero('edificio')} titulo="Datos del inmueble" descripcion="Antigüedad y altura.">
+              <Bloque id="edificio" titulo="Datos del inmueble" descripcion="Antigüedad y altura.">
                 <div className="grid grid-cols-3 gap-4">
                   <Campo etiqueta="Año de construcción" obligatorio error={visibles.anio} className="col-span-2"
                     ayuda={f.anioPrecision === 'desconocido' ? 'Se guarda como desconocido.' : undefined}>
@@ -408,7 +407,7 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
                 </MasDatos>
               </Bloque>
 
-              <Solapa id="registral" numero={numero('registral')} titulo="Datos registrales y catastrales"
+              <Solapa id="registral" titulo="Datos registrales y catastrales"
                 descripcion="Matrícula, nomenclatura, partida, valuación y linderos (de la escritura o la boleta de impuesto)."
                 abierta={abiertas.has('registral')} onAlternar={() => alternar('registral')}
                 cargados={['matricula', 'nomenclatura', 'partida', 'valuacion', 'linderos'].filter(c => String(f[c as CampoEdificio]).trim()).length}>
@@ -426,7 +425,7 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
               </Solapa>
 
               {esPh && (
-                <Solapa id="ph" numero={numero('ph')} titulo="Propiedad horizontal" descripcion="Unidades, porcentual y plano de PH."
+                <Solapa id="ph" titulo="Propiedad horizontal" descripcion="Unidades, porcentual y plano de PH."
                   abierta={abiertas.has('ph')} onAlternar={() => alternar('ph')}
                   cargados={['phUnidades', 'phUnidadFuncional', 'phPorcentual'].filter(c => String(f[c as CampoEdificio]).trim()).length + archivos.filter(a => a.tipo === DOCUMENTO_PLANO_PH).length}>
                   <div className="grid grid-cols-3 gap-4">
@@ -447,7 +446,7 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
                 </Solapa>
               )}
 
-              <Solapa id="contacto" numero={numero('contacto')} titulo="Responsable y contacto" descripcion="A quién avisar para coordinar el relevamiento."
+              <Solapa id="contacto" titulo="Responsable y contacto" descripcion="A quién avisar para coordinar el relevamiento."
                 abierta={abiertas.has('contacto')} onAlternar={() => alternar('contacto')}
                 cargados={['responsable', 'contacto'].filter(c => String(f[c as CampoEdificio]).trim()).length}>
                 <div className="grid grid-cols-2 gap-4">
@@ -458,7 +457,7 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
                 </div>
               </Solapa>
 
-              <Solapa id="documentos" numero={numero('documentos')} titulo="Documentación adjunta"
+              <Solapa id="documentos" titulo="Documentación adjunta"
                 descripcion={`Planos, final de obra, escritura, fotos e informes. PDF, DWG, DXF, JPG, PNG o Word, hasta ${MAX_MB} MB.`}
                 abierta={abiertas.has('documentos')} onAlternar={() => alternar('documentos')}
                 cargados={archivos.filter(a => a.tipo !== DOCUMENTO_PLANO_PH).length + docsGuardados.filter(d => d.tipo_archivo !== DOCUMENTO_PLANO_PH).length}>
@@ -483,7 +482,7 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
                     : <span className="text-[#8A8C8E]">Los documentos se suben al guardar.</span>}
                 </div>
                 {fallidos > 0 && guardado && !guardando && <SecondaryButton onClick={() => onCreado(guardado.id)}>Seguir sin ellos</SecondaryButton>}
-                {!guardado && <SecondaryButton onClick={() => puedeSalir() && onCancel()}>Cancelar</SecondaryButton>}
+                {!guardado && <SecondaryButton onClick={() => salirSiSePuede(onCancel)}>Cancelar</SecondaryButton>}
                 <PrimaryButton onClick={guardar} disabled={guardando} shadow
                   icon={guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : fallidos > 0 && guardado ? <RefreshCw className="w-4 h-4" /> : undefined}>
                   {guardando ? 'Guardando…' : fallidos > 0 && guardado ? 'Reintentar archivos' : editando ? 'Guardar cambios' : 'Guardar edificio'}
@@ -630,7 +629,7 @@ function ZonaDocumentos({ tipo, etiqueta, ayuda, archivos, onAgregar, onQuitar, 
         role="button"
         tabIndex={0}
         onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && !bloqueado && entrada.current?.click()}
-        className={`flex items-center gap-3 rounded-xl border border-dashed px-3.5 py-3 cursor-pointer transition-colors ${
+        className={`flex items-center gap-3 rounded-md border border-dashed px-3.5 py-3 cursor-pointer transition-colors ${
           encima ? 'border-[#377DC0] bg-[#E3EEF8]' : 'border-[#377DC0]/30 hover:border-[#377DC0] hover:bg-[#F8FAFC]'
         } ${bloqueado ? 'opacity-50 cursor-not-allowed' : ''}`}
       >

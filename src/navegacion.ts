@@ -10,10 +10,18 @@ export function registrarCambiosSinGuardar(f: (() => boolean) | null) {
   haySinGuardar = f;
 }
 
-/** true si se puede salir: no hay cambios sin guardar, o el usuario confirma descartarlos. */
-export function puedeSalir(): boolean {
-  if (!haySinGuardar || !haySinGuardar()) return true;
-  return window.confirm('Tenés cambios sin guardar. Si salís, se van a perder.\n\n¿Salir sin guardar?');
+let pedirConfirmacion: ((seguir: () => void) => void) | null = null;
+
+/** El cartel «¿Salir sin guardar?» se registra acá (null al desmontarse). */
+export function registrarDialogoSalir(f: ((seguir: () => void) => void) | null) {
+  pedirConfirmacion = f;
+}
+
+/** Hace `accion` si no hay cambios sin guardar; si los hay, pregunta antes con el cartel de la app. */
+export function salirSiSePuede(accion: () => void) {
+  if (!haySinGuardar || !haySinGuardar()) accion();
+  else if (pedirConfirmacion) pedirConfirmacion(accion);
+  else if (window.confirm('Tenés cambios sin guardar. ¿Salir sin guardar?')) accion();
 }
 
 let alNuevoEdificioEn: ((proyectoId: string) => void) | null = null;
@@ -30,7 +38,7 @@ export function registrarNuevoProyecto(f: () => void) {
 
 /** Abre «Nuevo proyecto». */
 export function nuevoProyecto() {
-  if (puedeSalir()) alNuevoProyecto?.();
+  salirSiSePuede(() => alNuevoProyecto?.());
 }
 
 let alEliminar: ((tipo: 'proyecto' | 'edificio', id: string) => void) | null = null;
@@ -52,7 +60,7 @@ export function registrarAlEditar(f: (tipo: 'proyecto' | 'edificio', id: string)
 
 /** Abre el formulario de edición de un proyecto o una edificación. */
 export function editarElemento(tipo: 'proyecto' | 'edificio', id: string) {
-  if (puedeSalir()) alEditar?.(tipo, id);
+  salirSiSePuede(() => alEditar?.(tipo, id));
 }
 
 let alVerProyecto: ((id: string) => void) | null = null;
@@ -63,10 +71,10 @@ export function registrarVerProyecto(f: (id: string) => void) {
 
 /** Abre la ficha de un proyecto. */
 export function verProyecto(id: string) {
-  if (puedeSalir()) alVerProyecto?.(id);
+  salirSiSePuede(() => alVerProyecto?.(id));
 }
 
 /** Abre «Nuevo edificio» con ese proyecto ya elegido. */
 export function nuevoEdificioEn(proyectoId: string) {
-  if (puedeSalir()) alNuevoEdificioEn?.(proyectoId);
+  salirSiSePuede(() => alNuevoEdificioEn?.(proyectoId));
 }

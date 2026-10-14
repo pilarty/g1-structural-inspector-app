@@ -74,7 +74,7 @@ export default function FichaProyecto({ activeTab, onTabChange, proyectoId, onEd
               )}
 
               {p && (
-                <div className="bg-white rounded-2xl border border-[#14202B]/[0.07] shadow-[0_1px_2px_rgba(20,32,43,0.04),0_8px_24px_rgba(20,32,43,0.05)]">
+                <div className="bg-white rounded-lg border border-[#14202B]/[0.07] shadow-[0_1px_2px_rgba(20,32,43,0.04),0_8px_24px_rgba(20,32,43,0.05)]">
 
                   {/* Cabecera */}
                   <div className="px-6 py-6 flex items-center gap-4 border-b border-[#14202B]/[0.06]">
@@ -88,7 +88,7 @@ export default function FichaProyecto({ activeTab, onTabChange, proyectoId, onEd
                       </div>
                     </div>
                     <button type="button" onClick={() => setBorrando({ enviando: false, error: null, inspecciones: inspeccionesTotales })}
-                      className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-[#991B1B] hover:bg-[#FEF2F2] transition-colors">
+                      className="flex items-center justify-center gap-2 h-9 px-3.5 rounded-[3px] text-[13px] font-medium transition-colors bg-white text-[#B91C1C] border border-[#D4D4D4] hover:bg-[#FEF2F2] hover:border-[#FCA5A5]">
                       <Trash2 className="w-4 h-4" /> Eliminar
                     </button>
                     <PrimaryButton onClick={onEditar} shadow icon={<Pencil className="w-4 h-4" />}>Editar</PrimaryButton>
@@ -118,7 +118,7 @@ export default function FichaProyecto({ activeTab, onTabChange, proyectoId, onEd
                         Edificaciones <span className="text-[#8A8C8E] font-semibold">· {edificios.length}</span>
                       </h2>
                       <button type="button" onClick={() => nuevoEdificioEn(proyectoId)}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] font-semibold text-[#377DC0] bg-[#E3EEF8] hover:bg-[#D3E4F4] transition-colors">
+                        className="flex items-center justify-center gap-2 h-9 px-3.5 rounded-[3px] text-[13px] font-medium transition-colors bg-white text-[#1A1C1E] border border-[#D4D4D4] hover:bg-[#F3F4F6]">
                         <Plus className="w-4 h-4" /> Nueva edificación
                       </button>
                     </div>

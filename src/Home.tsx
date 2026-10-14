@@ -23,7 +23,7 @@ export default function Home({ onNavigateToFloorPlan, activeTab, onTabChange, se
 
         <div className="flex flex-1 overflow-hidden">
           <ProjectsSidebar
-            selectedBuildingId={selectedBuildingId ?? null}
+            selectedBuildingId={null}
             onSelectBuilding={id => onSelectBuilding?.(id)}
           />
 
