@@ -25,7 +25,6 @@ export default function Home({ onNavigateToFloorPlan, activeTab, onTabChange, se
           <ProjectsSidebar
             selectedBuildingId={selectedBuildingId ?? null}
             onSelectBuilding={id => onSelectBuilding?.(id)}
-            onNewBuilding={() => onTabChange('nuevo-edificio')}
           />
 
           {/* Main content */}
@@ -52,3 +51,4 @@ export default function Home({ onNavigateToFloorPlan, activeTab, onTabChange, se
     </div>
   );
 }
+

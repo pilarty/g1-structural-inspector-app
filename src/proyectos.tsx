@@ -15,6 +15,8 @@ interface EdificacionApi {
   direccion: string | null;
   cantidad_plantas: number | null;
   anio_construccion: number | null;
+  latitud?: number | string | null;
+  longitud?: number | string | null;
 }
 
 interface ResumenApi {
@@ -73,6 +75,8 @@ function aEdificio(e: EdificacionApi, rels: ResumenApi[]): Building {
     address: e.direccion ?? '',
     floors: e.cantidad_plantas ?? 0,
     yearBuilt: e.anio_construccion ?? 0,
+    lat: e.latitud != null ? Number(e.latitud) : undefined,
+    lon: e.longitud != null ? Number(e.longitud) : undefined,
   };
   if (rels.length === 0) return base;
 
@@ -88,10 +92,16 @@ function aEdificio(e: EdificacionApi, rels: ResumenApi[]): Building {
     lastRobot: ult.robot ?? '—',
     lastOperator: ult.operador ?? '—',
     historial: rels.map(r => ({
+      id: r.id,
       date: fechaLarga(r.fecha_inicio),
       detections: r.detecciones,
       severity: mayorSeveridad(r),
       robot: r.robot ?? '—',
+      operador: r.operador ?? '—',
+      estado: r.estado ?? '',
+      inicio: aIso(r.fecha_inicio),
+      fin: aIso(r.fecha_fin),
+      breakdown: { low: r.low, medium: r.medium, high: r.high, critical: r.critical },
     })),
     ultimoRelevamiento: {
       id: ult.id,

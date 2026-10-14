@@ -10,6 +10,14 @@ export interface HistorialEntry {
   detections: number;
   severity: SeverityLevel;
   robot: string;
+  // Lo siguiente solo viene en los edificios cargados desde la nube
+  /** id del relevamiento (inspección) */
+  id?: number;
+  operador?: string;
+  estado?: string;
+  inicio?: string | null;
+  fin?: string | null;
+  breakdown?: Record<SeverityLevel, number>;
 }
 
 export interface UltimoRelevamiento {
@@ -37,6 +45,9 @@ export interface Building {
   riskZones: RiskZone[];
   historial: HistorialEntry[];
   ultimoRelevamiento?: UltimoRelevamiento;
+  /** Coordenadas (Georef), si la dirección se ubicó */
+  lat?: number;
+  lon?: number;
 }
 
 export interface Project {

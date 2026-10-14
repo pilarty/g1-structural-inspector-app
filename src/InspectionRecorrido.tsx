@@ -7,7 +7,7 @@ import { useProyectos, EDIFICIO_VACIO } from './proyectos';
 import { TopNav, ProjectsSidebar, TurquoiseCard, PanelTitle, PanelLabel, PanelText, PrimaryButton } from './components';
 import {
   Map,
-  ZoomIn, ZoomOut, Maximize, ArrowRight,
+  ZoomIn, ZoomOut, Maximize, ArrowRight, FileText,
 } from 'lucide-react';
 
 const GRID_BG = {
@@ -53,9 +53,15 @@ interface InspectionRecorridoProps {
   onViewDetails: () => void;
   selectedBuildingId?: string | null;
   onSelectBuilding?: (id: string) => void;
+  /** Abre la ficha completa del inmueble (para verla o editarla) */
+  onVerFicha?: (id: string) => void;
+  /** Inspección elegida en el historial; si no viene, se muestra la última */
+  relevamientoId?: number | null;
+  /** Volver a mostrar la última inspección */
+  onVerUltima?: () => void;
 }
 
-export default function InspectionRecorrido({ activeTab, onTabChange, onViewDetails, selectedBuildingId, onSelectBuilding }: InspectionRecorridoProps) {
+export default function InspectionRecorrido({ activeTab, onTabChange, onViewDetails, selectedBuildingId, onSelectBuilding, onVerFicha, relevamientoId, onVerUltima }: InspectionRecorridoProps) {
   const [infoTab, setInfoTab] = useState<TabId>('datos');
   const { proyectos, recargar } = useProyectos();
   useEffect(() => {
@@ -64,8 +70,23 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
   const edificios = proyectos.flatMap(p => p.buildings);
   const currentBuildingId = selectedBuildingId ?? edificios[0]?.id ?? '';
 
-  const currentBuilding: Building =
+  const edificio: Building =
     edificios.find(b => b.id === currentBuildingId) ?? EDIFICIO_VACIO;
+  // Si se eligió una inspección anterior del historial, se muestra esa en vez de la última
+  const elegida = relevamientoId ? edificio.historial.find(h => h.id === relevamientoId) : undefined;
+  const esAnterior = !!elegida && elegida.id !== edificio.ultimoRelevamiento?.id;
+  const currentBuilding: Building = elegida && elegida.id !== undefined
+    ? {
+        ...edificio,
+        ultimoRelevamiento: { id: elegida.id, estado: elegida.estado ?? '', inicio: elegida.inicio ?? null, fin: elegida.fin ?? null },
+        lastRelevamientoDate: elegida.date,
+        lastDetections: elegida.detections,
+        highestSeverity: elegida.severity,
+        lastSeverityBreakdown: elegida.breakdown ?? edificio.lastSeverityBreakdown,
+        lastRobot: elegida.robot,
+        lastOperator: elegida.operador ?? edificio.lastOperator,
+      }
+    : edificio;
 
   const infoTabs: { id: TabId; label: string }[] = [
     { id: 'datos',    label: 'Datos del recorrido' },
@@ -86,10 +107,19 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
           <ProjectsSidebar
             selectedBuildingId={currentBuildingId}
             onSelectBuilding={id => onSelectBuilding?.(id)}
-            onNewBuilding={() => onTabChange('nuevo-edificio')}
           />
 
         <div className="flex flex-col flex-1 overflow-hidden min-h-0">
+
+        {/* Aviso: se está viendo una inspección anterior */}
+        {esAnterior && elegida && (
+          <div className="flex-none flex items-center gap-3 px-5 py-2.5 bg-[#FFFBEB] border-b border-[#FDE68A] text-[13px] text-[#92400E]">
+            <span className="flex-1 min-w-0 truncate">Estás viendo la inspección del <b>{elegida.date}</b>, no la última.</span>
+            {onVerUltima && (
+              <button type="button" onClick={onVerUltima} className="flex-none font-semibold text-[#377DC0] hover:opacity-75">Ver la última</button>
+            )}
+          </div>
+        )}
 
         {/* Floor plan */}
         <div className="flex-1 relative overflow-hidden min-h-0" style={GRID_BG}>
@@ -284,6 +314,15 @@ export default function InspectionRecorrido({ activeTab, onTabChange, onViewDeta
                 </button>
               ))}
             </div>
+            {currentBuilding.id && onVerFicha && (
+              <button
+                type="button"
+                onClick={() => onVerFicha(currentBuilding.id)}
+                className="mr-3 flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold text-[#377DC0] bg-[#E3EEF8] hover:bg-[#D3E4F4] transition-colors"
+              >
+                <FileText className="w-3.5 h-3.5" /> Ficha del inmueble
+              </button>
+            )}
             {currentBuilding.relevamientos > 0 && (
               <PrimaryButton onClick={onViewDetails} iconRight={<ArrowRight className="w-3.5 h-3.5" />} shadow>
                 Ver relevamiento
