@@ -14,6 +14,8 @@ export interface DatosInforme {
   edificacion: string;
   direccion: string;
   planta: string;
+  motivo: string | null;
+  observaciones: string | null;
   fecha: string;
   inicio: string;
   fin: string;
@@ -78,6 +80,7 @@ export default function Informe({ datos, hallazgos, descartados }: {
             <tr><th>Edificación</th><td>{datos.edificacion}</td><th>Proyecto</th><td>{datos.proyecto}</td></tr>
             <tr><th>Dirección</th><td>{datos.direccion || '—'}</td><th>Comitente</th><td>{datos.comitente || '—'}</td></tr>
             <tr><th>Planta inspeccionada</th><td>{datos.planta}</td><th>Fecha</th><td>{datos.fecha}</td></tr>
+            <tr><th>Motivo</th><td colSpan={3}>{datos.motivo ?? '—'}</td></tr>
             <tr><th>Horario</th><td>{datos.inicio} a {datos.fin} ({datos.duracion})</td><th>Equipo</th><td>Robot {datos.robot}</td></tr>
           </tbody>
         </table>
@@ -97,6 +100,9 @@ export default function Informe({ datos, hallazgos, descartados }: {
           inspeccionaron elementos ocultos. La confianza informada indica qué tan seguro está el modelo del tipo de daño y no
           mide su gravedad.
         </p>
+        {datos.observaciones && (
+          <p className="informe-texto mt-1.5 whitespace-pre-line"><b>Observaciones del lugar:</b> {datos.observaciones}</p>
+        )}
       </section>
 
       {/* 3. Resumen */}

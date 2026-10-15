@@ -268,7 +268,7 @@ export default function NewRobot({ activeTab, onTabChange }: NewRobotProps) {
         <TopNav />
 
         <div className="flex-1 overflow-y-auto bg-[#F3F6F9]">
-          <div className="w-full px-8 py-8">
+          <div className="w-full max-w-[1600px] mx-auto px-6 xl:px-8 py-8">
 
             <div className="mb-6">
               <h1 className="text-[22px] font-bold text-[#1A1C1E] tracking-tight">Robot</h1>

@@ -1,11 +1,17 @@
 ﻿import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import Login from './Login';
+import Login, { type PedidoClave } from './Login';
 
 export const BACKEND_URL = 'http://localhost:8000';
 
 interface SesionCtx {
   usuario: string;
   cerrar: () => void;
+  /** Cambia el nombre que se muestra (después de editarlo en el perfil) */
+  renombrar: (nombre: string) => void;
+  /** Vuelve al login sin llamar al backend (la sesión ya no existe, p. ej. al eliminar la cuenta) */
+  salir: () => void;
+  /** Cierra la sesión y abre el inicio en el paso de cambiar la contraseña (el correo ya se mandó) */
+  irACambiarClave: (pedido: PedidoClave) => void;
 }
 
 const SesionContext = createContext<SesionCtx | null>(null);
@@ -24,6 +30,7 @@ type Estado =
 
 export function SesionProvider({ children }: { children: React.ReactNode }) {
   const [estado, setEstado] = useState<Estado>({ tipo: 'cargando' });
+  const [pedidoClave, setPedidoClave] = useState<PedidoClave | null>(null);
 
   const consultar = useCallback(async () => {
     setEstado({ tipo: 'cargando' });
@@ -52,6 +59,7 @@ export function SesionProvider({ children }: { children: React.ReactNode }) {
       if (res.status === 401) return 'Usuario o contraseña incorrectos.';
       if (!res.ok) return 'No se pudo iniciar sesión. Intenta de nuevo.';
       const data = await res.json();
+      setPedidoClave(null);
       setEstado({ tipo: 'ok', usuario: data.usuario ?? usuario });
       return null;
     } catch {
@@ -70,11 +78,17 @@ export function SesionProvider({ children }: { children: React.ReactNode }) {
 
   if (estado.tipo === 'ok') {
     return (
-      <SesionContext.Provider value={{ usuario: estado.usuario, cerrar }}>
+      <SesionContext.Provider value={{
+        usuario: estado.usuario,
+        cerrar,
+        renombrar: nombre => setEstado({ tipo: 'ok', usuario: nombre }),
+        salir: () => setEstado({ tipo: 'sin-sesion' }),
+        irACambiarClave: async pedido => { setPedidoClave(pedido); await cerrar(); },
+      }}>
         {children}
       </SesionContext.Provider>
     );
   }
 
-  return <Login estado={estado.tipo} onLogin={iniciar} onReintentar={consultar} />;
+  return <Login key={pedidoClave ? 'clave' : 'login'} estado={estado.tipo} onLogin={iniciar} onReintentar={consultar} pedidoClave={pedidoClave} />;
 }

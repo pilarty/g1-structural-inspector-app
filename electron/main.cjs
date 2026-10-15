@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron')
+const { app, BrowserWindow, dialog, ipcMain, screen, shell } = require('electron')
 const { spawn } = require('node:child_process')
 const fs = require('node:fs')
 const http = require('node:http')
@@ -115,9 +115,18 @@ async function arrancar() {
 }
 
 function crearVentana() {
+  // Tamaño según la pantalla: ocupa casi todo el espacio libre (sin la barra de tareas de Windows)
+  const { width: anchoLibre, height: altoLibre } = screen.getPrimaryDisplay().workAreaSize
+  const ancho = Math.min(1600, Math.round(anchoLibre * 0.92))
+  const alto = Math.min(1000, Math.round(altoLibre * 0.92))
   ventana = new BrowserWindow({
-    width: 1280,
-    height: 800,
+    width: ancho,
+    height: alto,
+    center: true,
+    // Más chica que esto las pantallas ya no entran bien
+    minWidth: Math.min(1024, anchoLibre),
+    minHeight: Math.min(600, altoLibre),
+    show: false,
     // Instalada, Windows toma el icono del .exe; en desarrollo el .exe es el de Electron
     ...(isDev && { icon: path.join(__dirname, '../build/icon.ico') }),
     webPreferences: {
@@ -128,6 +137,9 @@ function crearVentana() {
   })
   // Sin la barra de menú de Electron (File, Edit, View, Window)
   ventana.removeMenu()
+  // En pantallas chicas (notebooks) arranca maximizada
+  if (anchoLibre < 1440 || altoLibre < 820) ventana.maximize()
+  ventana.once('ready-to-show', () => ventana.show())
   // La app no abre ventanas nuevas ni navega fuera de sus propias pantallas
   ventana.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   ventana.webContents.on('will-navigate', (e, url) => {

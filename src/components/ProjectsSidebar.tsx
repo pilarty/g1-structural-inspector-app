@@ -111,7 +111,7 @@ export default function ProjectsSidebar({
 
   // ── Expanded state ────────────────────────────────────────────────────────
   return (
-    <aside className="flex-none w-[280px] flex flex-col bg-[#F8F9FA] border-r border-[#E5E7EB] overflow-hidden">
+    <aside className="flex-none w-[240px] xl:w-[280px] flex flex-col bg-[#F8F9FA] border-r border-[#E5E7EB] overflow-hidden">
       {/* Encabezado: título, acciones y buscador */}
       <div className="flex-none bg-white border-b border-[#E5E7EB] px-4 pt-4 pb-3.5">
         <div className="flex items-center justify-between gap-2">

@@ -291,12 +291,9 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
           borrador={editando ? undefined : { tipo: 'edificio', nombre: f.nombre, proyectoId: f.proyectoId }}
         />
         <div className="flex-1 overflow-y-auto bg-[#F3F6F9]">
-          <div className="w-full px-8 pt-8 pb-10">
+          <div className="w-full max-w-[1600px] mx-auto px-6 xl:px-8 pt-8 pb-10">
 
             <h1 className="text-[22px] font-bold text-[#1A1C1E] tracking-tight">{editando ? `Editar ${f.nombre || 'edificio'}` : 'Nuevo edificio'}</h1>
-            {!editando && <p className="text-[14px] text-[#8A8C8E] mt-1">
-              {<>Registrá una casa, un edificio o un PH. Lo marcado con <span className="text-[#991B1B]">*</span> es obligatorio; lo demás podés sumarlo ahora o más adelante.</>}
-            </p>}
             {cargando && <p className="mt-6 flex items-center gap-2 text-[14px] text-[#8A8C8E]"><Loader2 className="w-4 h-4 animate-spin" /> Cargando los datos del edificio…</p>}
             {errorCarga && <p className="mt-6 text-[14px] text-[#991B1B]">{errorCarga}</p>}
             {!cargando && !errorCarga && (<>

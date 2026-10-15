@@ -66,7 +66,7 @@ export default function FichaProyecto({ activeTab, onTabChange, proyectoId, onEd
         <div className="flex flex-1 overflow-hidden">
           <ProjectsSidebar selectedBuildingId={null} proyectoSeleccionado={proyectoId} onSelectBuilding={onSeleccionarEnBarra} />
           <div className="flex-1 overflow-y-auto bg-[#F3F6F9]">
-            <div className="w-full px-8 pt-8 pb-10">
+            <div className="w-full max-w-[1600px] mx-auto px-6 xl:px-8 pt-8 pb-10">
 
               {error && <p className="text-[14px] text-[#991B1B]">{error}</p>}
               {!p && !error && (

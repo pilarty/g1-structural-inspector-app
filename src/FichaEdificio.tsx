@@ -83,7 +83,7 @@ export default function FichaEdificio({ activeTab, onTabChange, edificioId, onVo
         <div className="flex flex-1 overflow-hidden">
         <ProjectsSidebar selectedBuildingId={edificioId} onSelectBuilding={onAbrirEdificio} />
         <div className="flex-1 overflow-y-auto bg-[#F3F6F9]">
-          <div className="w-full px-8 pt-6 pb-10">
+          <div className="w-full max-w-[1600px] mx-auto px-6 xl:px-8 pt-6 pb-10">
 
             <button type="button" onClick={onVolver}
               className="flex items-center gap-1.5 text-[13px] font-semibold text-[#377DC0] hover:opacity-75 mb-4">

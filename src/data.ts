@@ -13,11 +13,16 @@ export interface HistorialEntry {
   fin?: string | null;
   /** Planta (piso) que se inspeccionó, si se indicó */
   planta?: string;
+  /** Motivo y observaciones al iniciar */
+  motivo?: string;
+  observaciones?: string;
 }
 
 export interface UltimoRelevamiento {
   id: number;
   planta?: string;
+  motivo?: string;
+  observaciones?: string;
   estado: string;
   inicio: string | null;
   fin: string | null;

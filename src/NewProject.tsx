@@ -122,7 +122,7 @@ export default function NewProject({ activeTab, onTabChange, onCancel, onCreado,
           borrador={editando ? undefined : { tipo: 'proyecto', nombre: f.nombre }}
         />
         <div className="flex-1 overflow-y-auto bg-[#F3F6F9]">
-          <div className="w-full px-8 pt-8 pb-10">
+          <div className="w-full max-w-[1600px] mx-auto px-6 xl:px-8 pt-8 pb-10">
 
             <h1 className="text-[22px] font-bold text-[#1A1C1E] tracking-tight">{editando ? `Editar ${f.nombre || 'proyecto'}` : 'Nuevo proyecto'}</h1>
             <p className="text-[14px] text-[#8A8C8E] mt-1 mb-6">

@@ -1,10 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  AlertTriangle, Bot, Building2, ChevronDown, ChevronRight, ClipboardList, Download, Plus, Radio, Search, X,
+  AlertTriangle, ArrowDown, ArrowUp, Bot, Building2, ChevronDown, ClipboardList, Map as MapaIcono, MoreHorizontal, Plus, Search, Trash2, X,
 } from 'lucide-react';
 import { useProyectos } from './proyectos';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav } from './components';
+import DialogoConfirmar from './components/DialogoConfirmar';
+import { BACKEND_URL } from './sesion';
+import { etiquetaMotivo } from './motivos';
+import { duracion as duracionTexto } from './formato';
 
 interface InspeccionesProps {
   activeTab: NavTab;
@@ -13,7 +17,6 @@ interface InspeccionesProps {
   onVer: (edificioId: string, relevamientoId: number) => void;
 }
 
-type FiltroEstado = 'todas' | 'en_curso' | 'finalizadas';
 
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -24,21 +27,23 @@ const fechaCorta = (iso?: string | null) => {
 };
 const hora = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
-function duracion(inicio?: string | null, fin?: string | null) {
-  if (!inicio || !fin) return '—';
-  const min = Math.round((new Date(fin).getTime() - new Date(inicio).getTime()) / 60000);
-  if (min < 1) return '< 1 min';
-  return min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
-}
+/** Segundos que duró (para ordenar); en curso cuenta hasta ahora. */
+const segundos = (inicio?: string | null, fin?: string | null) =>
+  inicio ? ((fin ? new Date(fin) : new Date()).getTime() - new Date(inicio).getTime()) / 1000 : -1;
+
+type Columna = 'fecha' | 'edificio' | 'duracion' | 'hallazgos';
 const codigo = (id: number) => `INS-${String(id).padStart(4, '0')}`;
 
 /** Todas las inspecciones de todos los edificios, con filtros. */
 export default function Inspecciones({ activeTab, onTabChange, onVer }: InspeccionesProps) {
   const { proyectos, cargando, error, recargar } = useProyectos();
   const [texto, setTexto] = useState('');
-  const [estado, setEstado] = useState<FiltroEstado>('todas');
   const [robot, setRobot] = useState('todos');
   const [conHallazgos, setConHallazgos] = useState('todos');
+  const [proyecto, setProyecto] = useState('todos');
+  const [orden, setOrden] = useState<{ col: Columna; asc: boolean }>({ col: 'fecha', asc: false });
+  const [menuDe, setMenuDe] = useState<number | null>(null);
+  const [borrando, setBorrando] = useState<{ id: number; texto: string; enviando: boolean; error: string | null } | null>(null);
 
   useEffect(() => { recargar(); }, [recargar]);
 
@@ -47,34 +52,52 @@ export default function Inspecciones({ activeTab, onTabChange, onVer }: Inspecci
     .map(h => ({ ...h, id: h.id as number, edificioId: b.id, edificio: b.name, proyecto: p.name }))))
     .sort((a, b) => (b.inicio ?? '').localeCompare(a.inicio ?? '')), [proyectos]);
 
-  const robots = [...new Set(todas.map(i => i.robot).filter(r => r && r !== '—'))].sort();
-  const q = texto.trim().toLowerCase();
-  const base = todas.filter(i =>
-    (!q || i.edificio.toLowerCase().includes(q) || i.proyecto.toLowerCase().includes(q) || codigo(i.id).toLowerCase().includes(q)) &&
-    (robot === 'todos' || i.robot === robot) &&
-    (conHallazgos === 'todos' || (conHallazgos === 'con' ? i.detections > 0 : i.detections === 0)));
-  const deEstado = (v: FiltroEstado, e?: string) => v === 'todas' || (v === 'en_curso' ? e === 'en_curso' : e !== 'en_curso');
-  const filtradas = base.filter(i => deEstado(estado, i.estado));
-  const hayFiltros = !!q || robot !== 'todos' || conHallazgos !== 'todos';
+  // Mientras haya una inspección en curso, la lista se actualiza sola
+  const hayEnCurso = todas.some(i => i.estado === 'en_curso');
+  useEffect(() => {
+    if (!hayEnCurso) return;
+    const t = setInterval(recargar, 10000);
+    return () => clearInterval(t);
+  }, [hayEnCurso, recargar]);
 
-  const enCurso = todas.filter(i => i.estado === 'en_curso').length;
+  const robots = [...new Set(todas.map(i => i.robot).filter(r => r && r !== '—'))].sort();
+  const nombresProyectos = [...new Set(todas.map(i => i.proyecto))].sort();
+  const q = texto.trim().toLowerCase();
+  const filtradas = todas.filter(i =>
+    (!q || [i.edificio, i.proyecto, codigo(i.id), i.planta ?? '', etiquetaMotivo(i.motivo) ?? ''].some(t => t.toLowerCase().includes(q))) &&
+    (proyecto === 'todos' || i.proyecto === proyecto) &&
+    (robot === 'todos' || i.robot === robot) &&
+    (conHallazgos === 'todos' || (conHallazgos === 'con' ? i.detections > 0 : i.detections === 0)))
+    .sort((a, b) => {
+      const d = orden.col === 'edificio' ? a.edificio.localeCompare(b.edificio)
+        : orden.col === 'duracion' ? segundos(a.inicio, a.fin) - segundos(b.inicio, b.fin)
+        : orden.col === 'hallazgos' ? a.detections - b.detections
+        : (a.inicio ?? '').localeCompare(b.inicio ?? '');
+      return orden.asc ? d : -d;
+    });
+  const hayFiltros = !!q || robot !== 'todos' || conHallazgos !== 'todos' || proyecto !== 'todos';
+  const ordenarPor = (col: Columna) => setOrden(o => (o.col === col ? { col, asc: !o.asc } : { col, asc: col === 'edificio' }));
+
+  async function eliminar() {
+    if (!borrando) return;
+    setBorrando({ ...borrando, enviando: true, error: null });
+    try {
+      const r = await fetch(`${BACKEND_URL}/nube/api/relevamientos/${borrando.id}`, { method: 'DELETE' });
+      if (r.status === 409) {
+        setBorrando({ ...borrando, enviando: false, error: 'Esta inspección está en curso. Detenela antes de eliminarla.' });
+        return;
+      }
+      if (!r.ok) throw new Error(String(r.status));
+      await recargar();
+      setBorrando(null);
+    } catch {
+      setBorrando({ ...borrando, enviando: false, error: 'No se pudo eliminar. Revisá tu conexión e intentá de nuevo.' });
+    }
+  }
+
   const hallazgos = todas.reduce((n, i) => n + i.detections, 0);
   const conDanos = todas.filter(i => i.detections > 0).length;
   const edificios = new Set(todas.map(i => i.edificioId)).size;
-
-  function exportar() {
-    const filas = [['Código', 'Fecha', 'Hora', 'Edificación', 'Proyecto', 'Robot', 'Operador', 'Duración', 'Hallazgos', 'Estado']];
-    for (const i of filtradas) {
-      filas.push([codigo(i.id), fechaCorta(i.inicio), hora(i.inicio), i.edificio, i.proyecto, i.robot, i.operador ?? '', duracion(i.inicio, i.fin),
-        String(i.detections), i.estado === 'en_curso' ? 'En curso' : 'Finalizada']);
-    }
-    const csv = '﻿' + filas.map(f => f.map(c => `"${c.replace(/"/g, '""')}"`).join(';')).join('\r\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-    a.download = `inspecciones-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }
 
   return (
     <div className="flex h-screen font-sans text-[#1A1C1E]">
@@ -82,19 +105,12 @@ export default function Inspecciones({ activeTab, onTabChange, onVer }: Inspecci
       <div className="flex flex-col flex-1 overflow-hidden">
         <TopNav />
         <div className="flex-1 overflow-y-auto bg-[#F3F4F6]">
-          <div className="w-full max-w-[1400px] mx-auto px-8 pt-7 pb-10">
+          <div className="w-full max-w-[1600px] mx-auto px-6 xl:px-8 pt-7 pb-10">
 
             {/* Encabezado */}
             <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="text-[12px] font-medium text-[#8A8C8E]">Operación</p>
-                <h1 className="text-[24px] font-semibold text-[#0F1A24] tracking-[-0.02em] mt-0.5">Inspecciones</h1>
-              </div>
+              <h1 className="text-[24px] font-semibold text-[#0F1A24] tracking-[-0.02em]">Inspecciones</h1>
               <div className="flex items-center gap-2">
-                <button type="button" onClick={exportar} disabled={filtradas.length === 0}
-                  className="flex items-center justify-center gap-2 h-9 px-3.5 rounded-[3px] text-[13px] font-medium transition-colors bg-white text-[#1A1C1E] border border-[#D4D4D4] hover:bg-[#F3F4F6] disabled:opacity-40">
-                  <Download className="w-4 h-4 text-[#66686A]" /> Exportar CSV
-                </button>
                 <button type="button" onClick={() => onTabChange('inspeccion')}
                   className="flex items-center justify-center gap-2 h-9 px-3.5 rounded-[3px] text-[13px] font-medium transition-colors bg-[#377DC0] text-white hover:bg-[#2F6CA8]">
                   <Plus className="w-4 h-4" /> Nueva inspección
@@ -103,11 +119,9 @@ export default function Inspecciones({ activeTab, onTabChange, onVer }: Inspecci
             </div>
 
             {/* Indicadores */}
-            <div className="mt-6 grid grid-cols-4 bg-white rounded-md border border-[#D4D4D4] divide-x divide-[#E5E7EB]">
+            <div className="mt-6 grid grid-cols-3 bg-white rounded-md border border-[#D4D4D4] divide-x divide-[#E5E7EB]">
               <Indicador Icon={ClipboardList} etiqueta="Inspecciones" valor={todas.length}
                 detalle={`en ${edificios} edificaci${edificios === 1 ? 'ón' : 'ones'}`} />
-              <Indicador Icon={Radio} etiqueta="En curso" valor={enCurso} detalle={enCurso ? 'Robot recorriendo ahora' : 'Ninguna activa'}
-                tono={enCurso ? '#059669' : undefined} />
               <Indicador Icon={Building2} etiqueta="Hallazgos" valor={hallazgos}
                 detalle={todas.length ? `${(hallazgos / todas.length).toLocaleString('es-AR', { maximumFractionDigits: 1 })} por inspección` : '—'} />
               <Indicador Icon={AlertTriangle} etiqueta="Con daños encontrados" valor={conDanos}
@@ -116,35 +130,21 @@ export default function Inspecciones({ activeTab, onTabChange, onVer }: Inspecci
 
             {/* Tabla */}
             <div className="mt-6 bg-white rounded-md border border-[#D4D4D4] overflow-hidden">
-              {/* Pestañas de estado */}
-              <div className="flex items-center gap-6 px-5 border-b border-[#E5E7EB]">
-                {([['todas', 'Todas'], ['en_curso', 'En curso'], ['finalizadas', 'Finalizadas']] as [FiltroEstado, string][]).map(([v, et]) => {
-                  const n = base.filter(i => deEstado(v, i.estado)).length;
-                  const activo = estado === v;
-                  return (
-                    <button key={v} type="button" onClick={() => setEstado(v)}
-                      className={`relative flex items-center gap-2 h-12 text-[13px] font-medium transition-colors ${activo ? 'text-[#0F1A24]' : 'text-[#8A8C8E] hover:text-[#1A1C1E]'}`}>
-                      {et}
-                      <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold flex items-center justify-center tabular-nums ${activo ? 'bg-[#E3EEF8] text-[#377DC0]' : 'bg-[#F1F3F5] text-[#8A8C8E]'}`}>{n}</span>
-                      {activo && <span className="absolute left-0 right-0 -bottom-px h-[2px] bg-[#377DC0] rounded-full" />}
-                    </button>
-                  );
-                })}
-              </div>
-
               {/* Filtros */}
               <div className="flex flex-wrap items-center gap-2.5 px-5 py-3 bg-[#F8F9FA] border-b border-[#E5E7EB]">
                 <div className="flex items-center gap-1.5 px-2 h-8 flex-1 min-w-[240px] max-w-[380px] rounded-[3px] bg-white border border-[#D4D4D4] focus-within:border-[#377DC0] focus-within:outline focus-within:outline-1 focus-within:outline-[#377DC0]">
                   <Search className="w-4 h-4 text-[#8A8C8E] flex-none" />
-                  <input value={texto} onChange={e => setTexto(e.target.value)} placeholder="Buscar por código, edificación o proyecto"
+                  <input value={texto} onChange={e => setTexto(e.target.value)} placeholder="Buscar por código, edificación, planta o motivo"
                     className="bg-transparent outline-none text-[13px] w-full min-w-0 placeholder:text-[#A0A2A4]" />
                 </div>
+                <Desplegable valor={proyecto} onCambio={setProyecto}
+                  opciones={[{ valor: 'todos', etiqueta: 'Todos los proyectos' }, ...nombresProyectos.map(p => ({ valor: p, etiqueta: p }))]} />
                 <Desplegable valor={robot} onCambio={setRobot}
                   opciones={[{ valor: 'todos', etiqueta: 'Todos los robots' }, ...robots.map(r => ({ valor: r, etiqueta: r }))]} />
                 <Desplegable valor={conHallazgos} onCambio={setConHallazgos}
                   opciones={[{ valor: 'todos', etiqueta: 'Con y sin hallazgos' }, { valor: 'con', etiqueta: 'Con hallazgos' }, { valor: 'sin', etiqueta: 'Sin hallazgos' }]} />
                 {hayFiltros && (
-                  <button type="button" onClick={() => { setTexto(''); setRobot('todos'); setConHallazgos('todos'); }}
+                  <button type="button" onClick={() => { setTexto(''); setRobot('todos'); setConHallazgos('todos'); setProyecto('todos'); }}
                     className="flex items-center gap-1 h-8 px-2 rounded-[3px] text-[13px] font-medium text-[#66686A] hover:bg-black/[0.06]">
                     <X className="w-3.5 h-3.5" /> Limpiar filtros
                   </button>
@@ -154,7 +154,13 @@ export default function Inspecciones({ activeTab, onTabChange, onVer }: Inspecci
               {cargando && todas.length === 0 ? (
                 <p className="px-5 py-10 text-center text-[13px] text-[#8A8C8E]">Cargando inspecciones…</p>
               ) : error ? (
-                <p className="px-5 py-10 text-center text-[13px] text-[#991B1B]">{error}</p>
+                <div className="px-5 py-10 text-center">
+                  <p className="text-[13px] text-[#991B1B]">{error}</p>
+                  <button type="button" onClick={() => recargar()}
+                    className="mt-3 h-8 px-3 rounded-[3px] text-[13px] font-medium bg-white text-[#1A1C1E] border border-[#D4D4D4] hover:bg-[#F3F4F6]">
+                    Reintentar
+                  </button>
+                </div>
               ) : filtradas.length === 0 ? (
                 <div className="px-5 py-14 text-center">
                   <ClipboardList className="w-8 h-8 mx-auto text-[#C4C7CA]" />
@@ -169,21 +175,32 @@ export default function Inspecciones({ activeTab, onTabChange, onVer }: Inspecci
                 <table className="w-full text-left">
                   <thead>
                     <tr className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#8A8C8E] border-b border-[#E5E7EB]">
-                      <Th>Código</Th><Th>Fecha</Th><Th>Edificación</Th><Th>Robot</Th><Th>Duración</Th><Th>Hallazgos</Th><Th>Estado</Th><Th />
+                      <Th className="hidden xl:table-cell">Código</Th>
+                      <Th orden={orden} col="fecha" onOrdenar={ordenarPor}>Fecha</Th>
+                      <Th orden={orden} col="edificio" onOrdenar={ordenarPor}>Edificación</Th>
+                      <Th className="hidden xl:table-cell">Motivo</Th>
+                      <Th>Robot</Th>
+                      <Th orden={orden} col="duracion" onOrdenar={ordenarPor}>Duración</Th>
+                      <Th orden={orden} col="hallazgos" onOrdenar={ordenarPor}>Hallazgos</Th>
+                      <Th>Estado</Th>
+                      <Th />
                     </tr>
                   </thead>
                   <tbody>
                     {filtradas.map(i => (
                       <tr key={i.id} onClick={() => onVer(i.edificioId, i.id)}
                         className="group cursor-pointer border-b border-[#EEEFF1] last:border-0 hover:bg-[#F7FAFD] transition-colors">
-                        <Td><span className="font-mono text-[12px] text-[#66686A]">{codigo(i.id)}</span></Td>
+                        <Td className="hidden xl:table-cell"><span className="font-mono text-[12px] text-[#66686A]">{codigo(i.id)}</span></Td>
                         <Td>
                           <span className="block text-[13px] font-medium text-[#1A1C1E] tabular-nums">{fechaCorta(i.inicio)}</span>
                           <span className="block text-[12px] text-[#8A8C8E] tabular-nums">{hora(i.inicio)}</span>
                         </Td>
-                        <Td className="max-w-[320px]">
+                        <Td className="max-w-[220px] xl:max-w-[320px]">
                           <span className="block text-[13px] font-semibold text-[#0F1A24] truncate">{i.edificio}</span>
-                          <span className="block text-[12px] text-[#8A8C8E] truncate">{i.proyecto}</span>
+                          <span className="block text-[12px] text-[#8A8C8E] truncate">{i.proyecto}{i.planta ? ` · ${i.planta}` : ''}</span>
+                        </Td>
+                        <Td className="hidden xl:table-cell max-w-[220px]">
+                          <span className="block text-[13px] text-[#1A1C1E] truncate">{etiquetaMotivo(i.motivo) ?? <span className="text-[#A0A2A4]">—</span>}</span>
                         </Td>
                         <Td>
                           <span className="flex items-center gap-2 text-[13px] text-[#1A1C1E]">
@@ -191,14 +208,45 @@ export default function Inspecciones({ activeTab, onTabChange, onVer }: Inspecci
                             {i.robot}
                           </span>
                         </Td>
-                        <Td><span className="text-[13px] text-[#66686A] tabular-nums">{duracion(i.inicio, i.fin)}</span></Td>
+                        <Td><span className="text-[13px] text-[#66686A] tabular-nums">{duracionTexto({ inicio: i.inicio ?? null, fin: i.fin ?? null, estado: i.estado ?? '' })}</span></Td>
                         <Td><Hallazgos total={i.detections} /></Td>
                         <Td><Estado enCurso={i.estado === 'en_curso'} /></Td>
-                        <Td className="w-10 pr-4"><ChevronRight className="w-4 h-4 text-[#C4C7CA] group-hover:text-[#377DC0] transition-colors" /></Td>
+                        <Td className="w-12 pr-4">
+                          <div className="relative" onClick={e => e.stopPropagation()}>
+                            <button type="button" onClick={() => setMenuDe(menuDe === i.id ? null : i.id)}
+                              title="Más opciones" aria-label={`Más opciones de ${codigo(i.id)}`} aria-expanded={menuDe === i.id}
+                              className={`w-7 h-7 flex items-center justify-center rounded-[4px] text-[#616161] hover:bg-black/[0.07] ${menuDe === i.id ? 'bg-black/[0.07]' : ''}`}>
+                              <MoreHorizontal className="w-4 h-4" />
+                            </button>
+                            {menuDe === i.id && (
+                              <>
+                                <div className="fixed inset-0 z-20" onClick={() => setMenuDe(null)} aria-hidden />
+                                <div className="absolute right-0 top-full z-30 mt-1 w-[200px] rounded-[5px] bg-white border border-[#D4D4D4] shadow-[0_2px_8px_rgba(0,0,0,0.16)] p-1 text-left">
+                                  <button type="button" onClick={() => { setMenuDe(null); onVer(i.edificioId, i.id); }}
+                                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[3px] text-left text-[14px] text-[#1A1C1E] hover:bg-[#377DC0] hover:text-white">
+                                    <MapaIcono className="w-3.5 h-3.5" /> Ver en el plano
+                                  </button>
+                                  <button type="button"
+                                    onClick={() => { setMenuDe(null); setBorrando({ id: i.id, texto: `${codigo(i.id)} de ${i.edificio} (${fechaCorta(i.inicio)}, ${hora(i.inicio)} hs)`, enviando: false, error: null }); }}
+                                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[3px] text-left text-[14px] text-[#B91C1C] hover:bg-[#B91C1C] hover:text-white">
+                                    <Trash2 className="w-3.5 h-3.5" /> Eliminar inspección
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </Td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              )}
+
+              {borrando && (
+                <DialogoConfirmar titulo="¿Eliminar esta inspección?" enviando={borrando.enviando} error={borrando.error}
+                  onConfirmar={eliminar} onCerrar={() => setBorrando(null)}>
+                  Se borra la inspección <b>{borrando.texto}</b> con sus hallazgos, el camino del robot y las revisiones. No se puede deshacer.
+                </DialogoConfirmar>
               )}
 
               {filtradas.length > 0 && (
@@ -228,9 +276,24 @@ function Indicador({ Icon, etiqueta, valor, detalle, tono }: {
   );
 }
 
-const Th = ({ children }: { children?: React.ReactNode }) => <th className="px-5 py-3 font-semibold">{children}</th>;
+/** Encabezado de columna; si trae `col`, se puede tocar para ordenar. */
+function Th({ children, col, orden, onOrdenar, className = '' }: {
+  children?: React.ReactNode; col?: Columna; orden?: { col: Columna; asc: boolean }; onOrdenar?: (c: Columna) => void; className?: string;
+}) {
+  if (!col || !onOrdenar) return <th className={`px-4 xl:px-5 py-3 font-semibold ${className}`}>{children}</th>;
+  const activa = orden?.col === col;
+  return (
+    <th className="px-4 xl:px-5 py-3 font-semibold">
+      <button type="button" onClick={() => onOrdenar(col)}
+        className={`inline-flex items-center gap-1 uppercase tracking-[0.06em] hover:text-[#1A1C1E] ${activa ? 'text-[#1A1C1E]' : ''}`}>
+        {children}
+        {activa && (orden!.asc ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
+      </button>
+    </th>
+  );
+}
 const Td = ({ children, className = '' }: { children: React.ReactNode; className?: string }) =>
-  <td className={`px-5 py-3.5 align-middle whitespace-nowrap ${className}`}>{children}</td>;
+  <td className={`px-4 xl:px-5 py-3.5 align-middle whitespace-nowrap ${className}`}>{children}</td>;
 
 /** Cantidad de hallazgos (daños encontrados) de la inspección. */
 function Hallazgos({ total }: { total: number }) {

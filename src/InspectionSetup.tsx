@@ -3,13 +3,14 @@ import { Loader2 } from 'lucide-react';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav, PrimaryButton, SecondaryButton, PanelTitle } from './components';
 import { tarjetaBlanca } from './tokens';
-import { Campo, Selector } from './components/Formulario';
+import { AreaTexto, Campo, Selector } from './components/Formulario';
 import { useProyectos } from './proyectos';
 import { useRobots } from './robots';
 import { autorizarMovimiento, consultarActivo, MODELO_SIMULADOR, reconectar, type ResultadoPrueba } from './robotConexion';
 import { PruebaEnRecuadro } from './RobotPrueba';
 import { BACKEND_URL } from './sesion';
 import { PLANTA_BAJA, plantasDe } from './plantas';
+import { MOTIVOS } from './motivos';
 
 interface InspectionSetupProps {
   activeTab: NavTab;
@@ -33,6 +34,10 @@ export default function InspectionSetup({ activeTab, onTabChange, edificioInicia
     () => proyectos.find(p => p.buildings.some(b => b.id === edificioInicial))?.id ?? '');
   const [robotId, setRobotId] = useState('');
   const [planta, setPlanta] = useState(PLANTA_BAJA);
+  const [motivo, setMotivo] = useState('rutina');
+  const [observaciones, setObservaciones] = useState('');
+  const [motivoOtro, setMotivoOtro] = useState(''); // lo que se escribe al elegir «Otro»
+  const motivoFinal = motivo === 'otro' ? motivoOtro.trim() : motivo;
   const [conectado, setConectado] = useState<{ si: boolean; codigo?: string | null; autorizado?: boolean }>({ si: false });
   // Confirmaciones de seguridad para permitir que el robot real se mueva
   const [seguridad, setSeguridad] = useState({ espacio_despejado: false, soporte_seguridad: false, operador_con_control: false });
@@ -143,19 +148,24 @@ export default function InspectionSetup({ activeTab, onTabChange, edificioInicia
   }
 
   async function iniciar() {
-    if (!edificio || !robotListo || iniciando) return;
+    if (!edificio || !robotListo || !motivoFinal || iniciando) return;
     setIniciando(true);
     setError(null);
     try {
       const res = await fetch(`${BACKEND_URL}/nube/relevamientos/iniciar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ edificacion_id: Number(edificio.id), robot_id: Number(robot.id), planta }),
+        body: JSON.stringify({ edificacion_id: Number(edificio.id), robot_id: Number(robot.id), planta, motivo: motivoFinal, observaciones: observaciones.trim() || null }),
       });
+      if (res.status === 401) {
+        setError('La sesión se cerró (¿reiniciaste el backend?). Cerrá sesión y volvé a entrar.');
+        setIniciando(false);
+        return;
+      }
       if (!res.ok) throw new Error(String(res.status));
       onTabChange('inspeccion-en-curso');
     } catch {
-      setError('No se pudo iniciar la inspección. Revisá tu conexión e intentá de nuevo.');
+      setError('No se pudo iniciar la inspección. Revisá que el backend esté abierto y tu conexión, e intentá de nuevo.');
       setIniciando(false);
     }
   }
@@ -164,6 +174,12 @@ export default function InspectionSetup({ activeTab, onTabChange, edificioInicia
   const pasos: { ok: boolean; aviso?: boolean; titulo: string; detalle: string }[] = [
     { ok: !!edificio, titulo: 'Edificación', detalle: edificio ? edificio.name : 'Sin elegir' },
     { ok: !!edificio, titulo: 'Planta', detalle: edificio ? planta : 'Sin elegir' },
+    {
+      ok: !!motivoFinal,
+      aviso: motivo === 'otro' && !motivoFinal,
+      titulo: 'Motivo',
+      detalle: motivo === 'otro' ? (motivoFinal || 'Falta escribirlo') : (MOTIVOS.find(m => m.valor === motivo)?.etiqueta ?? '—'),
+    },
     { ok: !!robot, titulo: 'Robot', detalle: robot ? robot.label : 'Sin elegir' },
     {
       ok: !!robot && (robotEsElConectado || esSimulador),
@@ -178,7 +194,7 @@ export default function InspectionSetup({ activeTab, onTabChange, edificioInicia
       detalle: movimientoAutorizado ? 'Autorizado' : 'Sin autorizar',
     }] : []),
   ];
-  const listo = !!edificio && robotListo;
+  const listo = !!edificio && robotListo && !!motivoFinal;
 
   return (
     <div className="flex h-screen font-sans text-[#1A1C1E]">
@@ -186,7 +202,7 @@ export default function InspectionSetup({ activeTab, onTabChange, edificioInicia
       <div className="flex flex-col flex-1 overflow-hidden">
         <TopNav />
         <div className="flex-1 overflow-y-auto bg-[#F3F6F9]">
-          <div className="w-full px-8 py-8">
+          <div className="w-full max-w-[1600px] mx-auto px-6 xl:px-8 py-8">
             <div className="mb-6">
               <h1 className="text-[22px] font-bold text-[#1A1C1E] tracking-tight">Iniciar inspección</h1>
             </div>
@@ -199,7 +215,7 @@ export default function InspectionSetup({ activeTab, onTabChange, edificioInicia
               </div>
             )}
 
-            <div className="grid grid-cols-[minmax(0,1fr)_340px] items-start gap-6">
+            <div className="grid grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_340px] items-start gap-5 xl:gap-6">
               {/* Izquierda — qué y con qué */}
               <div className={tarjetaBlanca}>
                 <div className="px-6 pt-5 pb-4 border-b border-[#14202B]/[0.06]">
@@ -207,7 +223,7 @@ export default function InspectionSetup({ activeTab, onTabChange, edificioInicia
                 </div>
                 <div className="divide-y divide-[#14202B]/[0.06]">
                   <SeccionSetup titulo="Lugar">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <Campo etiqueta="Proyecto" obligatorio>
                         <Selector valor={proyectoId} onCambio={elegirProyecto} placeholder="Elegí el proyecto" opciones={opcionesProyecto} />
                       </Campo>
@@ -220,10 +236,54 @@ export default function InspectionSetup({ activeTab, onTabChange, edificioInicia
                         <Selector valor={planta} onCambio={setPlanta} opciones={plantas.map(p => ({ valor: p, etiqueta: p }))} />
                       </Campo>
                     </div>
+
+                    {/* Resumen de la edificación elegida */}
+                    {edificio && (
+                      <dl className="mt-4 grid grid-cols-[2fr_1fr_1fr_1fr] rounded-md border border-[#E5E7EB] bg-[#F8F9FA] divide-x divide-[#E5E7EB]">
+                        <Dato etiqueta="Dirección" valor={edificio.address || 'Sin dirección'} />
+                        <Dato etiqueta="Inspecciones" valor={String(edificio.relevamientos)} />
+                        <Dato etiqueta="Última" valor={edificio.relevamientos ? edificio.lastRelevamientoDate : '—'} />
+                        <Dato etiqueta="Hallazgos en la última" valor={edificio.relevamientos ? String(edificio.lastDetections) : '—'} />
+                      </dl>
+                    )}
+                  </SeccionSetup>
+
+                  <SeccionSetup titulo="Detalles">
+                    <div className="space-y-4">
+                      <Campo etiqueta="Motivo" obligatorio>
+                        {/* Opciones a la vista, como fichas; «Otro» deja escribirlo */}
+                        <div className="flex flex-wrap items-center gap-2" role="radiogroup">
+                          {[...MOTIVOS.map(m => ({ valor: m.valor, etiqueta: m.corta ?? m.etiqueta })), { valor: 'otro', etiqueta: 'Otro' }].map(m => {
+                            const activo = motivo === m.valor;
+                            return (
+                              <button key={m.valor} type="button" role="radio" aria-checked={activo} onClick={() => setMotivo(m.valor)}
+                                className={`flex items-center gap-2 h-9 px-3.5 rounded-md border text-[13px] transition-colors ${
+                                  activo ? 'bg-[#EEF4FB] border-[#377DC0] text-[#1E4E7C] font-semibold'
+                                    : 'bg-[#F8FAFC] border-[#377DC0]/15 text-[#1A1C1E] font-medium hover:border-[#377DC0]/40'
+                                }`}>
+                                <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${activo ? 'border-[#377DC0]' : 'border-[#A0A2A4]'}`}>
+                                  {activo && <span className="w-1.5 h-1.5 rounded-full bg-[#377DC0]" />}
+                                </span>
+                                {m.etiqueta}
+                              </button>
+                            );
+                          })}
+                          {motivo === 'otro' && (
+                            <input autoFocus value={motivoOtro} onChange={e => setMotivoOtro(e.target.value)} maxLength={80}
+                              placeholder="Escribí el motivo"
+                              className="flex-1 min-w-[200px] h-9 px-3 rounded-md text-[13px] font-semibold text-[#1A1C1E] bg-white outline-none border border-[#377DC0] focus:ring-2 focus:ring-[#377DC0]/15 placeholder:text-[#A0A2A4] placeholder:font-normal" />
+                          )}
+                        </div>
+                      </Campo>
+                      <Campo etiqueta="Observaciones">
+                        <AreaTexto valor={observaciones} onCambio={setObservaciones} filas={3}
+                          placeholder="Iluminación, accesos, obstáculos…" />
+                      </Campo>
+                    </div>
                   </SeccionSetup>
 
                   <SeccionSetup titulo="Robot">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <Campo etiqueta="Robot" obligatorio>
                         <Selector valor={robotId} onCambio={setRobotId}
                           placeholder={cargandoRobots ? 'Cargando robots…' : errorRobots ? 'No se pudieron cargar' : robots.length ? 'Elegí el robot' : 'No hay robots registrados'}
@@ -312,6 +372,15 @@ export default function InspectionSetup({ activeTab, onTabChange, edificioInicia
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
+  return (
+    <div className="min-w-0 px-4 py-2.5">
+      <dt className="text-[11px] text-[#8A8C8E]">{etiqueta}</dt>
+      <dd className="text-[13px] font-semibold text-[#1A1C1E] truncate">{valor}</dd>
     </div>
   );
 }

@@ -26,7 +26,7 @@ export default function SelectorInspeccion({ inspecciones, elegida, ultimaId, on
   const hallazgos = (n: number) => `${n} hallazgo${n === 1 ? '' : 's'}`;
 
   return (
-    <div ref={caja} className="relative">
+    <div ref={caja} className="relative flex-none">
       <button type="button" onClick={() => setAbierto(x => !x)} aria-expanded={abierto} aria-haspopup="listbox"
         className={`flex items-center gap-2.5 h-9 pl-2.5 pr-2 rounded-[3px] bg-white border text-left transition-colors ${
           abierto ? 'border-[#377DC0] outline outline-1 outline-[#377DC0]' : 'border-[#D4D4D4] hover:border-[#A0A2A4]'
@@ -35,7 +35,7 @@ export default function SelectorInspeccion({ inspecciones, elegida, ultimaId, on
         {actual ? (
           <span className="flex items-baseline gap-2 min-w-0">
             <span className="text-[13px] font-semibold text-[#1A1C1E] tabular-nums">{actual.date} · {horaLocal(actual.inicio)}</span>
-            <span className="text-[12px] text-[#8A8C8E] truncate">{actual.robot} · {hallazgos(actual.detections)}</span>
+            <span className="hidden xl:inline text-[12px] text-[#8A8C8E] truncate">{actual.robot} · {hallazgos(actual.detections)}</span>
           </span>
         ) : <span className="text-[13px] text-[#8A8C8E]">Sin inspecciones</span>}
         {actual?.id === ultimaId
@@ -45,7 +45,7 @@ export default function SelectorInspeccion({ inspecciones, elegida, ultimaId, on
       </button>
 
       {abierto && (
-        <div role="listbox" className="absolute right-0 top-full mt-1 w-[360px] max-h-[320px] overflow-y-auto bg-white rounded-md border border-[#D4D4D4] shadow-[0_8px_24px_rgba(20,32,43,0.16)] py-1 z-40">
+        <div role="listbox" className="absolute left-0 right-0 top-full mt-1 max-h-[320px] overflow-y-auto bg-white rounded-md border border-[#D4D4D4] shadow-[0_8px_24px_rgba(20,32,43,0.16)] py-1 z-40">
           <p className="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-[#8A8C8E]">
             {inspecciones.length} inspecci{inspecciones.length === 1 ? 'ón' : 'ones'} en esta planta
           </p>

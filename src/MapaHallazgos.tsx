@@ -3,7 +3,7 @@ import { BACKEND_URL } from './sesion';
 import { infoDano } from './danos';
 import { horaLocal } from './formato';
 import DetalleDeteccion, { type Revision } from './components/DetalleDeteccion';
-import { Check, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, FileDown, Loader2, X as Cruz } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, X as Cruz } from 'lucide-react';
 import { createRoot } from 'react-dom/client';
 import Informe, { type DatosInforme, type HallazgoInforme } from './components/Informe';
 import { TIPOS_CLIENTE, obtenerProyecto } from './proyectoForm';
@@ -31,7 +31,7 @@ interface Plano { floor_polygon?: [number, number][]; paredes?: { resolucion: nu
 // ---- Cálculo de la vista (se mantiene aparte para poder probarlo) ----
 const W = 800;
 const H = 600;
-const MARGEN = { izq: 64, der: 24, arriba: 24, abajo: 48 };
+const MARGEN = { izq: 24, der: 24, arriba: 24, abajo: 24 };
 
 function paso(aprox: number): number {
   const base = Math.pow(10, Math.floor(Math.log10(aprox)));
@@ -89,20 +89,29 @@ export default function MapaHallazgos({
   relevamientoId,
   enCurso = false,
   informe,
+  exportarRef,
+  onExportando,
 }: {
   relevamientoId?: number;
   enCurso?: boolean;
   /** Datos de la inspección para el informe PDF (sin la distancia, que se calcula acá) */
   informe?: Omit<DatosInforme, 'distancia' | 'comitente'>;
+  /** Acá se deja la función que arma el informe, para llamarla desde el menú de la inspección */
+  exportarRef?: React.MutableRefObject<(() => Promise<void>) | null>;
+  /** Avisa cuando empieza y termina de armarse el informe */
+  onExportando?: (si: boolean) => void;
 }) {
-  const [exportando, setExportando] = useState(false);
+  const [exportando, setExportandoLocal] = useState(false);
+  const setExportando = (si: boolean) => { setExportandoLocal(si); onExportando?.(si); };
   const [panelCerrado, setPanelCerrado] = useState(false); // panel de hallazgos plegado
   const [hallazgos, setHallazgos] = useState<Hallazgo[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selId, setSelId] = useState<number | null>(null);
   const [detalle, setDetalle] = useState<number | null>(null);
-  const [cerrados, setCerrados] = useState<Set<string>>(new Set()); // tipos de daño plegados en el panel
+  const [abiertos, setAbiertos] = useState<Set<string>>(new Set()); // tipos de daño desplegados en el panel
+  const [ocultos, setOcultos] = useState<Set<string>>(new Set()); // tipos de daño que no se dibujan en el plano
+  const [filtroEstado, setFiltroEstado] = useState<'todos' | 'pendiente' | 'confirmado' | 'descartado'>('todos');
   const [revisiones, setRevisiones] = useState<Map<number, Revision>>(new Map());
 
   // Revisión del inspector de cada hallazgo (confirmado / descartado + nota)
@@ -238,6 +247,9 @@ export default function MapaHallazgos({
     };
   }, [claveFoto]);
 
+  // Lo que el usuario eligió ver: por tipo de daño y por estado de revisión
+  const seVe = (h: Hallazgo) =>
+    !ocultos.has(infoDano(h.tipo_dano).etiqueta) && (filtroEstado === 'todos' || estadoDe(h.id) === filtroEstado);
   const puntos = hallazgos.filter(h => h.ubicacion_x != null && h.ubicacion_y != null);
   // El camino completo: lo guardado más la posición en vivo (si llegó después del último punto)
   const recorrido: Punto[] = pose && (camino.length === 0 || pose.t > camino[camino.length - 1].t) ? [...camino, pose] : camino;
@@ -387,49 +399,24 @@ export default function MapaHallazgos({
     }
   }
 
-  // Barra de escala: 1, 2 o 5 m según el zoom
+  // El menú de la inspección (afuera de este componente) usa esta función para exportar
+  useEffect(() => {
+    if (!exportarRef) return;
+    exportarRef.current = informe && !cargando && !exportando ? exportarInforme : null;
+  });
+
+  // Cuántos píxeles mide un metro con el zoom actual (para la cuadrícula)
   const metroPx = vista ? (vista.px(1) - vista.px(0)) * k : 0;
-  const metrosEscala = metroPx >= 60 ? 1 : metroPx >= 25 ? 2 : metroPx >= 10 ? 5 : 10;
   const FUENTE = 'IBM Plex Sans, sans-serif';
   const dentroX = (px: number) => vista && px >= vista.area.x1 && px <= vista.area.x2;
   const dentroY = (py: number) => vista && py >= vista.area.y1 && py <= vista.area.y2;
 
   return (
-    <div className="absolute inset-0 bg-white">
-      {/* Mapa */}
-      <div className="absolute inset-y-0 left-0 flex flex-col bg-white" style={{ right: panelCerrado ? 36 : 300 }}>
-        {/* Barra de herramientas */}
-        <div className="flex-none flex items-center gap-4 h-11 px-4 bg-white border-b border-[#E5E7EB] overflow-hidden whitespace-nowrap">
-          <h3 className="text-[14px] font-semibold text-[#1A1C1E] whitespace-nowrap">Plano del recorrido</h3>
-          <div className="flex items-center gap-1">
-            {([['paredes', 'Paredes'], ['camino', 'Recorrido'], ['hallazgos', 'Hallazgos']] as [keyof Capas, string][]).map(([c, et]) => (
-              <button key={c} type="button" onClick={() => setCapas(x => ({ ...x, [c]: !x[c] }))} aria-pressed={capas[c]}
-                className={`flex items-center gap-1.5 h-7 px-2.5 rounded-[3px] text-[12px] font-medium border transition-colors ${
-                  capas[c] ? 'bg-[#EEF4FB] border-[#377DC0]/40 text-[#1E4E7C]' : 'bg-white border-[#D4D4D4] text-[#8A8C8E] hover:bg-[#F3F4F6]'
-                }`}>
-                <span className={`w-3 h-3 rounded-[2px] border flex items-center justify-center ${capas[c] ? 'bg-[#377DC0] border-[#377DC0]' : 'border-[#A0A2A4]'}`}>
-                  {capas[c] && <svg viewBox="0 0 10 10" className="w-2.5 h-2.5"><path d="M2 5.2 4.2 7.4 8 3" stroke="white" strokeWidth="1.6" fill="none" /></svg>}
-                </span>
-                {et}
-              </button>
-            ))}
-          </div>
-          <div className="flex-1" />
-          {informe && (
-            <button type="button" onClick={exportarInforme} disabled={exportando || cargando}
-              className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-[3px] text-[13px] font-medium transition-colors bg-[#377DC0] text-white hover:bg-[#2F6CA8] disabled:opacity-60">
-              {exportando ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-              {exportando ? 'Armando informe…' : 'Exportar informe'}
-            </button>
-          )}
-          <div className="flex items-center rounded-[3px] border border-[#D4D4D4] overflow-hidden">
-            <BotonZoom titulo="Ver todo" onClick={() => setZoom({ k: 1, dx: 0, dy: 0 })}>
-              <svg viewBox="0 0 16 16" className="w-3.5 h-3.5"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" stroke="currentColor" strokeWidth="1.5" fill="none" /></svg>
-            </BotonZoom>
-          </div>
-        </div>
+    <div className="absolute inset-0">
 
-        <div className="relative flex-1 min-h-0">
+        {/* Lienzo: el plano a la izquierda y el panel de hallazgos flotando a la derecha */}
+        <div className="absolute inset-0">
+        <div className={`absolute top-0 bottom-0 left-0 ${panelCerrado ? 'right-0' : 'right-[272px] xl:right-[324px]'}`}>
         {vista && !mensaje ? (
           <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className={`absolute inset-0 w-full h-full select-none ${arrastre ? 'cursor-grabbing' : 'cursor-grab'}`}
             fill="none" preserveAspectRatio="xMidYMid meet"
@@ -494,16 +481,8 @@ export default function MapaHallazgos({
               })()}
             </g>
 
-            {/* Coordenadas en metros */}
-            {vista.marcasX.map(v => { const x = X(v); return dentroX(x) && (
-              <text key={`tx${v}`} x={x} y={vista.area.y2 + 15} textAnchor="middle" fontSize="9.5" fill="#A0A2A4" fontFamily={FUENTE}>{v}</text>
-            ); })}
-            {vista.marcasY.map(v => { const y = Y(v); return dentroY(y) && (
-              <text key={`ty${v}`} x={vista.area.x1 - 7} y={y + 3} textAnchor="end" fontSize="9.5" fill="#A0A2A4" fontFamily={FUENTE}>{v}</text>
-            ); })}
-
             {/* Hallazgos, numerados */}
-            {capas.hallazgos && puntos.map(h => {
+            {capas.hallazgos && puntos.filter(seVe).map(h => {
               const x = X(Number(h.ubicacion_x));
               const y = Y(Number(h.ubicacion_y));
               if (!dentroX(x) || !dentroY(y)) return null;
@@ -553,20 +532,6 @@ export default function MapaHallazgos({
                 </g>
               )
             )}
-
-            {/* Norte y escala */}
-            <g transform={`translate(${vista.area.x2 - 22} ${vista.area.y1 + 26})`} pointerEvents="none">
-              <circle r="14" fill="#FFFFFF" stroke="#E2E5E9" />
-              <path d="M 0 -9 L 5 4 L 0 1.5 L -5 4 Z" fill="#3B4753" />
-              <text y="12" textAnchor="middle" fontSize="7" fontWeight="700" fill="#66686A" fontFamily={FUENTE}>N</text>
-            </g>
-            <g transform={`translate(${vista.area.x1 + 14} ${vista.area.y2 - 14})`} pointerEvents="none">
-              <rect x="-8" y="-18" width={metroPx * metrosEscala + 16} height="26" rx="3" fill="#FFFFFF" stroke="#E2E5E9" />
-              <path d={`M 0 -3 V 2 H ${metroPx * metrosEscala} V -3`} stroke="#3B4753" strokeWidth="1.5" fill="none" />
-              <text x={(metroPx * metrosEscala) / 2} y="-6" textAnchor="middle" fontSize="9.5" fontWeight="600" fill="#3B4753" fontFamily={FUENTE}>
-                {metrosEscala} m
-              </text>
-            </g>
           </svg>
         ) : (
           <div className="flex h-full items-center justify-center px-8 text-center">
@@ -574,6 +539,133 @@ export default function MapaHallazgos({
           </div>
         )}
         </div>
+
+      {/* Zoom: abajo, a la izquierda del panel de hallazgos */}
+      <div className={`absolute bottom-3 z-10 flex flex-col rounded-lg ${panelCerrado ? 'right-3' : 'right-[272px] xl:right-[324px]'} bg-white/90 backdrop-blur-sm border border-[#E5E7EB] shadow-[0_4px_16px_rgba(20,32,43,0.10)] overflow-hidden`}>
+        {([
+          ['Acercar', () => zoomEn(1.3), <path key="m" d="M8 3v10M3 8h10" />],
+          ['Alejar', () => zoomEn(1 / 1.3), <path key="m" d="M3 8h10" />],
+          ['Ver todo el plano', () => setZoom({ k: 1, dx: 0, dy: 0 }), <path key="t" d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" />],
+        ] as [string, () => void, React.ReactNode][]).map(([titulo, accion, icono]) => (
+          <button key={titulo} type="button" onClick={accion} title={titulo} aria-label={titulo}
+            className="w-9 h-9 flex items-center justify-center text-[#424242] hover:bg-black/[0.05] border-b last:border-b-0 border-[#14202B]/[0.06]">
+            <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" stroke="currentColor" strokeWidth="1.5" fill="none">{icono}</svg>
+          </button>
+        ))}
+      </div>
+
+      {/* Panel de hallazgos: tarjeta que flota sobre el lienzo */}
+      {panelCerrado ? (
+        <button type="button" onClick={() => setPanelCerrado(false)} title="Ver hallazgos" aria-label="Ver hallazgos"
+          className="absolute top-3 right-3 flex items-center gap-2 h-9 pl-3 pr-2.5 rounded-lg bg-white/90 backdrop-blur-sm border border-[#E5E7EB] shadow-[0_4px_16px_rgba(20,32,43,0.10)] text-[13px] font-semibold text-[#1A1C1E] hover:bg-white">
+          Hallazgos
+          <span className="h-5 min-w-[22px] px-1.5 rounded-full bg-[#F1F3F5] text-[11px] font-semibold text-[#66686A] flex items-center justify-center tabular-nums">{hallazgos.length}</span>
+          <ChevronsLeft className="w-4 h-4 text-[#616161]" />
+        </button>
+      ) : (
+      <aside className="absolute top-3 right-3 bottom-3 w-[260px] xl:w-[300px] flex flex-col rounded-lg bg-white/90 backdrop-blur-sm border border-[#E5E7EB] shadow-[0_4px_16px_rgba(20,32,43,0.10)] overflow-hidden">
+        <div className="flex-none flex items-center gap-2 px-4 h-12 border-b border-[#14202B]/[0.06]">
+          <h3 className="text-[14px] font-semibold text-[#1A1C1E]">Hallazgos</h3>
+          <span className="h-5 min-w-[22px] px-1.5 rounded-full bg-[#F1F3F5] text-[11px] font-semibold text-[#66686A] flex items-center justify-center tabular-nums">
+            {hallazgos.length}
+          </span>
+          <button type="button" onClick={() => setPanelCerrado(true)} title="Ocultar el panel" aria-label="Ocultar el panel"
+            className="ml-auto w-[24px] h-[24px] flex items-center justify-center rounded-[4px] text-[#424242] hover:bg-black/[0.06]">
+            <ChevronsRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {/* Revisión */}
+          <SeccionPanel titulo="Revisión">
+            <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value as typeof filtroEstado)}
+              className="w-full h-8 px-2.5 mb-2 rounded-md border border-[#D4D4D4] bg-white text-[13px] text-[#1A1C1E] outline-none focus:border-[#377DC0]">
+              <option value="todos">Todos los hallazgos</option>
+              <option value="pendiente">Solo sin revisar</option>
+              <option value="confirmado">Solo confirmados</option>
+              <option value="descartado">Solo descartados</option>
+            </select>
+            {([['pendiente', 'Sin revisar', '#1A1C1E'], ['confirmado', 'Confirmados', '#047857'], ['descartado', 'Descartados', '#66686A']] as const).map(([e, et, color]) => (
+              <div key={e} className="flex items-center h-7 text-[13px]">
+                <span className="flex-1 text-[#66686A]">{et}</span>
+                <span className="font-semibold tabular-nums" style={{ color }}>{hallazgos.filter(h => estadoDe(h.id) === e).length}</span>
+              </div>
+            ))}
+          </SeccionPanel>
+
+          {/* Tipos de daño: se eligen cuáles ver en el plano y se despliegan sus hallazgos */}
+          <SeccionPanel titulo="Tipos de daño" accion={porTipo.length > 1 ? (
+            <button type="button" onClick={() => setOcultos(o => (o.size ? new Set() : new Set(porTipo.map(p => p.tipo.etiqueta))))}
+              className="text-[12px] font-medium text-[#377DC0] hover:underline">
+              {ocultos.size ? 'Ver todos' : 'Ocultar todos'}
+            </button>
+          ) : undefined}>
+            {hallazgos.length === 0 && (
+              <p className="text-[13px] text-[#8A8C8E]">{enCurso ? 'Todavía no hay hallazgos.' : 'Sin hallazgos.'}</p>
+            )}
+            <div className="-mx-2">
+              {porTipo.map(({ tipo }) => {
+                const abierto = abiertos.has(tipo.etiqueta);
+                const visible = !ocultos.has(tipo.etiqueta);
+                const delTipo = lista.filter(h => infoDano(h.tipo_dano).etiqueta === tipo.etiqueta);
+                const filtrados = delTipo.filter(h => filtroEstado === 'todos' || estadoDe(h.id) === filtroEstado);
+                return (
+                  <div key={tipo.etiqueta}>
+                    <div className="flex items-center gap-1 h-8 pl-1 pr-2 rounded-md hover:bg-black/[0.035]">
+                      <button type="button" aria-label={abierto ? 'Plegar' : 'Desplegar'}
+                        onClick={() => setAbiertos(c => { const x = new Set(c); x.has(tipo.etiqueta) ? x.delete(tipo.etiqueta) : x.add(tipo.etiqueta); return x; })}
+                        className="w-5 h-5 flex items-center justify-center text-[#8A8C8E] hover:text-[#1A1C1E]">
+                        {abierto ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                      </button>
+                      <label className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
+                        <input type="checkbox" checked={visible} className="sr-only"
+                          onChange={() => setOcultos(o => { const x = new Set(o); x.has(tipo.etiqueta) ? x.delete(tipo.etiqueta) : x.add(tipo.etiqueta); return x; })} />
+                        <Casilla marcada={visible} color={tipo.color} />
+                        <span className={`text-[13px] flex-1 truncate ${visible ? 'text-[#1A1C1E]' : 'text-[#A0A2A4]'}`}>{tipo.etiqueta}</span>
+                      </label>
+                      <span className="text-[12px] text-[#8A8C8E] tabular-nums">{filtrados.length}</span>
+                    </div>
+                    {abierto && (
+                      <div className="ml-[13px] pl-2 border-l border-[#14202B]/[0.08] mb-1">
+                        {filtrados.length === 0 && <p className="h-7 flex items-center pl-2 text-[12px] text-[#A0A2A4]">Ninguno con este filtro</p>}
+                        {filtrados.map(h => {
+                          const activo = h.id === selId;
+                          const pct = h.probabilidad_promedio != null ? Math.round(Number(h.probabilidad_promedio) * 100) : null;
+                          return (
+                            <button key={h.id} type="button" onClick={() => { setSelId(h.id); setDetalle(h.id); }}
+                              aria-current={activo ? 'true' : undefined}
+                              className={`w-full flex items-center gap-2 h-7 pl-2 pr-2 rounded-md text-left ${activo ? 'bg-[#E3EEF8]' : 'hover:bg-black/[0.035]'}`}>
+                              <span className="w-[18px] h-[18px] rounded-full flex-none flex items-center justify-center text-[10px] font-bold text-white tabular-nums" style={{ background: tipo.color }}>
+                                {numero.get(h.id)}
+                              </span>
+                              <span className={`text-[13px] flex-1 truncate ${estadoDe(h.id) === 'descartado' ? 'text-[#A0A2A4] line-through' : 'text-[#1A1C1E]'}`}>Hallazgo {numero.get(h.id)}</span>
+                              {estadoDe(h.id) === 'confirmado' && <Check className="w-3.5 h-3.5 text-[#047857] flex-none" aria-label="Confirmado" />}
+                              {estadoDe(h.id) === 'descartado' && <Cruz className="w-3.5 h-3.5 text-[#A0A2A4] flex-none" aria-label="Descartado" />}
+                              {pct !== null && <span className="w-9 text-right text-[12px] text-[#66686A] tabular-nums">{pct}%</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </SeccionPanel>
+
+          {/* Capas del plano */}
+          <SeccionPanel titulo="Capas del plano">
+            {([['paredes', 'Paredes'], ['camino', 'Recorrido del robot'], ['hallazgos', 'Hallazgos']] as [keyof Capas, string][]).map(([c, et]) => (
+              <label key={c} className="flex items-center gap-2 h-7 cursor-pointer">
+                <input type="checkbox" checked={capas[c]} className="sr-only" onChange={() => setCapas(x => ({ ...x, [c]: !x[c] }))} />
+                <Casilla marcada={capas[c]} color="#377DC0" />
+                <span className={`text-[13px] ${capas[c] ? 'text-[#1A1C1E]' : 'text-[#A0A2A4]'}`}>{et}</span>
+              </label>
+            ))}
+          </SeccionPanel>
+        </div>
+      </aside>
+      )}
       </div>
 
       {/* Detalle del hallazgo elegido */}
@@ -599,104 +691,33 @@ export default function MapaHallazgos({
           />
         );
       })()}
-
-      {/* Panel de hallazgos: árbol por tipo de daño, con el estilo del panel de proyectos */}
-      {panelCerrado && (
-        <aside className="absolute inset-y-0 right-0 w-[36px] flex flex-col items-center py-1.5 bg-[#F8F9FA] border-l border-[#E5E7EB]">
-          <button type="button" onClick={() => setPanelCerrado(false)} title="Ver hallazgos" aria-label="Ver hallazgos"
-            className="w-7 h-7 flex items-center justify-center rounded-[4px] hover:bg-black/[0.07] text-[#616161]">
-            <ChevronsLeft className="w-4 h-4" />
-          </button>
-          <span className="mt-2 text-[12px] font-semibold text-[#616161] [writing-mode:vertical-rl] rotate-180">Hallazgos · {hallazgos.length}</span>
-        </aside>
-      )}
-      <aside className={`absolute inset-y-0 right-0 w-[300px] flex-col bg-[#F8F9FA] border-l border-[#E5E7EB] overflow-hidden ${panelCerrado ? 'hidden' : 'flex'}`}>
-        <div className="flex-none bg-white border-b border-[#E5E7EB] px-4 pt-4 pb-3.5">
-          <div className="flex items-center gap-2">
-            <h3 className="text-[16px] font-semibold text-[#1A1C1E] tracking-[-0.01em]">Hallazgos</h3>
-            <span className="h-5 min-w-[22px] px-1.5 rounded-full bg-[#F1F3F5] text-[11px] font-semibold text-[#66686A] flex items-center justify-center tabular-nums">
-              {hallazgos.length}
-            </span>
-            <button type="button" onClick={() => setPanelCerrado(true)} title="Ocultar el panel" aria-label="Ocultar el panel"
-              className="ml-auto w-[22px] h-[22px] flex items-center justify-center rounded-[4px] text-[#424242] hover:bg-black/[0.08]">
-              <ChevronsRight className="w-4 h-4" />
-            </button>
-          </div>
-          {hallazgos.length > 0 && (() => {
-            const conf = hallazgos.filter(h => estadoDe(h.id) === 'confirmado').length;
-            const desc = hallazgos.filter(h => estadoDe(h.id) === 'descartado').length;
-            const pend = hallazgos.length - conf - desc;
-            return (
-              <p className="mt-2 text-[12px] text-[#66686A]">
-                <b className="font-semibold text-[#1A1C1E]">{pend}</b> sin revisar · <b className="font-semibold text-[#047857]">{conf}</b> confirmado{conf === 1 ? '' : 's'} · <b className="font-semibold text-[#66686A]">{desc}</b> descartado{desc === 1 ? '' : 's'}
-              </p>
-            );
-          })()}
-          <div className="flex mt-3 rounded-full overflow-hidden h-1.5 bg-[#EEF1F4]">
-            {porTipo.map(({ tipo, n }) => (
-              <span key={tipo.etiqueta} style={{ width: `${(n / hallazgos.length) * 100}%`, background: tipo.color }} />
-            ))}
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto pt-2 pb-2 min-h-0">
-          {hallazgos.length === 0 && (
-            <p className="px-5 py-2 text-[14px] text-[#8A8C8E]">{enCurso ? 'Todavía no hay hallazgos.' : 'Sin hallazgos.'}</p>
-          )}
-          {porTipo.map(({ tipo, n }) => {
-            const abierto = !cerrados.has(tipo.etiqueta);
-            const delTipo = lista.filter(h => infoDano(h.tipo_dano).etiqueta === tipo.etiqueta);
-            return (
-              <div key={tipo.etiqueta}>
-                <button type="button" onClick={() => setCerrados(c => { const x = new Set(c); x.has(tipo.etiqueta) ? x.delete(tipo.etiqueta) : x.add(tipo.etiqueta); return x; })}
-                  className="w-full flex items-center gap-1.5 h-[32px] pl-1.5 pr-3 text-left hover:bg-black/[0.045]">
-                  {abierto ? <ChevronDown className="w-4 h-4 flex-none text-[#616161]" /> : <ChevronRight className="w-4 h-4 flex-none text-[#616161]" />}
-                  <span className="w-2.5 h-2.5 rounded-full flex-none" style={{ background: tipo.color }} />
-                  <span className="text-[14px] flex-1 truncate text-[#1A1C1E]">{tipo.etiqueta}</span>
-                  <span className="text-[12px] text-[#8A8C8E] flex-none tabular-nums">{n}</span>
-                </button>
-                {abierto && (
-                  <div className="relative">
-                    <span className="absolute left-[14px] top-0 bottom-0 w-px bg-black/[0.12] pointer-events-none" />
-                    {delTipo.map(h => {
-                      const activo = h.id === selId;
-                      const pct = h.probabilidad_promedio != null ? Math.round(Number(h.probabilidad_promedio) * 100) : null;
-                      return (
-                        <button key={h.id} type="button" onClick={() => { setSelId(h.id); setDetalle(h.id); }}
-                          aria-current={activo ? 'true' : undefined}
-                          className={`w-full flex items-center gap-2 h-[32px] pl-[30px] pr-3 text-left ${
-                            activo ? 'bg-[#D6E6F5] outline outline-1 -outline-offset-1 outline-[#377DC0]' : 'hover:bg-black/[0.045]'
-                          }`}>
-                          <span className="w-[18px] h-[18px] rounded-full flex-none flex items-center justify-center text-[10px] font-bold text-white tabular-nums" style={{ background: tipo.color }}>
-                            {numero.get(h.id)}
-                          </span>
-                          <span className={`text-[14px] flex-1 truncate ${estadoDe(h.id) === 'descartado' ? 'text-[#A0A2A4] line-through' : 'text-[#1A1C1E]'}`}>Hallazgo {numero.get(h.id)}</span>
-                          {estadoDe(h.id) === 'confirmado' && <Check className="w-3.5 h-3.5 text-[#047857] flex-none" aria-label="Confirmado" />}
-                          {estadoDe(h.id) === 'descartado' && <Cruz className="w-3.5 h-3.5 text-[#A0A2A4] flex-none" aria-label="Descartado" />}
-                          {h.fecha_deteccion && <span className="text-[12px] text-[#8A8C8E] tabular-nums">{horaLocal(h.fecha_deteccion).replace(' hs', '')}</span>}
-                          {pct !== null && <span className="w-9 text-right text-[12px] text-[#66686A] tabular-nums">{pct}%</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </aside>
     </div>
   );
 }
 
-function BotonZoom({ titulo, onClick, children }: { titulo: string; onClick: () => void; children: React.ReactNode }) {
+/** Bloque del panel de hallazgos: título chico arriba y su contenido. */
+function SeccionPanel({ titulo, accion, children }: { titulo: string; accion?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <button type="button" onClick={onClick} title={titulo} aria-label={titulo}
-      className="w-8 h-7 flex items-center justify-center text-[15px] text-[#424242] bg-white hover:bg-[#F3F4F6] border-r last:border-r-0 border-[#D4D4D4]">
+    <section className="px-4 py-3.5 border-b border-[#14202B]/[0.06] last:border-b-0">
+      <div className="flex items-center mb-2">
+        <h4 className="flex-1 text-[12px] font-semibold text-[#66686A]">{titulo}</h4>
+        {accion}
+      </div>
       {children}
-    </button>
+    </section>
   );
 }
+
+/** Casilla de verificación cuadrada, pintada del color del tipo de daño. */
+function Casilla({ marcada, color }: { marcada: boolean; color: string }) {
+  return (
+    <span className="w-3.5 h-3.5 flex-none rounded-[3px] border flex items-center justify-center"
+      style={marcada ? { background: color, borderColor: color } : { borderColor: '#A0A2A4', background: 'white' }}>
+      {marcada && <svg viewBox="0 0 10 10" className="w-2.5 h-2.5"><path d="M2 5.2 4.2 7.4 8 3" stroke="white" strokeWidth="1.6" fill="none" /></svg>}
+    </span>
+  );
+}
+
 
 /** Cartelito blanco con texto de color, arriba a la derecha de un punto del mapa. */
 function Etiqueta({ x, y, texto, color }: { x: number; y: number; texto: string; color: string }) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { duracion, etiquetaEstado, fechaLarga, horaLocal } from './formato';
 import { useRobots } from './robots';
 import { DESTINOS, TIPOS_PROPIEDAD, etiquetaDe, obtenerEdificacion, type EdificacionApi } from './edificioForm';
@@ -7,8 +7,9 @@ import ActivityBar, { NavTab } from './ActivityBar';
 import type { Building } from './data';
 import { useProyectos, EDIFICIO_VACIO } from './proyectos';
 import { TopNav, ProjectsSidebar, PanelLabel, PanelText } from './components';
-import { Map, FileText, Layers, Play, Trash2 } from 'lucide-react';
+import { Map, FileText, FileDown, Loader2, MoreHorizontal, Play, Trash2 } from 'lucide-react';
 import SelectorInspeccion from './components/SelectorInspeccion';
+import { etiquetaMotivo } from './motivos';
 import DialogoConfirmar from './components/DialogoConfirmar';
 import { BACKEND_URL } from './sesion';
 import { ordenPlanta, plantasDe } from './plantas';
@@ -38,6 +39,10 @@ interface InspectionRecorridoProps {
 export default function InspectionRecorrido({ activeTab, onTabChange, selectedBuildingId, onSelectBuilding, onVerFicha, relevamientoId, onVerUltima, onElegirInspeccion, onIniciarInspeccion }: InspectionRecorridoProps) {
   const [infoTab, setInfoTab] = useState<TabId>('datos');
   const [borrando, setBorrando] = useState<{ enviando: boolean; error: string | null } | null>(null);
+  // Menú «⋯» de la inspección (exportar informe y eliminar)
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const [exportando, setExportando] = useState(false);
+  const exportarRef = useRef<(() => Promise<void>) | null>(null);
   const { proyectos, recargar } = useProyectos();
   const { robots } = useRobots();
   // Ficha de la edificación (para el resumen de la solapa Edificio)
@@ -56,7 +61,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, selectedBu
   const currentBuilding: Building = elegida && elegida.id !== undefined
     ? {
         ...edificio,
-        ultimoRelevamiento: { id: elegida.id, estado: elegida.estado ?? '', inicio: elegida.inicio ?? null, fin: elegida.fin ?? null, planta: elegida.planta },
+        ultimoRelevamiento: { id: elegida.id, estado: elegida.estado ?? '', inicio: elegida.inicio ?? null, fin: elegida.fin ?? null, planta: elegida.planta, motivo: elegida.motivo, observaciones: elegida.observaciones },
         lastRelevamientoDate: elegida.date,
         lastDetections: elegida.detections,
         lastRobot: elegida.robot,
@@ -81,7 +86,10 @@ export default function InspectionRecorrido({ activeTab, onTabChange, selectedBu
   const plantasConInspeccion = new Set(inspecciones.map(h => plantaDe(h.planta)));
   const plantas = [...new Set([...plantasEdificio, ...plantasConInspeccion])]
     .sort((a, b) => (a === SIN_PLANTA ? 1 : b === SIN_PLANTA ? -1 : ordenPlanta(a) - ordenPlanta(b)));
-  const deLaPlanta = inspecciones.filter(h => plantaDe(h.planta) === plantaActual);
+  // El selector de plantas solo aparece si la edificación tiene más de una planta;
+  // si no, en «Inspección» se ven todas
+  const variasPlantas = plantasEdificio.length > 1;
+  const deLaPlanta = variasPlantas ? inspecciones.filter(h => plantaDe(h.planta) === plantaActual) : inspecciones;
   const elegir = (id: number) => onElegirInspeccion?.(id === edificio.ultimoRelevamiento?.id ? null : id);
 
   // ── Eliminar la inspección que se está viendo ──
@@ -124,13 +132,15 @@ export default function InspectionRecorrido({ activeTab, onTabChange, selectedBu
             onSelectBuilding={id => onSelectBuilding?.(id)}
           />
 
-        <div className="flex flex-col flex-1 overflow-hidden min-h-0">
+        <div className="flex flex-col flex-1 overflow-hidden min-h-0 bg-[#F3F6F9] bg-[radial-gradient(#DDE3EA_1px,transparent_1px)] [background-size:16px_16px]">
 
         {/* Plantas e inspecciones de la edificación */}
         {inspecciones.length > 0 && (
-          <div className="flex-none flex items-center gap-3 h-14 px-4 bg-[#F8F9FA] border-b border-[#E5E7EB] whitespace-nowrap">
-            <span className="flex items-center gap-1.5 text-[12px] font-semibold text-[#616161]"><Layers className="w-4 h-4" /> Planta</span>
-            <div className="flex items-center gap-1">
+          <div className="flex-none flex items-center gap-3 h-14 px-4 bg-white border-b border-[#E5E7EB] whitespace-nowrap min-w-0">
+            {variasPlantas && <>
+            <span className="text-[12px] font-semibold text-[#66686A]">Planta</span>
+            {/* Plantas como control segmentado: la elegida resalta en blanco (si no entran, se desplazan) */}
+            <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-[#F1F3F5] min-w-0 overflow-x-auto [scrollbar-width:none]">
               {plantas.map(p => {
                 const delas = inspecciones.filter(h => plantaDe(h.planta) === p);
                 const activa = p === plantaActual;
@@ -138,19 +148,30 @@ export default function InspectionRecorrido({ activeTab, onTabChange, selectedBu
                   <button key={p} type="button" disabled={delas.length === 0}
                     onClick={() => delas[0]?.id !== undefined && elegir(delas[0].id)}
                     title={delas.length === 0 ? 'Sin inspecciones en esta planta' : undefined}
-                    className={`flex items-center gap-1.5 h-8 px-3 rounded-[3px] text-[13px] font-medium border transition-colors ${
-                      activa ? 'bg-white border-[#377DC0] text-[#1E4E7C] shadow-[inset_0_-2px_0_#377DC0]'
-                        : delas.length ? 'bg-white border-[#D4D4D4] text-[#1A1C1E] hover:bg-[#F3F4F6]'
-                        : 'bg-transparent border-transparent text-[#A0A2A4] cursor-default'
+                    className={`flex-none flex items-center gap-1.5 h-8 px-3 rounded-[5px] text-[13px] transition-colors ${
+                      activa ? 'bg-white text-[#1A1C1E] font-semibold shadow-[0_1px_3px_rgba(20,32,43,0.14)]'
+                        : delas.length ? 'text-[#1A1C1E] font-medium hover:bg-white/60'
+                        : 'text-[#A0A2A4] font-medium cursor-default'
                     }`}>
                     {p}
-                    {delas.length > 0 && <span className="text-[11px] text-[#8A8C8E] tabular-nums">{delas.length}</span>}
+                    {delas.length > 0 && (
+                      <span className={`h-[18px] min-w-[18px] px-1 rounded-full text-[11px] font-semibold tabular-nums flex items-center justify-center ${activa ? 'bg-[#E3EEF8] text-[#1E4E7C]' : 'bg-black/[0.06] text-[#66686A]'}`}>{delas.length}</span>
+                    )}
                   </button>
                 );
               })}
             </div>
-            <div className="flex-1" />
-            <span className="text-[12px] font-semibold text-[#616161]">Inspección</span>
+            </>}
+            {!variasPlantas && <>
+              {/* Una sola planta: se muestra cuál es, sin poder cambiarla */}
+              <span className="text-[12px] font-semibold text-[#66686A]">Planta</span>
+              <div className="flex items-center p-0.5 rounded-md bg-[#F1F3F5]">
+                <span className="flex items-center h-8 px-3 rounded-[5px] text-[13px] bg-white text-[#1A1C1E] font-semibold shadow-[0_1px_3px_rgba(20,32,43,0.14)]">
+                  {plantasEdificio[0]}
+                </span>
+              </div>
+            </>}
+            <div className="flex-1 min-w-2" />
             <SelectorInspeccion
               inspecciones={deLaPlanta}
               elegida={currentBuilding.ultimoRelevamiento?.id}
@@ -159,28 +180,47 @@ export default function InspectionRecorrido({ activeTab, onTabChange, selectedBu
             />
             {esAnterior && onVerUltima && (
               <button type="button" onClick={onVerUltima}
-                className="h-9 px-2 rounded-[3px] text-[13px] font-medium text-[#377DC0] hover:bg-[#EEF4FB] transition-colors">
+                className="flex-none h-9 px-2 rounded-[3px] text-[13px] font-medium text-[#377DC0] hover:bg-[#EEF4FB] transition-colors">
                 Ir a la última
               </button>
             )}
-            <div className="w-px h-6 bg-[#E5E7EB]" />
-            {/* Acciones sobre la inspección elegida */}
-            <div className="flex items-center rounded-[3px] border border-[#D4D4D4] bg-white overflow-hidden">
-              <button type="button" onClick={() => setBorrando({ enviando: false, error: null })}
-                title="Eliminar esta inspección" aria-label="Eliminar esta inspección"
-                className="flex items-center justify-center gap-1.5 h-[34px] px-3 text-[13px] font-medium text-[#B91C1C] hover:bg-[#FEF2F2] transition-colors">
-                <Trash2 className="w-4 h-4" /> Eliminar
+            <div className="relative flex-none">
+              <button type="button" onClick={() => setMenuAbierto(x => !x)} aria-expanded={menuAbierto}
+                title="Más opciones de la inspección" aria-label="Más opciones de la inspección"
+                className={`w-9 h-9 flex items-center justify-center rounded-[3px] border transition-colors ${
+                  menuAbierto ? 'bg-[#EEF4FB] border-[#377DC0]/50 text-[#1E4E7C]' : 'bg-white border-[#D4D4D4] text-[#424242] hover:bg-[#F3F4F6]'
+                }`}>
+                {exportando ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-4 h-4" />}
               </button>
+              {menuAbierto && (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setMenuAbierto(false)} aria-hidden />
+                  <div className="absolute right-0 top-full z-30 mt-1 w-[210px] rounded-[5px] bg-white border border-[#D4D4D4] shadow-[0_2px_8px_rgba(0,0,0,0.16)] p-1">
+                    <button type="button" disabled={exportando || !currentBuilding.relevamientos}
+                      onClick={() => { setMenuAbierto(false); exportarRef.current?.(); }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[3px] text-left text-[14px] text-[#1A1C1E] hover:bg-[#377DC0] hover:text-white disabled:text-[#A0A2A4] disabled:hover:bg-transparent">
+                      <FileDown className="w-3.5 h-3.5" /> {exportando ? 'Armando informe…' : 'Descargar informe'}
+                    </button>
+                    <button type="button"
+                      onClick={() => { setMenuAbierto(false); setBorrando({ enviando: false, error: null }); }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[3px] text-left text-[14px] text-[#B91C1C] hover:bg-[#B91C1C] hover:text-white">
+                      <Trash2 className="w-3.5 h-3.5" /> Eliminar inspección
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
 
         {/* Floor plan */}
-        <div className="flex-1 relative overflow-hidden min-h-0 bg-white">
+        <div className="flex-1 relative overflow-hidden min-h-0">
           {currentBuilding.relevamientos > 0 ? (
             <MapaHallazgos
               relevamientoId={currentBuilding.ultimoRelevamiento?.id}
               enCurso={currentBuilding.ultimoRelevamiento?.estado === 'en_curso'}
+              exportarRef={exportarRef}
+              onExportando={setExportando}
               informe={{
                 proyecto: proyectos.find(p => p.buildings.some(b => b.id === edificio.id))?.name ?? '—',
                 proyectoId: proyectos.find(p => p.buildings.some(b => b.id === edificio.id))?.id ?? null,
@@ -188,6 +228,8 @@ export default function InspectionRecorrido({ activeTab, onTabChange, selectedBu
                 edificacion: edificio.name,
                 direccion: ficha?.direccion || edificio.address,
                 planta: currentBuilding.ultimoRelevamiento?.planta ?? 'Sin indicar',
+                motivo: etiquetaMotivo(currentBuilding.ultimoRelevamiento?.motivo),
+                observaciones: currentBuilding.ultimoRelevamiento?.observaciones ?? null,
                 fecha: currentBuilding.lastRelevamientoDate,
                 inicio: horaLocal(currentBuilding.ultimoRelevamiento?.inicio),
                 fin: currentBuilding.ultimoRelevamiento?.fin ? horaLocal(currentBuilding.ultimoRelevamiento.fin) : 'En curso',
@@ -215,25 +257,29 @@ export default function InspectionRecorrido({ activeTab, onTabChange, selectedBu
         </div>
 
         {/* Bottom info panel */}
-        <div className="flex-none bg-white border-t border-[#E5E7EB]">
+        {/* Datos de abajo: tarjeta flotante, igual que el panel de hallazgos */}
+        <div className="flex-none px-3 pb-3">
+        <div className="rounded-lg bg-white/90 backdrop-blur-sm border border-[#E5E7EB] shadow-[0_4px_16px_rgba(20,32,43,0.10)]">
 
-          {/* Tab bar */}
-          <div className="flex items-center h-11 border-b border-[#E5E7EB] px-3 bg-[#F8F9FA]">
-            <div className="flex items-center gap-1 flex-1">
+          {/* Solapas como control segmentado */}
+          <div className="flex items-center gap-3 px-4 pt-3">
+            <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-[#F1F3F5]">
               {infoTabs.map(tab => (
                 <button
                   key={tab.id}
+                  type="button"
                   onClick={() => setInfoTab(tab.id)}
-                  className={`h-11 px-3 text-[13px] font-medium transition-colors border-b-2 -mb-px ${
+                  className={`h-8 px-3 rounded-[5px] text-[13px] transition-colors ${
                     infoTab === tab.id
-                      ? 'border-[#377DC0] text-[#1A1C1E] bg-white'
-                      : 'border-transparent text-[#66686A] hover:text-[#1A1C1E]'
+                      ? 'bg-white text-[#1A1C1E] font-semibold shadow-[0_1px_3px_rgba(20,32,43,0.14)]'
+                      : 'text-[#66686A] font-medium hover:text-[#1A1C1E]'
                   }`}
                 >
                   {tab.label}
                 </button>
               ))}
             </div>
+            <div className="flex-1" />
             {currentBuilding.id && onVerFicha && (
               <button
                 type="button"
@@ -246,7 +292,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, selectedBu
           </div>
 
           {/* Tab content */}
-          <div className="px-6 py-4">
+          <div className="px-5 pt-3.5 pb-4 h-[86px] overflow-hidden [&_p]:whitespace-nowrap">
             {infoTab === 'datos' && (() => {
               const u = currentBuilding.ultimoRelevamiento;
               const hay = currentBuilding.relevamientos > 0 && !!u;
@@ -280,7 +326,6 @@ export default function InspectionRecorrido({ activeTab, onTabChange, selectedBu
                     <span className={`inline-flex items-center gap-1.5 text-[12px] font-semibold mt-1 px-2 py-0.5 rounded-full ${
                       enCurso ? 'bg-[#ECFDF5] text-[#047857]' : u?.estado === 'finalizado' ? 'bg-[#10B981]/[0.09] text-[#14202B]' : 'bg-black/5 text-[#66686A]'
                     }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full flex-none ${enCurso ? 'bg-[#10B981] animate-pulse' : u?.estado === 'finalizado' ? 'bg-[#10B981]' : 'bg-[#A0A2A4]'}`} />
                       {etiquetaEstado(u?.estado)}
                     </span>
                   ) : (
@@ -348,6 +393,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, selectedBu
               );
             })()}
           </div>
+        </div>
         </div>
 
         </div>

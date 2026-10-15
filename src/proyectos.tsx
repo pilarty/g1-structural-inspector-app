@@ -55,7 +55,7 @@ function aIso(valor: string | null): string | null {
 }
 
 // `rels` viene ordenado del relevamiento más reciente al más antiguo
-function aEdificio(e: EdificacionApi, rels: ResumenApi[], plantas: Map<number, string>): Building {
+function aEdificio(e: EdificacionApi, rels: ResumenApi[], plantas: Map<number, DatosInicio>): Building {
   const base: Building = {
     ...EDIFICIO_VACIO,
     id: String(e.id),
@@ -88,17 +88,24 @@ function aEdificio(e: EdificacionApi, rels: ResumenApi[], plantas: Map<number, s
       estado: r.estado ?? '',
       inicio: aIso(r.fecha_inicio),
       fin: aIso(r.fecha_fin),
-      planta: plantas.get(r.id),
+      planta: plantas.get(r.id)?.planta,
+      motivo: plantas.get(r.id)?.motivo ?? undefined,
+      observaciones: plantas.get(r.id)?.observaciones ?? undefined,
     })),
     ultimoRelevamiento: {
       id: ult.id,
-      planta: plantas.get(ult.id),
+      planta: plantas.get(ult.id)?.planta,
+      motivo: plantas.get(ult.id)?.motivo ?? undefined,
+      observaciones: plantas.get(ult.id)?.observaciones ?? undefined,
       estado: ult.estado ?? '',
       inicio: aIso(ult.fecha_inicio),
       fin: aIso(ult.fecha_fin),
     },
   };
 }
+
+/** Lo que se cargó al iniciar cada inspección */
+interface DatosInicio { planta: string; motivo?: string | null; observaciones?: string | null }
 
 interface ProyectosCtx {
   proyectos: Project[];
@@ -137,8 +144,8 @@ export function ProyectosProvider({ children }: { children: React.ReactNode }) {
       // Si el resumen falla, se muestran igual los proyectos y edificios (sin estadísticas)
       const resumen: ResumenApi[] = rr.ok ? await rr.json() : [];
       // Planta de cada inspección (si la nube todavía no tiene esa ruta, se sigue sin plantas)
-      const listaPlantas: { relevamiento_id: number; planta: string }[] = rpl?.ok ? await rpl.json() : [];
-      const plantas = new Map(listaPlantas.map(x => [x.relevamiento_id, x.planta]));
+      const listaPlantas: ({ relevamiento_id: number } & DatosInicio)[] = rpl?.ok ? await rpl.json() : [];
+      const plantas = new Map(listaPlantas.map(x => [x.relevamiento_id, x]));
       setProyectos(
         ps.map(p => ({
           id: String(p.id),

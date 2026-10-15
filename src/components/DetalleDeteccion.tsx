@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, CircleDashed, Download, ImageOff, Loader2, MapPin, X } from 'lucide-react';
+import { Check, CircleDashed, Download, ImageOff, Loader2, X } from 'lucide-react';
 import { infoDano } from '../danos';
 import { fechaLarga, horaLocal } from '../formato';
 
@@ -75,7 +75,7 @@ export default function DetalleDeteccion({ d, revision, onGuardarRevision, onCer
   const pct = d.probabilidad != null ? Math.round(d.probabilidad * 100) : null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#14202B]/10 flex items-center justify-center p-6" onMouseDown={e => e.target === e.currentTarget && onCerrar()}
+    <div className="fixed inset-0 z-50 bg-[#14202B]/20 backdrop-blur-[3px] flex items-center justify-center p-6" onMouseDown={e => e.target === e.currentTarget && onCerrar()}
       role="dialog" aria-modal="true" aria-label={`Hallazgo ${d.numero}`}>
       <div className="w-full max-w-[820px] bg-white rounded-lg border border-[#D4D4D4] shadow-[0_12px_48px_rgba(20,32,43,0.24)] overflow-hidden flex">
         {/* Foto */}
@@ -88,10 +88,6 @@ export default function DetalleDeteccion({ d, revision, onGuardarRevision, onCer
               {d.foto === undefined ? 'Cargando foto…' : 'Sin foto'}
             </div>
           )}
-          <div className="absolute bottom-3 left-3 flex items-center gap-1.5 h-7 px-2.5 rounded-[4px] bg-white/95 border border-[#E5E7EB] text-[12px] font-semibold text-[#1A1C1E]">
-            <span className="w-2 h-2 rounded-full" style={{ background: color }} />
-            {tipo.etiqueta}
-          </div>
         </div>
 
         {/* Datos */}
@@ -133,14 +129,9 @@ export default function DetalleDeteccion({ d, revision, onGuardarRevision, onCer
               </div>
             </section>
 
-            <p className="flex items-center gap-1.5 text-[13px] text-[#66686A] tabular-nums">
-              <MapPin className="w-3.5 h-3.5 text-[#8A8C8E]" />
-              Ubicación en el plano: <b className="font-semibold text-[#1A1C1E]">{d.x != null && d.y != null ? `X ${d.x.toFixed(1)} m · Y ${d.y.toFixed(1)} m` : '—'}</b>
-            </p>
-
             {/* Revisión del inspector: la IA propone, el ingeniero valida */}
             <section>
-              <h3 className="text-[12px] font-semibold text-[#616161] mb-2">Revisión del inspector</h3>
+              <h3 className="text-[12px] font-semibold text-[#616161] mb-2">Revisión</h3>
               <div className="grid grid-cols-3 rounded-[3px] border border-[#D4D4D4] overflow-hidden">
                 {ESTADOS_REVISION.map(e => {
                   const activo = estado === e.valor;
@@ -156,25 +147,25 @@ export default function DetalleDeteccion({ d, revision, onGuardarRevision, onCer
                   );
                 })}
               </div>
-              {estado === 'descartado' && <p className="text-[11px] text-[#8A8C8E] mt-1.5">Falso positivo: no se cuenta como daño ni sale en el informe.</p>}
-              {estado === 'confirmado' && (
-                <div className="grid grid-cols-[1fr_190px] gap-2.5 mt-2.5">
-                  <label className="block">
-                    <span className="text-[12px] text-[#616161]">Intervención recomendada</span>
-                    <input value={intervencion} onChange={e => { setIntervencion(e.target.value); setAviso(null); }}
-                      placeholder="Ej. sellado de fisura con epoxi, picado y reparación…"
-                      className="mt-1 w-full h-9 px-3 rounded-md text-[13px] text-[#1A1C1E] bg-white border border-[#D4D4D4] outline-none focus:border-[#377DC0] placeholder:text-[#A0A2A4]" />
-                  </label>
-                  <label className="block">
-                    <span className="text-[12px] text-[#616161]">Plazo</span>
-                    <select value={plazo} onChange={e => { setPlazo(e.target.value); setAviso(null); }}
-                      className="mt-1 w-full h-9 px-2 rounded-md text-[13px] text-[#1A1C1E] bg-white border border-[#D4D4D4] outline-none focus:border-[#377DC0]">
-                      <option value="">Sin definir</option>
-                      {PLAZOS.map(p => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                  </label>
-                </div>
-              )}
+              {/* Siempre a la vista, para que la tarjeta no cambie de tamaño; solo se usan si está confirmado */}
+              <div className="grid grid-cols-[1fr_190px] gap-2.5 mt-2.5">
+                <label className="block">
+                  <span className={`text-[12px] ${estado === 'confirmado' ? 'text-[#616161]' : 'text-[#A0A2A4]'}`}>Intervención recomendada</span>
+                  <input value={intervencion} onChange={e => { setIntervencion(e.target.value); setAviso(null); }}
+                    disabled={estado !== 'confirmado'}
+                    placeholder="Ej. sellado de fisura con epoxi, picado y reparación…"
+                    className="mt-1 w-full h-9 px-3 rounded-md text-[13px] text-[#1A1C1E] bg-white border border-[#D4D4D4] outline-none focus:border-[#377DC0] placeholder:text-[#A0A2A4] disabled:bg-[#F8F9FA] disabled:text-[#A0A2A4] disabled:cursor-not-allowed" />
+                </label>
+                <label className="block">
+                  <span className={`text-[12px] ${estado === 'confirmado' ? 'text-[#616161]' : 'text-[#A0A2A4]'}`}>Plazo</span>
+                  <select value={plazo} onChange={e => { setPlazo(e.target.value); setAviso(null); }}
+                    disabled={estado !== 'confirmado'}
+                    className="mt-1 w-full h-9 px-2 rounded-md text-[13px] text-[#1A1C1E] bg-white border border-[#D4D4D4] outline-none focus:border-[#377DC0] disabled:bg-[#F8F9FA] disabled:text-[#A0A2A4] disabled:cursor-not-allowed">
+                    <option value="">Sin definir</option>
+                    {PLAZOS.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </label>
+              </div>
               <textarea value={nota} onChange={e => { setNota(e.target.value); setAviso(null); }} rows={2}
                 placeholder="Nota"
                 className="mt-2.5 w-full px-3 py-2 rounded-md text-[13px] text-[#1A1C1E] bg-white border border-[#D4D4D4] outline-none focus:border-[#377DC0] focus:outline focus:outline-1 focus:outline-[#377DC0] placeholder:text-[#A0A2A4] resize-none" />
