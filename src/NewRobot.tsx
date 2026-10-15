@@ -7,7 +7,7 @@ import { PanelPrueba, PruebaEnRecuadro, RobotsGuardados, DialogoReconexion, Dial
 import {
   CAMPOS_CONEXION, aConexionGuardada, autorizarMovimiento, avisos as calcularAvisos, consultarActivo, desconectarRobot,
   detectarInterfaces, formularioDesdePerfil,
-  formularioVacio, NOMBRE_REPETIDO, probarConexion, reconectar, validar,
+  formularioVacio, MODELO_SIMULADOR, NOMBRE_REPETIDO, probarConexion, reconectar, validar,
   type CampoForm, type Errores, type InterfazRed, type ResultadoPrueba, type RobotForm,
 } from './robotConexion';
 
@@ -119,7 +119,8 @@ export default function NewRobot({ activeTab, onTabChange }: NewRobotProps) {
   }
 
   function cargarRobot(r: RobotNube) {
-    if (r.conexion) cargarFormulario(formularioDesdePerfil(r.label, r.conexion), r.id);
+    if (r.modelo === MODELO_SIMULADOR) cargarFormulario({ ...formularioVacio(), codigo: r.label, simulador: true }, r.id);
+    else if (r.conexion) cargarFormulario(formularioDesdePerfil(r.label, r.conexion), r.id);
     else cargarFormulario({ ...formularioVacio(), codigo: r.label }, r.id);
   }
 
@@ -178,13 +179,14 @@ export default function NewRobot({ activeTab, onTabChange }: NewRobotProps) {
     setGuardando(true);
     const credenciales: { ssh_password?: string } = {};
     if (form.sshPassword || !editandoId) credenciales.ssh_password = form.sshPassword;
+    const sim = form.simulador;
     const r = await guardarRobot({
       codigo: form.codigo.trim(),
-      unidad: form.modelo,
-      conexion: aConexionGuardada(form),
-      credenciales,
-      ultima_prueba_fecha: pruebaVigente?.fecha ?? null,
-      ultima_prueba: pruebaVigente
+      unidad: sim ? MODELO_SIMULADOR : form.modelo,
+      conexion: sim ? null : aConexionGuardada(form),
+      credenciales: sim ? {} : credenciales,
+      ultima_prueba_fecha: sim ? null : pruebaVigente?.fecha ?? null,
+      ultima_prueba: !sim && pruebaVigente
         ? { resultado: pruebaVigente.resultado, tipo: pruebaVigente.tipo, interfaz: pruebaVigente.interfaz, pasos: pruebaVigente.pasos }
         : null,
     }, editandoId ?? undefined);
@@ -309,7 +311,9 @@ export default function NewRobot({ activeTab, onTabChange }: NewRobotProps) {
                         prueba={prueba}
                         probando={probando}
                         puedeProbar={puedeProbar && !!editandoRobot.conexion}
-                        motivoNoProbar="Este robot todavía no tiene datos de conexión. Pulsá «Configurar»."
+                        motivoNoProbar={editandoRobot.modelo === MODELO_SIMULADOR
+                          ? 'Es un simulador: no hace falta probar la conexión.'
+                          : 'Este robot todavía no tiene datos de conexión. Pulsá «Configurar».'}
                         onProbar={probar}
                       />
                     </CabeceraRobot>
@@ -333,7 +337,7 @@ export default function NewRobot({ activeTab, onTabChange }: NewRobotProps) {
                       onDetectarInterfaces={() => detectar()}
                       pie={
                         <div className="space-y-3">
-                          {advertenciaPrueba && completo && (
+                          {advertenciaPrueba && completo && !form.simulador && (
                             <p className="text-[11px] font-medium text-[#92400E] bg-[#FFFBEB] px-3.5 py-2.5 rounded-xl">
                               {advertenciaPrueba} Podés guardar igual, pero conviene probarla antes.
                             </p>
@@ -354,13 +358,13 @@ export default function NewRobot({ activeTab, onTabChange }: NewRobotProps) {
                       }
                     />
                     <div className="sticky top-0 space-y-2 min-w-0">
-                      <PanelPrueba
+                      {!form.simulador && <PanelPrueba
                         prueba={prueba}
                         probando={probando}
                         puedeProbar={puedeProbar}
                         motivoNoProbar="Completá la IP, el usuario y el puerto SSH y el Domain ID para probar."
                         onProbar={probar}
-                      />
+                      />}
                       {errorPrueba && <p className="text-[12px] text-[#991B1B] px-1">{errorPrueba}</p>}
                     </div>
                   </div>

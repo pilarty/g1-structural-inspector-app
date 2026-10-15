@@ -17,14 +17,6 @@ export const brand = {
   accentBg:     'rgba(173,143,110,0.16)',// Sand accent chip background
 } as const;
 
-// Severity — damage classification
-export const severity = {
-  critical: { dot: '#EF4444', bg: 'rgba(239,68,68,0.09)',   label: 'Crítica' },
-  high:     { dot: '#F97316', bg: 'rgba(249,115,22,0.09)',  label: 'Alta'    },
-  medium:   { dot: '#FBBF24', bg: 'rgba(251,191,36,0.09)',  label: 'Media'   },
-  low:      { dot: '#10B981', bg: 'rgba(16,185,129,0.09)',  label: 'Baja'    },
-} as const;
-
 // Status — robot connection states
 export const robotStatus = {
   listo:        { dot: '#10B981', chip: 'bg-[#E3EEF8] text-[#14202B]',     label: 'Listo'               },

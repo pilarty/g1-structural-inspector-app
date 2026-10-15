@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, ChevronDown, ChevronRight, ChevronsLeft, Plus, FolderPlus, Folder, FolderOpen, MoreHorizontal, Trash2, Pencil } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight, ChevronsLeft, Plus, FolderPlus, Folder, FolderOpen, MoreHorizontal, Trash2, Pencil, FileUp, Share2 } from 'lucide-react';
 import { useProyectos } from '../proyectos';
 import BuildingListItem from './BuildingListItem';
 import type { NavTab } from '../ActivityBar';
@@ -7,6 +7,8 @@ import { editarElemento, eliminado, nuevoEdificioEn, nuevoProyecto, verProyecto 
 import { eliminarEdificacion } from '../edificioForm';
 import { eliminarProyecto } from '../proyectoForm';
 import DialogoConfirmar from './DialogoConfirmar';
+import DialogoImportar from './DialogoImportar';
+import { exportarEdificacion } from '../archivoInspeccion';
 
 interface ProjectsSidebarProps {
   /** Currently highlighted building (drives the left-border active state) */
@@ -65,6 +67,7 @@ export default function ProjectsSidebar({
       : { ...borrando, enviando: false, error: 'No se pudo eliminar. Revisá tu conexión e intentá de nuevo.' });
   }
   const [collapsed, setCollapsed] = useState(false);
+  const [importando, setImportando] = useState(false);
   const [query, setQuery] = useState('');
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(
     new Set<string>() /* proyectos cerrados; por defecto todos abiertos */
@@ -118,7 +121,10 @@ export default function ProjectsSidebar({
               {proyectos.length}
             </span>
           </div>
-          <AccionIcono titulo="Ocultar el panel" onClick={() => setCollapsed(true)}><ChevronsLeft className="w-4 h-4" /></AccionIcono>
+          <div className="flex items-center gap-0.5">
+            <AccionIcono titulo="Importar edificación (.g1insp)" onClick={() => setImportando(true)}><FileUp className="w-4 h-4" /></AccionIcono>
+            <AccionIcono titulo="Ocultar el panel" onClick={() => setCollapsed(true)}><ChevronsLeft className="w-4 h-4" /></AccionIcono>
+          </div>
         </div>
         <div className="mt-3 flex items-center gap-2">
           <div className="flex items-center gap-2 h-9 px-2.5 flex-1 min-w-0 bg-white rounded-[3px] border border-[#D4D4D4] focus-within:border-[#377DC0] focus-within:outline focus-within:outline-1 focus-within:outline-[#377DC0]">
@@ -266,6 +272,16 @@ export default function ProjectsSidebar({
                             <Pencil className="w-3.5 h-3.5" /> Editar edificación
                           </button>
                           <button
+                            onClick={async () => {
+                              setMenuDe(null);
+                              const r = await exportarEdificacion(building.id, `Edificación ${building.name}`);
+                              if (r === 'error') window.alert('No se pudo armar el archivo. Revisá que el backend esté abierto.');
+                            }}
+                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[3px] text-left text-[14px] text-[#1A1C1E] hover:bg-[#377DC0] hover:text-white"
+                          >
+                            <Share2 className="w-3.5 h-3.5" /> Compartir edificación
+                          </button>
+                          <button
                             onClick={() => {
                               setMenuDe(null);
                               setBorrando({ tipo: 'edificio', id: building.id, nombre: building.name, edificios: 0, inspecciones: building.relevamientos, enviando: false, error: null });
@@ -315,6 +331,12 @@ export default function ProjectsSidebar({
           )}
           No se puede deshacer.
         </DialogoConfirmar>
+      )}
+      {importando && (
+        <DialogoImportar
+          onCerrar={() => setImportando(false)}
+          onImportado={eid => { setImportando(false); onSelectBuilding(eid); }}
+        />
       )}
     </aside>
   );

@@ -2,7 +2,6 @@
 // Import from '@/components' instead of individual paths.
 
 // UI atoms
-export { default as SeverityBadge }   from './SeverityBadge';
 export { default as PrimaryButton }   from './PrimaryButton';
 export { default as SecondaryButton } from './SecondaryButton';
 export { default as TurquoiseCard }   from './TurquoiseCard';

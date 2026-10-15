@@ -1,28 +1,25 @@
 import React, { useState } from 'react';
 import { PanelTitle, PanelLabel } from './components';
 import { tarjetaBlanca } from './tokens';
-import { Bot, Cable, ChevronDown, KeyRound, RadioTower, RefreshCw } from 'lucide-react';
+import { ChevronDown, RefreshCw } from 'lucide-react';
 import {
-  DDS_DOMAIN_MAX,
+  DDS_DOMAIN_MAX, MODELO_SIMULADOR,
   type Avisos, type CampoForm, type Errores, type InterfazRed, type RobotForm,
 } from './robotConexion';
 
 // ─── Configuración de conexión — Unitree G1 ──────────────────────────────────
 
-/** Bloque del formulario: icono, título y una línea que explica para qué sirve. */
-function Seccion({ icono, titulo, descripcion, children }: {
-  icono: React.ReactNode; titulo: string; descripcion: string; children: React.ReactNode;
+/** Bloque del formulario: título y una línea que explica para qué sirve. */
+function Seccion({ titulo, descripcion, children }: {
+  titulo: string; descripcion: string; children: React.ReactNode;
 }) {
   return (
     <section className="px-6 py-5">
-      <div className="flex items-start gap-3 mb-4">
-        <span className="flex-none w-8 h-8 rounded-lg bg-[#E3EEF8] text-[#377DC0] flex items-center justify-center">{icono}</span>
-        <div className="min-w-0">
-          <h3 className="text-[13px] font-bold text-[#1A1C1E] leading-tight">{titulo}</h3>
-          <p className="text-[11px] text-[#8A8C8E] mt-0.5 leading-snug">{descripcion}</p>
-        </div>
+      <div className="mb-4">
+        <h3 className="text-[13px] font-bold text-[#1A1C1E] leading-tight">{titulo}</h3>
+        <p className="text-[11px] text-[#8A8C8E] mt-0.5 leading-snug">{descripcion}</p>
       </div>
-      <div className="pl-11">{children}</div>
+      {children}
     </section>
   );
 }
@@ -108,25 +105,42 @@ export default function RobotConnectionSection({
       <div className="px-6 pt-5 pb-4 border-b border-[#14202B]/[0.06]">
         <div>
           <PanelTitle>Configuración de conexión</PanelTitle>
-          <p className="text-[11px] text-[#8A8C8E] mt-0.5">Unitree G1 conectado por cable a esta PC</p>
+          <p className="text-[11px] text-[#8A8C8E] mt-0.5">{form.simulador ? 'Robot simulado en MuJoCo' : 'Unitree G1 conectado por cable a esta PC'}</p>
         </div>
       </div>
 
       <div className="divide-y divide-[#14202B]/[0.06]">
 
-        <Seccion icono={<Bot className="w-4 h-4" />} titulo="Robot" descripcion="Cómo lo vas a reconocer en la app.">
+        <Seccion titulo="Robot" descripcion="Cómo lo vas a reconocer en la app.">
           <div className="grid grid-cols-[1fr_180px] gap-4">
             <Field label="Nombre" required error={errores.codigo} hint="Único entre tus robots.">
               {campo('codigo', { placeholder: 'Ej. G1 laboratorio' })}
             </Field>
             <Field label="Modelo">
-              <p className="h-[42px] flex items-center text-[12px] font-semibold text-[#1A1C1E]">{form.modelo}</p>
+              <p className="h-[42px] flex items-center text-[12px] font-semibold text-[#1A1C1E]">{form.simulador ? MODELO_SIMULADOR : form.modelo}</p>
             </Field>
+          </div>
+          <div className="mt-4">
+            <PanelLabel className="mb-1.5">Tipo</PanelLabel>
+            <div className="inline-flex rounded-[3px] border border-[#D4D4D4] overflow-hidden">
+              {([[false, 'Robot real'], [true, 'Es un simulador']] as [boolean, string][]).map(([v, et]) => (
+                <button key={et} type="button" onClick={() => onChange({ simulador: v })} aria-pressed={form.simulador === v}
+                  className={`h-9 px-4 text-[13px] font-medium transition-colors ${form.simulador === v ? 'bg-[#377DC0] text-white' : 'bg-white text-[#1A1C1E] hover:bg-[#F3F4F6]'}`}>
+                  {et}
+                </button>
+              ))}
+            </div>
+            {form.simulador && (
+              <p className="text-[12px] text-[#66686A] mt-2 leading-snug">
+                No necesita datos de conexión: las fotos y la posición las manda el script de MuJoCo directo al backend de esta PC.
+              </p>
+            )}
           </div>
         </Seccion>
 
+        {!form.simulador && (<>
+
         <Seccion
-          icono={<Cable className="w-4 h-4" />}
           titulo="Red"
           descripcion="Conectá esta PC al robot con un cable y poné en esa tarjeta la IP fija 192.168.123.51, máscara 255.255.255.0."
         >
@@ -134,7 +148,7 @@ export default function RobotConnectionSection({
             <Field label="IP del robot" required error={errores.host} hint="El G1 usa siempre 192.168.123.164.">
               {campo('host', { placeholder: '192.168.123.164' })}
             </Field>
-          </div>
+      </div>
 
           <button
             type="button"
@@ -185,7 +199,7 @@ export default function RobotConnectionSection({
           )}
         </Seccion>
 
-        <Seccion icono={<KeyRound className="w-4 h-4" />} titulo="Acceso SSH" descripcion="Usuario y contraseña de la computadora del robot.">
+        <Seccion titulo="Acceso SSH" descripcion="Usuario y contraseña de la computadora del robot.">
           <div className="grid grid-cols-[1fr_1fr_110px] gap-4">
             <Field label="Usuario" required error={errores.sshUsuario}>{campo('sshUsuario')}</Field>
             <Field label="Contraseña">{campo('sshPassword', { type: 'password', placeholder: clave })}</Field>
@@ -193,7 +207,7 @@ export default function RobotConnectionSection({
           </div>
         </Seccion>
 
-        <Seccion icono={<RadioTower className="w-4 h-4" />} titulo="DDS" descripcion="Canal por el que el robot envía el estado de sus motores.">
+        <Seccion titulo="DDS" descripcion="Canal por el que el robot envía el estado de sus motores.">
           <div className="grid grid-cols-2 gap-4">
             <Field
               label="Domain ID"
@@ -206,6 +220,7 @@ export default function RobotConnectionSection({
             </Field>
           </div>
         </Seccion>
+        </>)}
 
       </div>
 

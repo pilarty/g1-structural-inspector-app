@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Check, X, Minus, Clock, Loader2, Circle, Plug, Pencil, ShieldAlert, Bot, Plus, Trash2 } from 'lucide-react';
 import { PanelTitle, PrimaryButton } from './components';
 import { tarjetaBlanca } from './tokens';
-import type { EstadoPaso, IdPaso, Paso, ResultadoPrueba } from './robotConexion';
+import { MODELO_SIMULADOR, type EstadoPaso, type IdPaso, type Paso, type ResultadoPrueba } from './robotConexion';
 import type { RobotNube } from './robots';
 
 // ─── Pasos de la prueba ───────────────────────────────────────────────────────
@@ -227,7 +227,10 @@ export function CabeceraRobot({ robot, conectando, onConectar, onEditar, onElimi
   /** Contenido bajo el nombre, en el mismo recuadro (la prueba de conexión) */
   children?: React.ReactNode;
 }) {
-  const estado = !robot.conexion
+  const sim = robot.modelo === MODELO_SIMULADOR;
+  const estado = sim
+    ? { texto: 'Simulador', clase: 'bg-[#E3EEF8] text-[#1E4E7C]', punto: '#377DC0' }
+    : !robot.conexion
     ? { texto: 'Sin datos de conexión', clase: 'bg-black/5 text-[#66686A]', punto: '#A0A2A4' }
     : !robot.ultimaPruebaResultado
       ? { texto: 'Sin probar', clase: 'bg-black/5 text-[#66686A]', punto: '#A0A2A4' }
@@ -259,7 +262,7 @@ export function CabeceraRobot({ robot, conectando, onConectar, onEditar, onElimi
         <button type="button" onClick={onEditar}
           className="flex items-center justify-center gap-2 h-9 px-3.5 rounded-[3px] text-[13px] font-medium transition-colors bg-white text-[#1A1C1E] border border-[#D4D4D4] hover:bg-[#F3F4F6]">
           <Pencil className="w-3.5 h-3.5" />
-          {robot.conexion ? 'Editar' : 'Configurar'}
+          {robot.conexion || sim ? 'Editar' : 'Configurar'}
         </button>
         {robot.conexion && (
           <PrimaryButton onClick={onConectar} disabled={conectando} shadow
@@ -347,7 +350,9 @@ export function DatosConexion({ robot }: { robot: RobotNube }) {
   return (
     <div className={tarjetaBlanca}>
       <CabeceraTarjeta titulo="Datos de conexión" subtitulo="Guardados en la nube. La contraseña nunca se muestra." />
-      {c ? (
+      {robot.modelo === MODELO_SIMULADOR ? (
+        <p className="px-6 pb-5 text-[13px] text-[#66686A]">Es un simulador: no tiene datos de conexión. Las fotos y la posición las manda el script de MuJoCo al backend de esta PC.</p>
+      ) : c ? (
         <dl className="grid grid-cols-5 divide-x divide-[#14202B]/[0.06]">
           {filas.map(([etiqueta, valor]) => (
             <div key={etiqueta} className="px-5 py-4 min-w-0">

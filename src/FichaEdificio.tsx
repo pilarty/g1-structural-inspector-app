@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Building2, ChevronRight, Download, FileText, Home, Layers, Loader2, MapPin, Pencil, ScanLine, Trash2 } from 'lucide-react';
-import SeverityBadge from './components/SeverityBadge';
 import { useProyectos } from './proyectos';
 import DialogoConfirmar from './components/DialogoConfirmar';
 import { eliminado } from './navegacion';
@@ -118,7 +117,7 @@ export default function FichaEdificio({ activeTab, onTabChange, edificioId, onVo
                   <PrimaryButton onClick={onEditar} shadow icon={<Pencil className="w-4 h-4" />}>Editar</PrimaryButton>
                 </div>
 
-                <Seccion numero={1} titulo="Identificación">
+                <Seccion titulo="Identificación">
                   <Dato etiqueta="Nombre de referencia" valor={e.nombre} />
                   <Dato etiqueta="Tipo de propiedad" valor={etiquetaDe(TIPOS_PROPIEDAD, e.tipo_propiedad)} />
                   <Dato etiqueta="Destino o uso" valor={etiquetaDe(DESTINOS, e.destino)} />
@@ -126,7 +125,7 @@ export default function FichaEdificio({ activeTab, onTabChange, edificioId, onVo
                   <Dato etiqueta="Alta" valor={fecha(e.fecha_alta)} />
                 </Seccion>
 
-                <Seccion numero={2} titulo="Ubicación">
+                <Seccion titulo="Ubicación">
                   <Dato etiqueta="Calle y número" valor={e.calle_numero ?? e.direccion} ancho />
                   <Dato etiqueta="Localidad" valor={e.localidad} />
                   <Dato etiqueta="Provincia" valor={e.provincia} />
@@ -137,7 +136,7 @@ export default function FichaEdificio({ activeTab, onTabChange, edificioId, onVo
                     : null} />
                 </Seccion>
 
-                <Seccion numero={3} titulo="Datos del inmueble">
+                <Seccion titulo="Datos del inmueble">
                   <Dato etiqueta="Año de construcción" valor={anio} />
                   <Dato etiqueta="Pisos sobre planta baja" valor={pisos === null ? null : String(pisos)} />
                   <Dato etiqueta="Subsuelos" valor={num(e.subsuelos)} />
@@ -146,7 +145,7 @@ export default function FichaEdificio({ activeTab, onTabChange, edificioId, onVo
                   <Dato etiqueta="Modificaciones o ampliaciones" valor={e.modificaciones} ancho />
                 </Seccion>
 
-                <Seccion numero={4} titulo="Datos registrales y catastrales">
+                <Seccion titulo="Datos registrales y catastrales">
                   <Dato etiqueta="Matrícula" valor={e.matricula} />
                   <Dato etiqueta="Nomenclatura catastral" valor={e.nomenclatura_catastral} />
                   <Dato etiqueta="Partida inmobiliaria" valor={e.partida_inmobiliaria} />
@@ -155,21 +154,21 @@ export default function FichaEdificio({ activeTab, onTabChange, edificioId, onVo
                 </Seccion>
 
                 {e.tipo_propiedad === 'ph' && (
-                  <Seccion numero={5} titulo="Propiedad horizontal">
+                  <Seccion titulo="Propiedad horizontal">
                     <Dato etiqueta="Unidades funcionales" valor={num(e.ph_unidades_funcionales)} />
                     <Dato etiqueta="Unidad funcional y complementaria" valor={e.ph_unidad_funcional} />
                     <Dato etiqueta="Porcentual" valor={num(e.ph_porcentual, ' %')} />
                   </Seccion>
                 )}
 
-                <Seccion numero={e.tipo_propiedad === 'ph' ? 6 : 5} titulo="Responsable y contacto">
+                <Seccion titulo="Responsable y contacto">
                   <Dato etiqueta="Propietario o administrador" valor={e.responsable} />
                   <Dato etiqueta="Teléfono o email" valor={e.contacto} />
                 </Seccion>
 
                 {/* Historial de inspecciones (de la más reciente a la más antigua) */}
                 <section className="px-6 py-6 border-b border-[#14202B]/[0.06]">
-                  <Titulo numero={e.tipo_propiedad === 'ph' ? 7 : 6} titulo={`Inspecciones · ${inspecciones.length}`} />
+                  <Titulo titulo={`Inspecciones · ${inspecciones.length}`} />
                   {inspecciones.length === 0 ? (
                     <p className="mt-3 text-[13px] text-[#A0A2A4]">Todavía no tiene inspecciones.</p>
                   ) : (
@@ -192,8 +191,7 @@ export default function FichaEdificio({ activeTab, onTabChange, edificioId, onVo
                             <span className="flex-none text-[13px] font-semibold text-[#1A1C1E] tabular-nums w-[110px] text-right">
                               {r.detections} hallazgo{r.detections === 1 ? '' : 's'}
                             </span>
-                            <span className="flex-none w-[96px] flex justify-end">{r.detections > 0 ? <SeverityBadge level={r.severity} /> : <span className="text-[12px] text-[#A0A2A4]">—</span>}</span>
-                            <span className="flex-none flex items-center gap-1 text-[12px] font-semibold text-[#377DC0]">
+                                                        <span className="flex-none flex items-center gap-1 text-[12px] font-semibold text-[#377DC0]">
                               Ver en el plano <ChevronRight className="w-4 h-4" />
                             </span>
                           </button>
@@ -204,7 +202,7 @@ export default function FichaEdificio({ activeTab, onTabChange, edificioId, onVo
                 </section>
 
                 <section className="px-6 py-6">
-                  <Titulo numero={e.tipo_propiedad === 'ph' ? 8 : 7} titulo="Documentación adjunta" />
+                  <Titulo titulo="Documentación adjunta" />
                   {docs.length === 0 ? (
                     <p className="mt-3 text-[13px] text-[#A0A2A4]">Sin documentos. Podés sumarlos desde «Editar».</p>
                   ) : (
@@ -252,19 +250,14 @@ export default function FichaEdificio({ activeTab, onTabChange, edificioId, onVo
   );
 }
 
-function Titulo({ numero, titulo }: { numero: number; titulo: string }) {
-  return (
-    <div className="flex items-baseline gap-2.5">
-      <span className="text-[13px] font-bold text-[#377DC0] tabular-nums">{String(numero).padStart(2, '0')}</span>
-      <h2 className="text-[16px] font-bold text-[#1A1C1E]">{titulo}</h2>
-    </div>
-  );
+function Titulo({ titulo }: { titulo: string }) {
+  return <h2 className="text-[16px] font-bold text-[#1A1C1E]">{titulo}</h2>;
 }
 
-function Seccion({ numero, titulo, children }: { numero: number; titulo: string; children: React.ReactNode }) {
+function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <section className="px-6 py-6 border-b border-[#14202B]/[0.06]">
-      <Titulo numero={numero} titulo={titulo} />
+      <Titulo titulo={titulo} />
       <dl className="mt-4 grid grid-cols-3 gap-x-6 gap-y-4">{children}</dl>
     </section>
   );

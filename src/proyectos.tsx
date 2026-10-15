@@ -1,6 +1,6 @@
 ﻿import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { BACKEND_URL } from './sesion';
-import type { Building, Project, SeverityLevel } from './data';
+import type { Building, Project } from './data';
 import { aDate, fechaLarga, hace } from './formato';
 
 interface ProyectoApi {
@@ -15,6 +15,8 @@ interface EdificacionApi {
   direccion: string | null;
   cantidad_plantas: number | null;
   anio_construccion: number | null;
+  pisos_sobre_pb?: number | null;
+  subsuelos?: number | null;
   latitud?: number | string | null;
   longitud?: number | string | null;
 }
@@ -29,10 +31,6 @@ interface ResumenApi {
   robot: string | null;
   operador: string | null;
   detecciones: number;
-  critical: number;
-  high: number;
-  medium: number;
-  low: number;
 }
 
 // Edificio "vacío": se usa cuando todavía no hay ninguno seleccionado o cargado.
@@ -46,28 +44,18 @@ export const EDIFICIO_VACIO: Building = {
   lastRelevamiento: 'Sin relevamientos',
   lastRelevamientoDate: '—',
   lastDetections: 0,
-  highestSeverity: 'low',
   planStatus: 'unconfigured',
-  lastSeverityBreakdown: { low: 0, medium: 0, high: 0, critical: 0 },
   lastRobot: '—',
   lastOperator: '—',
-  riskZones: [],
   historial: [],
 };
-
-function mayorSeveridad(r: { critical: number; high: number; medium: number }): SeverityLevel {
-  if (r.critical > 0) return 'critical';
-  if (r.high > 0) return 'high';
-  if (r.medium > 0) return 'medium';
-  return 'low';
-}
 
 function aIso(valor: string | null): string | null {
   return aDate(valor)?.toISOString() ?? null;
 }
 
 // `rels` viene ordenado del relevamiento más reciente al más antiguo
-function aEdificio(e: EdificacionApi, rels: ResumenApi[]): Building {
+function aEdificio(e: EdificacionApi, rels: ResumenApi[], plantas: Map<number, string>): Building {
   const base: Building = {
     ...EDIFICIO_VACIO,
     id: String(e.id),
@@ -75,6 +63,8 @@ function aEdificio(e: EdificacionApi, rels: ResumenApi[]): Building {
     address: e.direccion ?? '',
     floors: e.cantidad_plantas ?? 0,
     yearBuilt: e.anio_construccion ?? 0,
+    pisos: e.pisos_sobre_pb ?? undefined,
+    subsuelos: e.subsuelos ?? undefined,
     lat: e.latitud != null ? Number(e.latitud) : undefined,
     lon: e.longitud != null ? Number(e.longitud) : undefined,
   };
@@ -87,24 +77,22 @@ function aEdificio(e: EdificacionApi, rels: ResumenApi[]): Building {
     lastRelevamiento: ult.estado === 'en_curso' ? 'En curso' : hace(ult.fecha_inicio),
     lastRelevamientoDate: fechaLarga(ult.fecha_inicio),
     lastDetections: ult.detecciones,
-    highestSeverity: mayorSeveridad(ult),
-    lastSeverityBreakdown: { low: ult.low, medium: ult.medium, high: ult.high, critical: ult.critical },
     lastRobot: ult.robot ?? '—',
     lastOperator: ult.operador ?? '—',
     historial: rels.map(r => ({
       id: r.id,
       date: fechaLarga(r.fecha_inicio),
       detections: r.detecciones,
-      severity: mayorSeveridad(r),
       robot: r.robot ?? '—',
       operador: r.operador ?? '—',
       estado: r.estado ?? '',
       inicio: aIso(r.fecha_inicio),
       fin: aIso(r.fecha_fin),
-      breakdown: { low: r.low, medium: r.medium, high: r.high, critical: r.critical },
+      planta: plantas.get(r.id),
     })),
     ultimoRelevamiento: {
       id: ult.id,
+      planta: plantas.get(ult.id),
       estado: ult.estado ?? '',
       inicio: aIso(ult.fecha_inicio),
       fin: aIso(ult.fecha_fin),
@@ -137,23 +125,27 @@ export function ProyectosProvider({ children }: { children: React.ReactNode }) {
     if (!cargoAntes.current) setCargando(true);
     setError(null);
     try {
-      const [rp, re, rr] = await Promise.all([
+      const [rp, re, rr, rpl] = await Promise.all([
         fetch(`${BACKEND_URL}/nube/api/proyectos`),
         fetch(`${BACKEND_URL}/nube/api/edificaciones`),
         fetch(`${BACKEND_URL}/nube/api/resumen/relevamientos`),
+        fetch(`${BACKEND_URL}/nube/api/plantas`).catch(() => null),
       ]);
       if (!rp.ok || !re.ok) throw new Error(`respuesta ${rp.status}/${re.status}`);
       const ps: ProyectoApi[] = await rp.json();
       const es: EdificacionApi[] = await re.json();
       // Si el resumen falla, se muestran igual los proyectos y edificios (sin estadísticas)
       const resumen: ResumenApi[] = rr.ok ? await rr.json() : [];
+      // Planta de cada inspección (si la nube todavía no tiene esa ruta, se sigue sin plantas)
+      const listaPlantas: { relevamiento_id: number; planta: string }[] = rpl?.ok ? await rpl.json() : [];
+      const plantas = new Map(listaPlantas.map(x => [x.relevamiento_id, x.planta]));
       setProyectos(
         ps.map(p => ({
           id: String(p.id),
           name: p.nombre,
           buildings: es
             .filter(e => e.proyecto_id === p.id)
-            .map(e => aEdificio(e, resumen.filter(r => r.edificacion_id === e.id))),
+            .map(e => aEdificio(e, resumen.filter(r => r.edificacion_id === e.id), plantas)),
         })),
       );
       cargoAntes.current = true;

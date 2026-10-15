@@ -5,9 +5,7 @@ import { Building2, ChevronRight, Folder, MapPin, MapPinOff, Search, X } from 'l
 import { useProyectos } from './proyectos';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav, PrimaryButton } from './components';
-import SeverityBadge from './components/SeverityBadge';
-import { severity } from './tokens';
-import type { Building, SeverityLevel } from './data';
+import type { Building } from './data';
 
 interface MapaProps {
   activeTab: NavTab;
@@ -21,10 +19,12 @@ interface MapaProps {
 type Item = Building & { proyecto: string };
 
 const SIN_INSPECCION = '#8A8C8E';
-const NIVELES: SeverityLevel[] = ['critical', 'high', 'medium', 'low'];
 
+const CON_DANOS = '#EA580C';
+const SIN_DANOS = '#16A34A';
+// Color por la última inspección: con daños, sin daños o sin inspeccionar
 const colorDe = (b: Building) =>
-  b.relevamientos === 0 ? SIN_INSPECCION : b.lastDetections === 0 ? '#377DC0' : severity[b.highestSeverity].dot;
+  b.relevamientos === 0 ? SIN_INSPECCION : b.lastDetections === 0 ? SIN_DANOS : CON_DANOS;
 
 /** Las edificaciones en un mapa, con el color de su última inspección. */
 export default function Mapa({ activeTab, onTabChange, onAbrir, onEditar }: MapaProps) {
@@ -173,12 +173,8 @@ export default function Mapa({ activeTab, onTabChange, onAbrir, onEditar }: Mapa
             {/* Referencias */}
             <div className="absolute top-4 right-4 z-[500] bg-white rounded-lg border border-[#D4D4D4] shadow-[0_2px_8px_rgba(20,32,43,0.10)] px-4 py-3 text-[13px]">
               <p className="text-[12px] font-semibold text-[#616161] mb-1.5">Última inspección</p>
-              {NIVELES.map(n => (
-                <p key={n} className="flex items-center gap-2 py-0.5 text-[#1A1C1E]">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: severity[n].dot }} />{severity[n].label}
-                </p>
-              ))}
-              <p className="flex items-center gap-2 py-0.5 text-[#1A1C1E]"><span className="w-2.5 h-2.5 rounded-full bg-[#377DC0]" />Sin hallazgos</p>
+              <p className="flex items-center gap-2 py-0.5 text-[#1A1C1E]"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CON_DANOS }} />Con daños encontrados</p>
+              <p className="flex items-center gap-2 py-0.5 text-[#1A1C1E]"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: SIN_DANOS }} />Sin daños</p>
               <p className="flex items-center gap-2 py-0.5 text-[#1A1C1E]"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: SIN_INSPECCION }} />Sin inspeccionar</p>
             </div>
 
@@ -209,8 +205,8 @@ export default function Mapa({ activeTab, onTabChange, onAbrir, onEditar }: Mapa
                       <>
                         <span className="text-[#66686A]">Última inspección: <b className="font-semibold text-[#1A1C1E]">{actual.lastRelevamientoDate}</b></span>
                         {actual.lastDetections > 0
-                          ? <SeverityBadge level={actual.highestSeverity} count={actual.lastDetections} />
-                          : <span className="text-[12px] font-medium text-[#377DC0]">Sin hallazgos</span>}
+                          ? <span className="text-[12px] font-semibold" style={{ color: CON_DANOS }}>{actual.lastDetections} hallazgo{actual.lastDetections === 1 ? '' : 's'}</span>
+                          : <span className="text-[12px] font-semibold" style={{ color: SIN_DANOS }}>Sin hallazgos</span>}
                       </>
                     )}
                   </div>

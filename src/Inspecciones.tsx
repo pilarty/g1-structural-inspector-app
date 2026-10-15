@@ -5,8 +5,6 @@ import {
 import { useProyectos } from './proyectos';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav } from './components';
-import { severity } from './tokens';
-import type { SeverityLevel } from './data';
 
 interface InspeccionesProps {
   activeTab: NavTab;
@@ -17,7 +15,6 @@ interface InspeccionesProps {
 
 type FiltroEstado = 'todas' | 'en_curso' | 'finalizadas';
 
-const NIVELES: SeverityLevel[] = ['critical', 'high', 'medium', 'low'];
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 const fechaCorta = (iso?: string | null) => {
@@ -41,7 +38,7 @@ export default function Inspecciones({ activeTab, onTabChange, onVer }: Inspecci
   const [texto, setTexto] = useState('');
   const [estado, setEstado] = useState<FiltroEstado>('todas');
   const [robot, setRobot] = useState('todos');
-  const [severidad, setSeveridad] = useState('todos');
+  const [conHallazgos, setConHallazgos] = useState('todos');
 
   useEffect(() => { recargar(); }, [recargar]);
 
@@ -55,21 +52,21 @@ export default function Inspecciones({ activeTab, onTabChange, onVer }: Inspecci
   const base = todas.filter(i =>
     (!q || i.edificio.toLowerCase().includes(q) || i.proyecto.toLowerCase().includes(q) || codigo(i.id).toLowerCase().includes(q)) &&
     (robot === 'todos' || i.robot === robot) &&
-    (severidad === 'todos' || (i.detections > 0 && i.severity === severidad)));
+    (conHallazgos === 'todos' || (conHallazgos === 'con' ? i.detections > 0 : i.detections === 0)));
   const deEstado = (v: FiltroEstado, e?: string) => v === 'todas' || (v === 'en_curso' ? e === 'en_curso' : e !== 'en_curso');
   const filtradas = base.filter(i => deEstado(estado, i.estado));
-  const hayFiltros = !!q || robot !== 'todos' || severidad !== 'todos';
+  const hayFiltros = !!q || robot !== 'todos' || conHallazgos !== 'todos';
 
   const enCurso = todas.filter(i => i.estado === 'en_curso').length;
   const hallazgos = todas.reduce((n, i) => n + i.detections, 0);
-  const criticas = todas.filter(i => (i.breakdown?.critical ?? 0) > 0 || (i.detections > 0 && i.severity === 'critical')).length;
+  const conDanos = todas.filter(i => i.detections > 0).length;
   const edificios = new Set(todas.map(i => i.edificioId)).size;
 
   function exportar() {
-    const filas = [['Código', 'Fecha', 'Hora', 'Edificación', 'Proyecto', 'Robot', 'Operador', 'Duración', 'Hallazgos', 'Severidad máxima', 'Estado']];
+    const filas = [['Código', 'Fecha', 'Hora', 'Edificación', 'Proyecto', 'Robot', 'Operador', 'Duración', 'Hallazgos', 'Estado']];
     for (const i of filtradas) {
       filas.push([codigo(i.id), fechaCorta(i.inicio), hora(i.inicio), i.edificio, i.proyecto, i.robot, i.operador ?? '', duracion(i.inicio, i.fin),
-        String(i.detections), i.detections > 0 ? severity[i.severity].label : '', i.estado === 'en_curso' ? 'En curso' : 'Finalizada']);
+        String(i.detections), i.estado === 'en_curso' ? 'En curso' : 'Finalizada']);
     }
     const csv = '﻿' + filas.map(f => f.map(c => `"${c.replace(/"/g, '""')}"`).join(';')).join('\r\n');
     const a = document.createElement('a');
@@ -113,8 +110,8 @@ export default function Inspecciones({ activeTab, onTabChange, onVer }: Inspecci
                 tono={enCurso ? '#059669' : undefined} />
               <Indicador Icon={Building2} etiqueta="Hallazgos" valor={hallazgos}
                 detalle={todas.length ? `${(hallazgos / todas.length).toLocaleString('es-AR', { maximumFractionDigits: 1 })} por inspección` : '—'} />
-              <Indicador Icon={AlertTriangle} etiqueta="Con hallazgos críticos" valor={criticas}
-                detalle={criticas ? 'Requieren revisión' : 'Sin alertas'} tono={criticas ? '#DC2626' : undefined} />
+              <Indicador Icon={AlertTriangle} etiqueta="Con daños encontrados" valor={conDanos}
+                detalle={todas.length ? `de ${todas.length} inspecci${todas.length === 1 ? 'ón' : 'ones'}` : '—'} tono={conDanos ? '#C2410C' : undefined} />
             </div>
 
             {/* Tabla */}
@@ -144,10 +141,10 @@ export default function Inspecciones({ activeTab, onTabChange, onVer }: Inspecci
                 </div>
                 <Desplegable valor={robot} onCambio={setRobot}
                   opciones={[{ valor: 'todos', etiqueta: 'Todos los robots' }, ...robots.map(r => ({ valor: r, etiqueta: r }))]} />
-                <Desplegable valor={severidad} onCambio={setSeveridad}
-                  opciones={[{ valor: 'todos', etiqueta: 'Toda severidad' }, ...NIVELES.map(s => ({ valor: s, etiqueta: severity[s].label }))]} />
+                <Desplegable valor={conHallazgos} onCambio={setConHallazgos}
+                  opciones={[{ valor: 'todos', etiqueta: 'Con y sin hallazgos' }, { valor: 'con', etiqueta: 'Con hallazgos' }, { valor: 'sin', etiqueta: 'Sin hallazgos' }]} />
                 {hayFiltros && (
-                  <button type="button" onClick={() => { setTexto(''); setRobot('todos'); setSeveridad('todos'); }}
+                  <button type="button" onClick={() => { setTexto(''); setRobot('todos'); setConHallazgos('todos'); }}
                     className="flex items-center gap-1 h-8 px-2 rounded-[3px] text-[13px] font-medium text-[#66686A] hover:bg-black/[0.06]">
                     <X className="w-3.5 h-3.5" /> Limpiar filtros
                   </button>
@@ -195,7 +192,7 @@ export default function Inspecciones({ activeTab, onTabChange, onVer }: Inspecci
                           </span>
                         </Td>
                         <Td><span className="text-[13px] text-[#66686A] tabular-nums">{duracion(i.inicio, i.fin)}</span></Td>
-                        <Td><Hallazgos total={i.detections} desglose={i.breakdown} maxima={i.severity} /></Td>
+                        <Td><Hallazgos total={i.detections} /></Td>
                         <Td><Estado enCurso={i.estado === 'en_curso'} /></Td>
                         <Td className="w-10 pr-4"><ChevronRight className="w-4 h-4 text-[#C4C7CA] group-hover:text-[#377DC0] transition-colors" /></Td>
                       </tr>
@@ -235,22 +232,10 @@ const Th = ({ children }: { children?: React.ReactNode }) => <th className="px-5
 const Td = ({ children, className = '' }: { children: React.ReactNode; className?: string }) =>
   <td className={`px-5 py-3.5 align-middle whitespace-nowrap ${className}`}>{children}</td>;
 
-/** Cantidad de hallazgos con una barrita por severidad. */
-function Hallazgos({ total, desglose, maxima }: { total: number; desglose?: Record<SeverityLevel, number>; maxima: SeverityLevel }) {
+/** Cantidad de hallazgos (daños encontrados) de la inspección. */
+function Hallazgos({ total }: { total: number }) {
   if (total === 0) return <span className="text-[12px] text-[#A0A2A4]">Sin hallazgos</span>;
-  const partes = desglose && NIVELES.some(n => desglose[n] > 0) ? NIVELES.filter(n => desglose[n] > 0) : [maxima];
-  const cant = (n: SeverityLevel) => (desglose && desglose[n] > 0 ? desglose[n] : total);
-  return (
-    <div className="flex items-center gap-2.5" title={partes.map(n => `${severity[n].label}: ${cant(n)}`).join(' · ')}>
-      <span className="text-[13px] font-semibold text-[#1A1C1E] tabular-nums w-5 text-right">{total}</span>
-      <span className="flex h-1.5 w-[72px] rounded-full overflow-hidden bg-[#F1F3F5]">
-        {partes.map(n => (
-          <span key={n} style={{ width: `${(cant(n) / total) * 100}%`, backgroundColor: severity[n].dot }} />
-        ))}
-      </span>
-      <span className="text-[12px] font-medium" style={{ color: severity[maxima].dot }}>{severity[maxima].label}</span>
-    </div>
-  );
+  return <span className="text-[13px] font-semibold text-[#1A1C1E] tabular-nums">{total}</span>;
 }
 
 function Estado({ enCurso }: { enCurso: boolean }) {

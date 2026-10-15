@@ -1,5 +1,4 @@
-﻿import React, { useState } from 'react';
-import { ScanLine } from 'lucide-react';
+import React, { useState } from 'react';
 import PrimaryButton from './components/PrimaryButton';
 import TurquoiseCard from './components/TurquoiseCard';
 import { PanelLabel } from './components/PanelText';
@@ -38,9 +37,6 @@ export default function Login({ estado, onLogin, onReintentar }: LoginProps) {
     <div className="flex h-screen items-center justify-center bg-[#FFFFFF] font-sans text-[#1A1C1E] px-6">
       <div className="w-full max-w-[400px]">
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-[#377DC0]/10 flex items-center justify-center mb-4">
-            <ScanLine className="w-6 h-6 text-[#377DC0]" />
-          </div>
           <h1 className="text-[22px] font-bold tracking-tight">G1 Structural Inspector</h1>
           <p className="text-[13px] text-[#8A8C8E] mt-1.5">Inicia sesión para continuar</p>
         </div>

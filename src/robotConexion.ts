@@ -7,7 +7,9 @@ import { BACKEND_URL } from './sesion';
 
 export interface RobotForm {
   codigo: string;
-  modelo: 'Unitree G1';
+  modelo: string;
+  /** Robot simulado (MuJoCo): no tiene datos de conexión */
+  simulador: boolean;
   host: string;
   interfaz: string;
   sshUsuario: string;
@@ -25,6 +27,9 @@ export interface ConexionGuardada {
   dds_domain_id: number;
 }
 
+/** Modelo con el que se guarda un robot simulado */
+export const MODELO_SIMULADOR = 'Simulador MuJoCo';
+
 export const IP_ROBOT_POR_DEFECTO = '192.168.123.164';
 export const CREDENCIALES_POR_DEFECTO = { usuario: 'unitree', clave: '123' };
 export const DDS_DOMAIN_ROBOT = 0;
@@ -34,6 +39,7 @@ export function formularioVacio(): RobotForm {
   return {
     codigo: '',
     modelo: 'Unitree G1',
+    simulador: false,
     host: IP_ROBOT_POR_DEFECTO,
     interfaz: '',
     sshUsuario: CREDENCIALES_POR_DEFECTO.usuario,
@@ -48,6 +54,7 @@ export function formularioDesdePerfil(codigo: string, c: ConexionGuardada): Robo
   return {
     codigo,
     modelo: 'Unitree G1',
+    simulador: false,
     host: c.host,
     interfaz: c.interfaz ?? '',
     sshUsuario: c.ssh_usuario,
@@ -97,6 +104,8 @@ export function validar(f: RobotForm, otros: RobotExistente[]): Errores {
   else if (otros.some(r => r.label.trim().toLowerCase() === f.codigo.trim().toLowerCase())) {
     e.codigo = NOMBRE_REPETIDO;
   }
+
+  if (f.simulador) return e; // el simulador no tiene datos de conexión
 
   const host = errorHost(f.host);
   if (host) e.host = host;
@@ -241,7 +250,7 @@ export async function detectarInterfaces(host: string): Promise<{ interfaces: In
   return res.json();
 }
 
-export async function consultarActivo(): Promise<{ conectado: boolean; id?: number; codigo?: string | null }> {
+export async function consultarActivo(): Promise<{ conectado: boolean; id?: number; codigo?: string | null; movimiento_autorizado?: boolean }> {
   const res = await fetch(`${BACKEND_URL}/robot/activo`);
   if (!res.ok) throw new Error(String(res.status));
   return res.json();

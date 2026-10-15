@@ -71,7 +71,7 @@ export function useRobots() {
 export interface GuardarRobotIn {
   codigo: string;
   unidad: string;
-  conexion: ConexionGuardada;
+  conexion: ConexionGuardada | null;
   /** Solo las contraseñas que cambiaron; se cifran en el servidor */
   credenciales: { ssh_password?: string };
   ultima_prueba_fecha: string | null;

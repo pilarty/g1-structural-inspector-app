@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { FolderPlus, House, ScanLine, Settings, Bot, ClipboardList, Map as MapIcon } from 'lucide-react';
+import { FolderPlus, House, ScanLine, Bot, ClipboardList, Map as MapIcon } from 'lucide-react';
 import { consultarActivo } from './robotConexion';
+import ParadaEmergencia from './components/ParadaEmergencia';
+import { MenuUsuario } from './components/TopNav';
 
 export type NavTab = 'dashboard' | 'edificios' | 'relevamiento' | 'inspeccion' | 'equipo' | 'nuevo-edificio' | 'nuevo-proyecto' | 'nuevo-robot' | 'building-empty' | 'inspeccion-en-curso' | 'recorrido' | 'ficha-edificio' | 'editar-edificio' | 'editar-proyecto' | 'ficha-proyecto' | 'inspecciones' | 'mapa';
 
@@ -67,7 +69,10 @@ export default function ActivityBar({ active: pantalla, onChange }: ActivityBarP
   // El detalle de un relevamiento se abre desde el dashboard («Ver relevamiento»): se marca el dashboard
   const active: NavTab = pantalla === 'relevamiento' ? 'dashboard' : pantalla;
   return (
-    <div className="flex-none w-[72px] h-full bg-[#14202B] flex flex-col items-center pt-[64px] z-30">
+    <div className="flex-none w-[72px] h-full bg-[#14202B] flex flex-col items-center pt-2 z-30">
+      {/* Parada de emergencia: siempre arriba y a la vista */}
+      <ParadaEmergencia compacto />
+      <div className="w-8 h-px bg-white/10 my-2" />
       {navItems.map(item => (
         <RailButton key={item.id} {...item} isActive={active === item.id} onClick={() => onChange(item.id)} />
       ))}
@@ -82,12 +87,7 @@ export default function ActivityBar({ active: pantalla, onChange }: ActivityBarP
           } : {})} />
       ))}
 
-      <button className="group relative w-full flex items-center justify-center h-14 text-white/35 hover:text-white/70 transition-colors mb-1">
-        <Settings size={26} />
-        <span className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 whitespace-nowrap bg-[#1A1C1E] text-white text-[13px] font-medium px-3 py-2 rounded-lg shadow-lg opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-150 z-40">
-          Configuración
-        </span>
-      </button>
+      <MenuUsuario />
     </div>
   );
 }

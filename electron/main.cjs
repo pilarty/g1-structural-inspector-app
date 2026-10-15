@@ -1,4 +1,4 @@
-﻿const { app, BrowserWindow, ipcMain, shell } = require('electron')
+const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron')
 const { spawn } = require('node:child_process')
 const fs = require('node:fs')
 const http = require('node:http')
@@ -140,6 +140,46 @@ ipcMain.on('backend:reintentar', () => {
 })
 ipcMain.on('backend:ver-log', () => {
   shell.openPath(rutaLog())
+})
+
+// Archivo de inspección (.g1insp): guardar lo que arma la app y abrir uno para importarlo.
+ipcMain.handle('archivo:guardar', async (_e, nombre, contenido) => {
+  if (!ventana) return null
+  const { canceled, filePath } = await dialog.showSaveDialog(ventana, {
+    title: 'Guardar inspección para compartir',
+    defaultPath: path.join(app.getPath('documents'), String(nombre || 'inspeccion') + '.g1insp'),
+    filters: [{ name: 'Inspección G1', extensions: ['g1insp'] }],
+  })
+  if (canceled || !filePath) return null
+  fs.writeFileSync(filePath, String(contenido), 'utf8')
+  shell.showItemInFolder(filePath)
+  return filePath
+})
+ipcMain.handle('archivo:abrir', async () => {
+  if (!ventana) return null
+  const { canceled, filePaths } = await dialog.showOpenDialog(ventana, {
+    title: 'Importar inspección',
+    filters: [{ name: 'Inspección G1', extensions: ['g1insp'] }],
+    properties: ['openFile'],
+  })
+  if (canceled || !filePaths[0]) return null
+  return { nombre: path.basename(filePaths[0]), contenido: fs.readFileSync(filePaths[0], 'utf8') }
+})
+
+// Informe de inspección: la pantalla ya dejó armado el informe para imprimir;
+// se convierte a PDF, se pregunta dónde guardarlo y se abre.
+ipcMain.handle('informe:pdf', async (_e, nombre) => {
+  if (!ventana) return null
+  const { canceled, filePath } = await dialog.showSaveDialog(ventana, {
+    title: 'Guardar informe',
+    defaultPath: path.join(app.getPath('documents'), String(nombre || 'informe') + '.pdf'),
+    filters: [{ name: 'PDF', extensions: ['pdf'] }],
+  })
+  if (canceled || !filePath) return null
+  const pdf = await ventana.webContents.printToPDF({ pageSize: 'A4', printBackground: true, margins: { marginType: 'default' } })
+  fs.writeFileSync(filePath, pdf)
+  shell.openPath(filePath)
+  return filePath
 })
 
 const unica = app.isPackaged ? app.requestSingleInstanceLock() : true
