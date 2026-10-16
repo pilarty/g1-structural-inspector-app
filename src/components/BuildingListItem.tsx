@@ -1,4 +1,5 @@
 import React from 'react';
+import { Building2 } from 'lucide-react';
 import type { Building } from '../data';
 
 interface BuildingListItemProps {
@@ -15,16 +16,13 @@ export default function BuildingListItem({ building, isSelected, onClick }: Buil
   return (
     <button
       onClick={onClick}
-      className={[
-        'w-full flex items-center gap-3 pl-8 pr-4 py-2 transition-colors text-left border-l-2',
-        isSelected
-          ? 'bg-[#F3F1ED] border-[#1B6E77]'
-          : 'hover:bg-[#F8F7F5] border-transparent',
-      ].join(' ')}
+      aria-current={isSelected ? 'page' : undefined}
+      className={`w-full flex items-center gap-1.5 h-[32px] pl-[40px] pr-9 text-left ${
+        isSelected ? 'bg-[#D6E6F5] outline outline-1 -outline-offset-1 outline-[#377DC0]' : 'hover:bg-black/[0.045]'
+      }`}
     >
-      <p className={`text-[12px] font-medium truncate leading-snug min-w-0 flex-1 ${isSelected ? 'text-[#1B6E77]' : 'text-[#2D2F31]'}`}>
-        {building.name}
-      </p>
+      <Building2 className="w-4 h-4 flex-none text-[#377DC0]" />
+      <span className="text-[14px] truncate min-w-0 flex-1 text-[#1A1C1E]">{building.name}</span>
     </button>
   );
 }

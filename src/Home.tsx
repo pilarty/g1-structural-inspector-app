@@ -15,7 +15,7 @@ interface HomeProps {
 
 export default function Home({ onNavigateToFloorPlan, activeTab, onTabChange, selectedBuildingId, onSelectBuilding }: HomeProps) {
   return (
-    <div className="flex h-screen bg-[#F3F1ED] font-sans text-[#1A1C1E]">
+    <div className="flex h-screen bg-[#FFFFFF] font-sans text-[#1A1C1E]">
       <ActivityBar active={activeTab} onChange={tab => { onTabChange(tab); if (tab === 'relevamiento') onNavigateToFloorPlan(''); }} />
 
       <div className="flex flex-col flex-1 overflow-hidden">
@@ -23,13 +23,12 @@ export default function Home({ onNavigateToFloorPlan, activeTab, onTabChange, se
 
         <div className="flex flex-1 overflow-hidden">
           <ProjectsSidebar
-            selectedBuildingId={selectedBuildingId ?? null}
+            selectedBuildingId={null}
             onSelectBuilding={id => onSelectBuilding?.(id)}
-            onNewBuilding={() => onTabChange('nuevo-edificio')}
           />
 
           {/* Main content */}
-          <main className="flex-1 flex items-center justify-center bg-[#F3F1ED]">
+          <main className="flex-1 flex items-center justify-center bg-[#FFFFFF]">
             <div className="flex flex-col items-center text-center max-w-[440px]">
               <p className="text-[24px] font-bold text-[#1A1C1E] mb-2.5 tracking-tight">
                 Ningún edificio seleccionado
@@ -52,3 +51,4 @@ export default function Home({ onNavigateToFloorPlan, activeTab, onTabChange, se
     </div>
   );
 }
+
