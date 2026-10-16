@@ -1,4 +1,5 @@
-// Tipos de daño que reconoce el clasificador (las 7 clases del modelo).
+// Tipos de daño que reconoce el clasificador. Las 11 primeras son las clases del modelo v2
+// (EfficientNetB0); las de abajo son del modelo anterior, para las inspecciones viejas.
 // La app muestra el tipo de daño y la confianza del modelo.
 
 export interface TipoDano {
@@ -9,12 +10,23 @@ export interface TipoDano {
 }
 
 export const TIPOS_DANO: TipoDano[] = [
-  { clase: 'Shear crack',            etiqueta: 'Grieta de corte',             color: '#DC2626' },
-  { clase: 'Diagonal crack',         etiqueta: 'Grieta diagonal',             color: '#EA580C' },
-  { clase: 'Flexural/rocking crack', etiqueta: 'Grieta de flexión',           color: '#D97706' },
-  { clase: 'Detachment crack',       etiqueta: 'Grieta de desprendimiento',   color: '#DB2777' },
-  { clase: 'Concrete spalling',      etiqueta: 'Desprendimiento de hormigón', color: '#7C3AED' },
-  { clase: 'Corrosion',              etiqueta: 'Corrosión',                   color: '#92400E' },
+  // Modelo de clasificación v2
+  { clase: 'Structural crack',            etiqueta: 'Grieta estructural',          color: '#DC2626' },
+  { clase: 'Concrete spalling',           etiqueta: 'Desprendimiento de hormigón', color: '#7C3AED' },
+  { clase: 'Corrosion',                   etiqueta: 'Corrosión',                   color: '#92400E' },
+  { clase: 'Delamination',                etiqueta: 'Delaminación',                color: '#DB2777' },
+  { clase: 'Material loss/erosion',       etiqueta: 'Pérdida de material',         color: '#EA580C' },
+  { clase: 'Surface flaking/exfoliation', etiqueta: 'Descascaramiento',            color: '#D97706' },
+  { clase: 'Moisture/water damage',       etiqueta: 'Humedad',                     color: '#2563EB' },
+  { clase: 'Salt weathering',             etiqueta: 'Eflorescencia salina',        color: '#0891B2' },
+  { clase: 'Biological growth',           etiqueta: 'Crecimiento biológico',       color: '#16A34A' },
+  { clase: 'Vegetation',                  etiqueta: 'Vegetación',                  color: '#65A30D' },
+  { clase: 'Vandalism',                   etiqueta: 'Vandalismo',                  color: '#475569' },
+  // Modelo anterior
+  { clase: 'Shear crack',            etiqueta: 'Grieta de corte',             color: '#B91C1C' },
+  { clase: 'Diagonal crack',         etiqueta: 'Grieta diagonal',             color: '#C2410C' },
+  { clase: 'Flexural/rocking crack', etiqueta: 'Grieta de flexión',           color: '#B45309' },
+  { clase: 'Detachment crack',       etiqueta: 'Grieta de desprendimiento',   color: '#BE185D' },
   { clase: 'Debris',                 etiqueta: 'Escombros',                   color: '#0D9488' },
 ];
 
