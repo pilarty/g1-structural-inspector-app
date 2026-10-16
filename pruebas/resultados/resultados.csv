@@ -1,0 +1,32 @@
+﻿ID;Grupo;Caso;Cubre;Resultado;Duración (s);Detalle;Captura
+B-01;Backend;Pedir datos sin sesión;RNF7;Aprobó;2,65;;
+B-02;Backend;Pedir un recurso que no está permitido;RNF7;Aprobó;0,00;;
+B-03;Backend;Iniciar y detener una inspección por la API;RF4, RF5, RNF5;Aprobó;3,99;;
+B-04;Backend;Eliminar una inspección en curso;RF13, CU11;Aprobó;6,41;;
+B-05;Backend;Exportar e importar el archivo .g1insp;RF15, CU12;Aprobó;33,53;;
+B-06;Backend;Revisión de un hallazgo;RF12, RNF4;Aprobó;2,96;;
+F-01;Funcionales;Entrar con la cuenta de prueba;RF1, CU1;Aprobó;3,87;;F-01.png
+F-02;Funcionales;Entrar con una contraseña incorrecta;RF1, CU1;Aprobó;2,98;;F-02.png
+F-03;Funcionales;Abrir «¿Olvidaste tu contraseña?» y «Registrate»;RF1, CU1;Aprobó;0,65;;F-03.png
+F-04;Funcionales;Abrir la ventana de perfil y cerrar sesión;RF1;Aprobó;0,45;;F-04.png
+F-05;Funcionales;Crear un proyecto;RF2, CU2;Aprobó;8,17;;F-05.png
+F-06;Funcionales;Crear un proyecto sin nombre;RF2, CU2;Aprobó;2,73;;F-06.png
+F-07;Funcionales;Crear una edificación con PB + 2 pisos;RF2, CU2;Aprobó;9,12;;F-07.png
+F-08;Funcionales;Editar la dirección en la ficha y guardar;RF2;Aprobó;14,97;;F-08.png
+F-09;Funcionales;Registrar un robot de prueba y ver la prueba de conexión;RF3, CU3;Aprobó;26,27;;F-09.png
+F-10;Funcionales;Iniciar inspección sin robot elegido;RF4, CU4;Aprobó;1,86;;F-10.png
+F-11;Funcionales;Motivo «Otro» sin escribir el texto;RF4, CU4;Aprobó;3,61;;F-11.png
+F-12;Funcionales;Robot real sin conectar;RF4, RNF7, CU4;Aprobó;9,23;;F-12.png
+F-13;Funcionales;Iniciar con el simulador, recorrer y detener;RF5–RF9, CU5–CU7;Aprobó;23,91;;F-13.png
+F-14;Funcionales;Filtrar por tipo de daño en el panel de hallazgos;RF10, CU8;Aprobó;5,52;;F-14.png
+F-15;Funcionales;Confirmar un hallazgo con intervención y plazo;RF11, RF12, CU9;Aprobó;13,60;;F-15.png
+F-16;Funcionales;Descargar el informe PDF;RF14, RNF6, CU10;Aprobó;11,27;;F-16.png
+F-17;Funcionales;Buscar, filtrar y ordenar por hallazgos;RF13, CU11;Aprobó;4,40;;F-17.png
+F-18;Funcionales;Eliminar una inspección de prueba;RF13, CU11;Aprobó;14,38;;F-18.png
+F-19;Funcionales;Exportar una edificación e importarla;RF15, CU12;Aprobó;60,33;;F-19.png
+R-01;Rendimiento y responsive;Tiempo desde el inicio de sesión hasta ver los proyectos;RNF3;Falló;3,71;test_rendimiento.py:47: AssertionError;R-01.png
+R-02;Rendimiento y responsive;Tiempo en dibujar el plano con sus hallazgos;RF10, RNF3;Falló;6,07;test_rendimiento.py:60: AssertionError;R-02.png
+R-03;Rendimiento y responsive;Recorrer las pantallas en 1024×600, 1366×768 y 1920×1080;RNF8;Aprobó;75,82;;R-03.png
+S-01;Seguridad;Pedir las credenciales de un robot;RNF7;Aprobó;2,07;;
+S-02;Seguridad;Eliminar la cuenta con una contraseña incorrecta;RF1, RNF7;Aprobó;1,78;;
+S-03;Seguridad;Robot real sin las tres confirmaciones;RNF7, CU4;Aprobó;0,01;;
