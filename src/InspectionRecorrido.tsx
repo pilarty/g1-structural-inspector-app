@@ -1,401 +1,418 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { duracion, etiquetaEstado, fechaLarga, horaLocal } from './formato';
+import { useRobots } from './robots';
+import { DESTINOS, TIPOS_PROPIEDAD, etiquetaDe, obtenerEdificacion, type EdificacionApi } from './edificioForm';
+import MapaHallazgos from './MapaHallazgos';
 import ActivityBar, { NavTab } from './ActivityBar';
-import { mockProjects, Building } from './data';
-import { TopNav, ProjectsSidebar } from './components';
-import {
-  CheckCircle2, Clock, Map, Bot,
-  ZoomIn, ZoomOut, Maximize, ArrowRight,
-} from 'lucide-react';
-
-const GRID_BG = {
-  backgroundColor: '#FFFFFF',
-  backgroundImage: `linear-gradient(rgba(229,231,235,0.17) 1px, transparent 1px), linear-gradient(90deg, rgba(229,231,235,0.17) 1px, transparent 1px)`,
-  backgroundSize: '22px 22px',
-} as const;
-
-// Full floor-plan trajectory in 800×600 viewBox space
-const TRAJ_POINTS: [number, number][] = [
-  [144, 210], [144, 132], [250, 132], [370, 132],
-  [370, 200], [440, 200], [440, 132], [578, 132],
-  [578, 240], [450, 240], [450, 348], [376, 348],
-  [376, 440], [520, 440], [578, 440], [578, 340],
-];
-const START    = TRAJ_POINTS[0];
-const END      = TRAJ_POINTS[TRAJ_POINTS.length - 1];
-const trajStr  = TRAJ_POINTS.map(([x, y]) => `${x},${y}`).join(' ');
+import type { Building } from './data';
+import { useProyectos, EDIFICIO_VACIO } from './proyectos';
+import { TopNav, ProjectsSidebar, PanelLabel, PanelText } from './components';
+import { Map, FileText, FileDown, Loader2, MoreHorizontal, Play, Trash2 } from 'lucide-react';
+import SelectorInspeccion from './components/SelectorInspeccion';
+import { etiquetaMotivo } from './motivos';
+import DialogoConfirmar from './components/DialogoConfirmar';
+import { BACKEND_URL } from './sesion';
+import { ordenPlanta, plantasDe } from './plantas';
 
 // Default to first building that has relevamientos
-const defaultBuilding =
-  mockProjects.flatMap(p => p.buildings).find(b => b.relevamientos > 0)!;
+// El edificio por defecto ahora sale de los datos de AWS (useProyectos).
 
-type TabId = 'datos' | 'robot' | 'operador' | 'edificio';
+type TabId = 'datos' | 'robot' | 'edificio';
 
 interface InspectionRecorridoProps {
   activeTab: NavTab;
   onTabChange: (tab: NavTab) => void;
-  onViewDetails: () => void;
+  selectedBuildingId?: string | null;
+  onSelectBuilding?: (id: string) => void;
+  /** Abre la ficha completa del inmueble (para verla o editarla) */
+  onVerFicha?: (id: string) => void;
+  /** Inspección elegida en el historial; si no viene, se muestra la última */
+  relevamientoId?: number | null;
+  /** Volver a mostrar la última inspección */
+  onVerUltima?: () => void;
+  /** Elegir otra inspección de la misma edificación (null = la última) */
+  onElegirInspeccion?: (id: number | null) => void;
+  /** Ir a «Iniciar inspección» con esta edificación (y su proyecto) ya elegidos */
+  onIniciarInspeccion?: () => void;
 }
 
-export default function InspectionRecorrido({ activeTab, onTabChange, onViewDetails }: InspectionRecorridoProps) {
+export default function InspectionRecorrido({ activeTab, onTabChange, selectedBuildingId, onSelectBuilding, onVerFicha, relevamientoId, onVerUltima, onElegirInspeccion, onIniciarInspeccion }: InspectionRecorridoProps) {
   const [infoTab, setInfoTab] = useState<TabId>('datos');
-  const [currentBuildingId, setCurrentBuildingId] = useState(defaultBuilding.id);
+  const [borrando, setBorrando] = useState<{ enviando: boolean; error: string | null } | null>(null);
+  // Menú «⋯» de la inspección (exportar informe y eliminar)
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const [exportando, setExportando] = useState(false);
+  const exportarRef = useRef<(() => Promise<void>) | null>(null);
+  const { proyectos, recargar } = useProyectos();
+  const { robots } = useRobots();
+  // Ficha de la edificación (para el resumen de la solapa Edificio)
+  const [ficha, setFicha] = useState<EdificacionApi | null>(null);
+  useEffect(() => {
+    recargar();
+  }, [recargar]);
+  const edificios = proyectos.flatMap(p => p.buildings);
+  const currentBuildingId = selectedBuildingId ?? edificios[0]?.id ?? '';
 
-  const currentBuilding: Building =
-    mockProjects.flatMap(p => p.buildings).find(b => b.id === currentBuildingId) ?? defaultBuilding;
+  const edificio: Building =
+    edificios.find(b => b.id === currentBuildingId) ?? EDIFICIO_VACIO;
+  // Si se eligió una inspección anterior del historial, se muestra esa en vez de la última
+  const elegida = relevamientoId ? edificio.historial.find(h => h.id === relevamientoId) : undefined;
+  const esAnterior = !!elegida && elegida.id !== edificio.ultimoRelevamiento?.id;
+  const currentBuilding: Building = elegida && elegida.id !== undefined
+    ? {
+        ...edificio,
+        ultimoRelevamiento: { id: elegida.id, estado: elegida.estado ?? '', inicio: elegida.inicio ?? null, fin: elegida.fin ?? null, planta: elegida.planta, motivo: elegida.motivo, observaciones: elegida.observaciones },
+        lastRelevamientoDate: elegida.date,
+        lastDetections: elegida.detections,
+        lastRobot: elegida.robot,
+        lastOperator: elegida.operador ?? edificio.lastOperator,
+      }
+    : edificio;
+
+  useEffect(() => {
+    if (!currentBuildingId) { setFicha(null); return; }
+    let vivo = true;
+    setFicha(null);
+    obtenerEdificacion(currentBuildingId).then(f => vivo && setFicha(f)).catch(() => vivo && setFicha(null));
+    return () => { vivo = false; };
+  }, [currentBuildingId]);
+
+  // ── Plantas e inspecciones de esta edificación ──
+  const SIN_PLANTA = 'Sin planta indicada';
+  const plantaDe = (p?: string) => p || SIN_PLANTA;
+  const inspecciones = edificio.historial.filter(h => h.id !== undefined);
+  const plantaActual = plantaDe(currentBuilding.ultimoRelevamiento?.planta);
+  const plantasEdificio = plantasDe(ficha?.pisos_sobre_pb ?? edificio.pisos, ficha?.subsuelos ?? edificio.subsuelos);
+  const plantasConInspeccion = new Set(inspecciones.map(h => plantaDe(h.planta)));
+  const plantas = [...new Set([...plantasEdificio, ...plantasConInspeccion])]
+    .sort((a, b) => (a === SIN_PLANTA ? 1 : b === SIN_PLANTA ? -1 : ordenPlanta(a) - ordenPlanta(b)));
+  // El selector de plantas solo aparece si la edificación tiene más de una planta;
+  // si no, en «Inspección» se ven todas
+  const variasPlantas = plantasEdificio.length > 1;
+  const deLaPlanta = variasPlantas ? inspecciones.filter(h => plantaDe(h.planta) === plantaActual) : inspecciones;
+  const elegir = (id: number) => onElegirInspeccion?.(id === edificio.ultimoRelevamiento?.id ? null : id);
+
+  // ── Eliminar la inspección que se está viendo ──
+  async function eliminarInspeccion() {
+    const rid = currentBuilding.ultimoRelevamiento?.id;
+    if (!rid) return;
+    setBorrando({ enviando: true, error: null });
+    try {
+      const r = await fetch(`${BACKEND_URL}/nube/api/relevamientos/${rid}`, { method: 'DELETE' });
+      if (r.status === 409) {
+        setBorrando({ enviando: false, error: 'Esta inspección está en curso. Detenela antes de eliminarla.' });
+        return;
+      }
+      if (!r.ok) throw new Error(String(r.status));
+      await recargar();
+      onElegirInspeccion?.(null);
+      setBorrando(null);
+    } catch {
+      setBorrando({ enviando: false, error: 'No se pudo eliminar. Revisá tu conexión e intentá de nuevo.' });
+    }
+  }
 
   const infoTabs: { id: TabId; label: string }[] = [
     { id: 'datos',    label: 'Datos del recorrido' },
     { id: 'robot',    label: 'Robot' },
-    { id: 'operador', label: 'Operador' },
     { id: 'edificio', label: 'Edificio' },
   ];
 
   return (
     <div className="flex h-screen font-sans text-[#1A1C1E]">
-      <ActivityBar active={activeTab} onChange={onTabChange} />
-      <ProjectsSidebar
-        selectedBuildingId={currentBuildingId}
-        onSelectBuilding={setCurrentBuildingId}
-        onNewBuilding={() => onTabChange('nuevo-edificio')}
-      />
+      <ActivityBar active={activeTab === 'recorrido' ? 'dashboard' : activeTab} onChange={onTabChange} />
 
       {/* ── Main content ── */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        <TopNav
-          badge={
-            <span className="ml-3 text-[11px] font-semibold text-white/50 bg-white/10 px-2.5 py-0.5 rounded-md truncate">
-              {currentBuilding.name}
-            </span>
-          }
-        />
+        <TopNav />
 
-        {/* Stats row */}
-        <div className="flex-none bg-white border-b border-[#EDEBE6] px-4 py-3 flex items-center">
-          {([
-            {
-              Icon: CheckCircle2,
-              label: 'Estado',
-              value: currentBuilding.relevamientos > 0 ? 'Recorrido completado' : 'Sin recorridos',
-              valueColor: currentBuilding.relevamientos > 0 ? '#10B981' : '#8A8C8E',
-              iconColor: currentBuilding.relevamientos > 0 ? '#10B981' : '#8A8C8E',
-            },
-            {
-              Icon: Clock,
-              label: 'Duración',
-              value: currentBuilding.relevamientos > 0 ? '1h 35min' : '—',
-              valueColor: '#1A1C1E',
-              iconColor: '#11676A',
-            },
-            {
-              Icon: Map,
-              label: 'Cobertura',
-              value: currentBuilding.relevamientos > 0 ? '100% de la planta' : '—',
-              valueColor: '#1A1C1E',
-              iconColor: '#11676A',
-            },
-            {
-              Icon: Bot,
-              label: 'Robot utilizado',
-              value: currentBuilding.lastRobot !== '—' ? currentBuilding.lastRobot : '—',
-              valueColor: '#1A1C1E',
-              iconColor: '#11676A',
-            },
-          ] as const).map(({ Icon, label, value, valueColor, iconColor }, i) => (
-            <div key={i} className={`flex-1 flex items-center gap-3 px-3 ${i < 3 ? 'border-r border-[#F0EDE8]' : ''}`}>
-              <div className="w-8 h-8 rounded-lg bg-[#11676A]/[0.07] flex items-center justify-center flex-none">
-                <Icon className="w-4 h-4" style={{ color: iconColor }} />
-              </div>
-              <div>
-                <p className="text-[9px] font-semibold text-[#8A8C8E] uppercase tracking-widest mb-0.5">{label}</p>
-                <p className="text-[13px] font-semibold leading-tight" style={{ color: valueColor }}>{value}</p>
-              </div>
+        <div className="flex flex-1 overflow-hidden">
+          <ProjectsSidebar
+            selectedBuildingId={currentBuildingId}
+            onSelectBuilding={id => onSelectBuilding?.(id)}
+          />
+
+        <div className="flex flex-col flex-1 overflow-hidden min-h-0 bg-[#F3F6F9] bg-[radial-gradient(#DDE3EA_1px,transparent_1px)] [background-size:16px_16px]">
+
+        {/* Plantas e inspecciones de la edificación */}
+        {inspecciones.length > 0 && (
+          <div className="flex-none flex items-center gap-3 h-14 px-4 bg-white border-b border-[#E5E7EB] whitespace-nowrap min-w-0">
+            {variasPlantas && <>
+            <span className="text-[12px] font-semibold text-[#66686A]">Planta</span>
+            {/* Plantas como control segmentado: la elegida resalta en blanco (si no entran, se desplazan) */}
+            <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-[#F1F3F5] min-w-0 overflow-x-auto [scrollbar-width:none]">
+              {plantas.map(p => {
+                const delas = inspecciones.filter(h => plantaDe(h.planta) === p);
+                const activa = p === plantaActual;
+                return (
+                  <button key={p} type="button" disabled={delas.length === 0}
+                    onClick={() => delas[0]?.id !== undefined && elegir(delas[0].id)}
+                    title={delas.length === 0 ? 'Sin inspecciones en esta planta' : undefined}
+                    className={`flex-none flex items-center gap-1.5 h-8 px-3 rounded-[5px] text-[13px] transition-colors ${
+                      activa ? 'bg-white text-[#1A1C1E] font-semibold shadow-[0_1px_3px_rgba(20,32,43,0.14)]'
+                        : delas.length ? 'text-[#1A1C1E] font-medium hover:bg-white/60'
+                        : 'text-[#A0A2A4] font-medium cursor-default'
+                    }`}>
+                    {p}
+                    {delas.length > 0 && (
+                      <span className={`h-[18px] min-w-[18px] px-1 rounded-full text-[11px] font-semibold tabular-nums flex items-center justify-center ${activa ? 'bg-[#E3EEF8] text-[#1E4E7C]' : 'bg-black/[0.06] text-[#66686A]'}`}>{delas.length}</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          ))}
-        </div>
+            </>}
+            {!variasPlantas && <>
+              {/* Una sola planta: se muestra cuál es, sin poder cambiarla */}
+              <span className="text-[12px] font-semibold text-[#66686A]">Planta</span>
+              <div className="flex items-center p-0.5 rounded-md bg-[#F1F3F5]">
+                <span className="flex items-center h-8 px-3 rounded-[5px] text-[13px] bg-white text-[#1A1C1E] font-semibold shadow-[0_1px_3px_rgba(20,32,43,0.14)]">
+                  {plantasEdificio[0]}
+                </span>
+              </div>
+            </>}
+            <div className="flex-1 min-w-2" />
+            <SelectorInspeccion
+              inspecciones={deLaPlanta}
+              elegida={currentBuilding.ultimoRelevamiento?.id}
+              ultimaId={edificio.ultimoRelevamiento?.id}
+              onElegir={elegir}
+            />
+            {esAnterior && onVerUltima && (
+              <button type="button" onClick={onVerUltima}
+                className="flex-none h-9 px-2 rounded-[3px] text-[13px] font-medium text-[#377DC0] hover:bg-[#EEF4FB] transition-colors">
+                Ir a la última
+              </button>
+            )}
+            <div className="relative flex-none">
+              <button type="button" onClick={() => setMenuAbierto(x => !x)} aria-expanded={menuAbierto}
+                title="Más opciones de la inspección" aria-label="Más opciones de la inspección"
+                className={`w-9 h-9 flex items-center justify-center rounded-[3px] border transition-colors ${
+                  menuAbierto ? 'bg-[#EEF4FB] border-[#377DC0]/50 text-[#1E4E7C]' : 'bg-white border-[#D4D4D4] text-[#424242] hover:bg-[#F3F4F6]'
+                }`}>
+                {exportando ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-4 h-4" />}
+              </button>
+              {menuAbierto && (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setMenuAbierto(false)} aria-hidden />
+                  <div className="absolute right-0 top-full z-30 mt-1 w-[210px] rounded-[5px] bg-white border border-[#D4D4D4] shadow-[0_2px_8px_rgba(0,0,0,0.16)] p-1">
+                    <button type="button" disabled={exportando || !currentBuilding.relevamientos}
+                      onClick={() => { setMenuAbierto(false); exportarRef.current?.(); }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[3px] text-left text-[14px] text-[#1A1C1E] hover:bg-[#377DC0] hover:text-white disabled:text-[#A0A2A4] disabled:hover:bg-transparent">
+                      <FileDown className="w-3.5 h-3.5" /> {exportando ? 'Armando informe…' : 'Descargar informe'}
+                    </button>
+                    <button type="button"
+                      onClick={() => { setMenuAbierto(false); setBorrando({ enviando: false, error: null }); }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[3px] text-left text-[14px] text-[#B91C1C] hover:bg-[#B91C1C] hover:text-white">
+                      <Trash2 className="w-3.5 h-3.5" /> Eliminar inspección
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Floor plan */}
-        <div className="flex-1 relative overflow-hidden min-h-0" style={GRID_BG}>
+        <div className="flex-1 relative overflow-hidden min-h-0">
           {currentBuilding.relevamientos > 0 ? (
-            <svg
-              viewBox="0 0 800 600"
-              className="w-full h-full"
-              fill="none"
-              preserveAspectRatio="xMidYMid meet"
-            >
-              <defs>
-                <pattern id="recGrid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#F0EDE8" strokeWidth="0.8" />
-                </pattern>
-                <filter id="startGlow">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                </filter>
-                <filter id="endGlow">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                </filter>
-              </defs>
-
-              <rect width="800" height="600" fill="rgba(255,255,255,0.92)" />
-              <rect width="800" height="600" fill="url(#recGrid)" />
-
-              {/* Walls */}
-              <path d="M50 50 L750 50 L750 550 L50 550 Z" stroke="#C8C5BF" strokeWidth="5" />
-              <path d="M250 50 L250 350 L50 350"   stroke="#C8C5BF" strokeWidth="3.5" />
-              <path d="M500 50 L500 250 L750 250"  stroke="#C8C5BF" strokeWidth="3.5" />
-              <path d="M350 550 L350 350 L500 350 L500 550" stroke="#C8C5BF" strokeWidth="3.5" />
-              {/* Doors */}
-              <path d="M250 150 A50 50 0 0 1 300 200 L250 200" fill="none" stroke="#A0A2A4" strokeWidth="1.5" strokeDasharray="4 4" />
-              <path d="M250 150 L250 200" stroke="#FFFFFF" strokeWidth="5" />
-              <path d="M400 350 A50 50 0 0 0 450 300 L450 350" fill="none" stroke="#A0A2A4" strokeWidth="1.5" strokeDasharray="4 4" />
-              <path d="M400 350 L450 350" stroke="#FFFFFF" strokeWidth="5" />
-              <path d="M500 150 A50 50 0 0 1 550 200 L500 200" fill="none" stroke="#A0A2A4" strokeWidth="1.5" strokeDasharray="4 4" />
-              <path d="M500 150 L500 200" stroke="#FFFFFF" strokeWidth="5" />
-              {/* Room labels */}
-              <text x="145" y="210" fill="#C8C5BF" fontSize="11" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala A</text>
-              <text x="375" y="155" fill="#C8C5BF" fontSize="11" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala B</text>
-              <text x="625" y="155" fill="#C8C5BF" fontSize="11" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala C</text>
-              <text x="420" y="460" fill="#C8C5BF" fontSize="11" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Sala D</text>
-              <text x="575" y="410" fill="#C8C5BF" fontSize="11" fontFamily="DM Sans, sans-serif" fontWeight="500" textAnchor="middle">Pasillo</text>
-
-              {/* Trajectory */}
-              <polyline
-                points={trajStr}
-                fill="none"
-                stroke="#11676A"
-                strokeWidth="2.5"
-                strokeOpacity="0.45"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeDasharray="6 3"
-              />
-              <polyline
-                points={trajStr}
-                fill="none"
-                stroke="#11676A"
-                strokeWidth="1.5"
-                strokeOpacity="0.85"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-              {/* Start marker */}
-              <g filter="url(#startGlow)">
-                <circle cx={START[0]} cy={START[1]} r="12" fill="#10B981" fillOpacity="0.18" />
-                <circle cx={START[0]} cy={START[1]} r="7"  fill="#10B981" />
-                <circle cx={START[0]} cy={START[1]} r="3"  fill="white" />
-              </g>
-              <text x={START[0] + 15} y={START[1] - 10} fill="#10B981" fontSize="9" fontFamily="DM Sans, sans-serif" fontWeight="700" letterSpacing="0.04em">INICIO</text>
-
-              {/* End marker */}
-              <g filter="url(#endGlow)">
-                <circle cx={END[0]} cy={END[1]} r="12" fill="#11676A" fillOpacity="0.18" />
-                <rect x={END[0] - 7} y={END[1] - 7} width="14" height="14" rx="3" fill="#11676A" />
-                <rect x={END[0] - 3} y={END[1] - 3} width="6"  height="6"  rx="1" fill="white" />
-              </g>
-              <text x={END[0] + 15} y={END[1] - 10} fill="#11676A" fontSize="9" fontFamily="DM Sans, sans-serif" fontWeight="700" letterSpacing="0.04em">FIN</text>
-            </svg>
+            <MapaHallazgos
+              relevamientoId={currentBuilding.ultimoRelevamiento?.id}
+              enCurso={currentBuilding.ultimoRelevamiento?.estado === 'en_curso'}
+              exportarRef={exportarRef}
+              onExportando={setExportando}
+              informe={{
+                proyecto: proyectos.find(p => p.buildings.some(b => b.id === edificio.id))?.name ?? '—',
+                proyectoId: proyectos.find(p => p.buildings.some(b => b.id === edificio.id))?.id ?? null,
+                relevamientoId: currentBuilding.ultimoRelevamiento?.id ?? 0,
+                edificacion: edificio.name,
+                direccion: ficha?.direccion || edificio.address,
+                planta: currentBuilding.ultimoRelevamiento?.planta ?? 'Sin indicar',
+                motivo: etiquetaMotivo(currentBuilding.ultimoRelevamiento?.motivo),
+                observaciones: currentBuilding.ultimoRelevamiento?.observaciones ?? null,
+                fecha: currentBuilding.lastRelevamientoDate,
+                inicio: horaLocal(currentBuilding.ultimoRelevamiento?.inicio),
+                fin: currentBuilding.ultimoRelevamiento?.fin ? horaLocal(currentBuilding.ultimoRelevamiento.fin) : 'En curso',
+                duracion: currentBuilding.ultimoRelevamiento ? duracion(currentBuilding.ultimoRelevamiento) : '—',
+                robot: currentBuilding.lastRobot,
+              }}
+            />
           ) : (
             /* No relevamientos empty state */
             <div className="flex flex-col items-center justify-center h-full text-center px-8">
-              <div className="w-16 h-16 rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.07)] flex items-center justify-center mb-5">
-                <Map className="w-8 h-8 text-[#C8C5BF]" />
-              </div>
-              <h3 className="text-[16px] font-semibold text-[#1A1C1E] mb-2">Sin recorridos disponibles</h3>
-              <p className="text-[13px] text-[#8A8C8E] max-w-[280px] leading-relaxed">
-                Este edificio todavía no tiene relevamientos. Iniciá una inspección para registrar el primer recorrido.
+              <Map className="w-8 h-8 text-[#C4C7CA] mb-4" />
+              <h3 className="text-[16px] font-semibold text-[#1A1C1E] mb-2">Todavía no hay inspecciones</h3>
+              <p className="text-[13px] text-[#8A8C8E] max-w-[300px] leading-relaxed">
+                Esta edificación todavía no se inspeccionó. Cuando el robot la recorra, acá vas a ver el plano y los daños encontrados.
               </p>
+              {onIniciarInspeccion && currentBuilding.id && (
+                <button type="button" onClick={onIniciarInspeccion}
+                  className="mt-5 flex items-center justify-center gap-2 h-9 px-3.5 rounded-[3px] text-[13px] font-medium transition-colors bg-[#377DC0] text-white hover:bg-[#2F6CA8]">
+                  <Play className="w-4 h-4" /> Iniciar inspección
+                </button>
+              )}
             </div>
           )}
 
-          {currentBuilding.relevamientos > 0 && (
-            <>
-              {/* Legend */}
-              <div className="absolute top-4 left-4 bg-white/80 backdrop-blur-md rounded-xl px-3.5 py-3 shadow-[0_2px_12px_rgba(0,0,0,0.08)]">
-                <p className="text-[9px] font-semibold text-[#8A8C8E] uppercase tracking-widest mb-2">Trayectoria</p>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className="w-2 h-2 rounded-full bg-[#10B981] flex-none" />
-                  <span className="text-[11px] font-medium text-[#1A1C1E]">Punto de inicio</span>
-                </div>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className="w-2 h-2 rounded-sm bg-[#11676A] flex-none" />
-                  <span className="text-[11px] font-medium text-[#1A1C1E]">Punto de fin</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-0.5 border-t-2 border-dashed border-[#11676A]/60 flex-none" />
-                  <span className="text-[11px] font-medium text-[#1A1C1E]">Recorrido del robot</span>
-                </div>
-              </div>
-
-              {/* Zoom controls */}
-              <div className="absolute bottom-5 right-5 z-20 flex flex-col bg-white/80 backdrop-blur-md rounded-xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.08)]">
-                <button className="p-2.5 hover:bg-[#11676A]/10 text-[#66686A] hover:text-[#11676A] transition-colors" title="Acercar">
-                  <ZoomIn className="w-4 h-4" />
-                </button>
-                <div className="h-px bg-[#11676A]/10" />
-                <button className="p-2.5 hover:bg-[#11676A]/10 text-[#66686A] hover:text-[#11676A] transition-colors" title="Alejar">
-                  <ZoomOut className="w-4 h-4" />
-                </button>
-                <div className="h-px bg-[#11676A]/10" />
-                <button className="p-2.5 hover:bg-[#11676A]/10 text-[#66686A] hover:text-[#11676A] transition-colors" title="Restaurar">
-                  <Maximize className="w-4 h-4" />
-                </button>
-              </div>
-            </>
-          )}
         </div>
 
         {/* Bottom info panel */}
-        <div className="flex-none bg-white border-t border-[#EDEBE6]" style={{ minHeight: '168px' }}>
+        {/* Datos de abajo: tarjeta flotante, igual que el panel de hallazgos */}
+        <div className="flex-none px-3 pb-3">
+        <div className="rounded-lg bg-white/90 backdrop-blur-sm border border-[#E5E7EB] shadow-[0_4px_16px_rgba(20,32,43,0.10)]">
 
-          {/* Tab bar */}
-          <div className="flex items-center border-b border-[#EDEBE6] px-5">
-            <div className="flex items-center gap-1 flex-1">
+          {/* Solapas como control segmentado */}
+          <div className="flex items-center gap-3 px-4 pt-3">
+            <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-[#F1F3F5]">
               {infoTabs.map(tab => (
                 <button
                   key={tab.id}
+                  type="button"
                   onClick={() => setInfoTab(tab.id)}
-                  className={`px-4 py-3 text-[12px] font-semibold transition-colors border-b-2 -mb-px ${
+                  className={`h-8 px-3 rounded-[5px] text-[13px] transition-colors ${
                     infoTab === tab.id
-                      ? 'border-[#11676A] text-[#11676A]'
-                      : 'border-transparent text-[#8A8C8E] hover:text-[#1A1C1E]'
+                      ? 'bg-white text-[#1A1C1E] font-semibold shadow-[0_1px_3px_rgba(20,32,43,0.14)]'
+                      : 'text-[#66686A] font-medium hover:text-[#1A1C1E]'
                   }`}
                 >
                   {tab.label}
                 </button>
               ))}
             </div>
-            {currentBuilding.relevamientos > 0 && (
+            <div className="flex-1" />
+            {currentBuilding.id && onVerFicha && (
               <button
-                onClick={onViewDetails}
-                className="flex items-center gap-2 px-5 py-2 bg-[#11676A] hover:bg-[#0E5254] text-white text-[12px] font-semibold rounded-xl transition-colors shadow-[0_2px_10px_rgba(17,103,106,0.25)]"
+                type="button"
+                onClick={() => onVerFicha(currentBuilding.id)}
+                className="flex items-center justify-center gap-2 h-8 px-3 rounded-[3px] text-[13px] font-medium transition-colors bg-[#377DC0] text-white hover:bg-[#2F6CA8]"
               >
-                Ver detalles
-                <ArrowRight className="w-3.5 h-3.5" />
+                <FileText className="w-4 h-4" /> Ficha del inmueble
               </button>
             )}
           </div>
 
           {/* Tab content */}
-          <div className="px-6 py-4">
-            {infoTab === 'datos' && (
-              <div className="flex items-start gap-10">
-                <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Inicio</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">{currentBuilding.lastRelevamientoDate !== '—' ? currentBuilding.lastRelevamientoDate : '—'}</p>
-                  <p className="text-[11px] text-[#8A8C8E]">14:30 hs</p>
+          <div className="px-5 pt-3.5 pb-4 h-[86px] overflow-hidden [&_p]:whitespace-nowrap">
+            {infoTab === 'datos' && (() => {
+              const u = currentBuilding.ultimoRelevamiento;
+              const hay = currentBuilding.relevamientos > 0 && !!u;
+              const enCurso = u?.estado === 'en_curso';
+              return (
+              <div className="flex items-start">
+                <div className="pr-8">
+                  <PanelLabel>Inicio</PanelLabel>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {hay && <span className="w-2 h-2 rounded-full bg-[#10B981] flex-none" />}
+                    <PanelText className="font-semibold">{hay ? fechaLarga(u?.inicio) : '—'}</PanelText>
+                  </div>
+                  <p className="text-[11px] text-[#8A8C8E] mt-0.5">{hay ? horaLocal(u?.inicio) : '\u00a0'}</p>
                 </div>
-                <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Fin</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">{currentBuilding.lastRelevamientoDate !== '—' ? currentBuilding.lastRelevamientoDate : '—'}</p>
-                  <p className="text-[11px] text-[#8A8C8E]">16:05 hs</p>
+                <div className="px-8 border-l border-[#E5E7EB]">
+                  <PanelLabel>Fin</PanelLabel>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {hay && u?.fin && <span className="w-2 h-2 rounded-sm bg-[#377DC0] flex-none" />}
+                    <PanelText className="font-semibold">{!hay ? '—' : u?.fin ? fechaLarga(u.fin) : enCurso ? 'Todavía no terminó' : '—'}</PanelText>
+                  </div>
+                  <p className="text-[11px] text-[#8A8C8E] mt-0.5">{hay && u?.fin ? horaLocal(u.fin) : '\u00a0'}</p>
                 </div>
-                <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Duración total</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">{currentBuilding.relevamientos > 0 ? '1h 35min' : '—'}</p>
-                  <p className="text-[11px] text-[#8A8C8E]">Planta 1</p>
+                <div className="px-8 border-l border-[#E5E7EB]">
+                  <PanelLabel>Duración total</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">{hay ? duracion(u) : '—'}</PanelText>
+                  <p className="text-[11px] text-[#8A8C8E]">&nbsp;</p>
                 </div>
-                <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Cobertura</p>
-                  {currentBuilding.relevamientos > 0 ? (
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="w-20 h-1.5 bg-[#E2DFD8] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#11676A] rounded-full w-full" />
-                      </div>
-                      <span className="text-[13px] font-bold text-[#11676A]">100%</span>
-                    </div>
-                  ) : (
-                    <p className="text-[13px] font-semibold text-[#8A8C8E]">—</p>
-                  )}
-                </div>
-                <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Estado</p>
-                  {currentBuilding.relevamientos > 0 ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#DCEFEF] text-[#0B5559] text-[11px] font-semibold rounded-lg">
-                      <CheckCircle2 className="w-3 h-3" />
-                      Completado
+                <div className="pl-8 border-l border-[#E5E7EB]">
+                  <PanelLabel>Estado</PanelLabel>
+                  {hay ? (
+                    <span className={`inline-flex items-center gap-1.5 text-[12px] font-semibold mt-1 px-2 py-0.5 rounded-full ${
+                      enCurso ? 'bg-[#ECFDF5] text-[#047857]' : u?.estado === 'finalizado' ? 'bg-[#10B981]/[0.09] text-[#14202B]' : 'bg-black/5 text-[#66686A]'
+                    }`}>
+                      {etiquetaEstado(u?.estado)}
                     </span>
                   ) : (
-                    <span className="text-[13px] font-semibold text-[#8A8C8E]">Sin recorridos</span>
+                    <PanelText className="font-semibold text-[#8A8C8E] mt-0.5">Sin recorridos</PanelText>
                   )}
                 </div>
               </div>
-            )}
+              );
+            })()}
 
-            {infoTab === 'robot' && (
-              <div className="flex items-start gap-10">
-                <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Identificación</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">{currentBuilding.lastRobot}</p>
-                  <p className="text-[11px] text-[#8A8C8E]">Robot de inspección autónomo</p>
+            {infoTab === 'robot' && (() => {
+              const robot = robots.find(x => x.label === currentBuilding.lastRobot);
+              const hay = currentBuilding.relevamientos > 0 && currentBuilding.lastRobot !== '—';
+              return (
+              <div className="flex items-start">
+                <div className="pr-8">
+                  <PanelLabel>Identificación</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">{hay ? currentBuilding.lastRobot : '—'}</PanelText>
                 </div>
-                <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Batería al inicio</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">100%</p>
-                  <p className="text-[11px] text-[#8A8C8E]">Carga completa</p>
+                <div className="px-8 border-l border-[#E5E7EB]">
+                  <PanelLabel>Modelo</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">{robot?.modelo || '—'}</PanelText>
                 </div>
-                <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Batería al fin</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="w-20 h-1.5 bg-[#E2DFD8] rounded-full overflow-hidden">
-                      <div className="h-full bg-[#10B981] rounded-full" style={{ width: '72%' }} />
-                    </div>
-                    <span className="text-[13px] font-bold text-[#10B981]">72%</span>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Sensores activos</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">Cámara, LiDAR 3D, WiFi</p>
-                  <p className="text-[11px] text-[#8A8C8E]">Sin fallas registradas</p>
+                <div className="pl-8 border-l border-[#E5E7EB]">
+                  <PanelLabel>Conexión</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">{robot?.conexion?.host ?? '—'}</PanelText>
+                  {robot?.conexion?.interfaz && <p className="text-[11px] text-[#8A8C8E]">Interfaz {robot.conexion.interfaz}</p>}
                 </div>
               </div>
-            )}
-
-            {infoTab === 'operador' && (
-              <div className="flex items-start gap-10">
-                <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Nombre</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">{currentBuilding.lastOperator}</p>
-                  <p className="text-[11px] text-[#8A8C8E]">Técnico de inspección</p>
+              );
+            })()}
+            {infoTab === 'edificio' && (() => {
+              const plantas = ficha?.pisos_sobre_pb ?? null;
+              const sub = ficha?.subsuelos ?? 0;
+              return (
+              <div className="flex items-start">
+                <div className="pr-8 min-w-0 max-w-[340px]">
+                  <PanelLabel>Edificación</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5 truncate">{currentBuilding.name}</PanelText>
+                  <p className="text-[11px] text-[#8A8C8E] truncate">{ficha?.direccion || currentBuilding.address || 'Sin dirección'}</p>
                 </div>
-                <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Inicio de sesión</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">{currentBuilding.lastRelevamientoDate}, 14:25 hs</p>
+                <div className="px-8 border-l border-[#E5E7EB]">
+                  <PanelLabel>Tipo y destino</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">{ficha?.tipo_propiedad ? etiquetaDe(TIPOS_PROPIEDAD, ficha.tipo_propiedad) : '—'}</PanelText>
+                  <p className="text-[11px] text-[#8A8C8E]">{ficha?.destino ? etiquetaDe(DESTINOS, ficha.destino) : '\u00a0'}</p>
                 </div>
-                <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Organización</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">Municipalidad CABA — Zona Norte</p>
+                <div className="px-8 border-l border-[#E5E7EB]">
+                  <PanelLabel>Año de construcción</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">{ficha?.anio_construccion ?? (currentBuilding.yearBuilt || '—')}</PanelText>
                 </div>
-              </div>
-            )}
-
-            {infoTab === 'edificio' && (
-              <div className="flex items-start gap-10">
-                <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Edificio</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">{currentBuilding.name}</p>
-                  <p className="text-[11px] text-[#8A8C8E]">{currentBuilding.address}</p>
+                <div className="px-8 border-l border-[#E5E7EB]">
+                  <PanelLabel>Altura</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">
+                    {plantas === null ? '—' : plantas === 0 ? 'Solo planta baja' : `PB + ${plantas} piso${plantas === 1 ? '' : 's'}`}
+                  </PanelText>
+                  <p className="text-[11px] text-[#8A8C8E]">{sub > 0 ? `${sub} subsuelo${sub === 1 ? '' : 's'}` : '\u00a0'}</p>
                 </div>
-                <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Planta recorrida</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">Planta 1</p>
-                  <p className="text-[11px] text-[#8A8C8E]">de {currentBuilding.floors} plantas totales</p>
-                </div>
-                <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Año de construcción</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">{currentBuilding.yearBuilt}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] font-semibold text-[#0B5559] uppercase tracking-widest mb-1">Total relevamientos</p>
-                  <p className="text-[13px] font-semibold text-[#1A1C1E]">
-                    {currentBuilding.relevamientos > 0 ? `${currentBuilding.relevamientos} relevamientos` : 'Sin relevamientos'}
-                  </p>
+                <div className="pl-8 border-l border-[#E5E7EB]">
+                  <PanelLabel>Inspecciones</PanelLabel>
+                  <PanelText className="font-semibold mt-0.5">
+                    {currentBuilding.relevamientos > 0 ? currentBuilding.relevamientos : 'Ninguna'}
+                  </PanelText>
                 </div>
               </div>
-            )}
+              );
+            })()}
           </div>
         </div>
+        </div>
 
+        </div>
+        </div>
+
+      {borrando && currentBuilding.ultimoRelevamiento && (
+        <DialogoConfirmar
+          titulo="¿Eliminar esta inspección?"
+          enviando={borrando.enviando}
+          error={borrando.error}
+          onConfirmar={eliminarInspeccion}
+          onCerrar={() => setBorrando(null)}
+        >
+          Se borra la inspección del <b>{currentBuilding.lastRelevamientoDate}</b> ({horaLocal(currentBuilding.ultimoRelevamiento.inicio)})
+          {currentBuilding.ultimoRelevamiento.planta ? `, ${currentBuilding.ultimoRelevamiento.planta}` : ''}, con
+          {currentBuilding.lastDetections > 0 ? ` sus ${currentBuilding.lastDetections} hallazgo${currentBuilding.lastDetections === 1 ? '' : 's'},` : ''} el
+          camino del robot y las revisiones. No se puede deshacer.
+        </DialogoConfirmar>
+      )}
       </div>
     </div>
   );

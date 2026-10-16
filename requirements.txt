@@ -1,0 +1,32 @@
+# Robot Control & Locomotion
+loco-mujoco>=1.0.0
+mujoco>=3.0.0
+dm-control>=1.0.0
+
+# Deep Learning & RL
+torch>=2.0.0
+torchvision>=0.15.0
+gymnasium>=0.29.0
+stable-baselines3>=2.0.0
+
+# Computer Vision (Structural Damage Detection)
+opencv-python>=4.8.0
+pillow>=10.0.0
+ultralytics>=8.0.0
+scikit-image>=0.21.0
+
+# Numerical Computing
+numpy>=1.24.0
+scipy>=1.11.0
+pandas>=2.0.0
+
+# API & Communication (Electron ↔ Python)
+fastapi>=0.100.0
+uvicorn>=0.23.0
+websockets>=11.0.0
+python-multipart>=0.0.6
+
+# Utilities
+pyyaml>=6.0.0
+tqdm>=4.65.0
+matplotlib>=3.7.0

@@ -10,35 +10,19 @@ interface BuildingListItemProps {
 
 /**
  * Single building row inside the PROYECTOS sidebar tree.
- * Shows building icon, name, and last-relevamiento summary.
+ * Shows only the building name.
  */
 export default function BuildingListItem({ building, isSelected, onClick }: BuildingListItemProps) {
   return (
     <button
       onClick={onClick}
-      className={[
-        'w-full flex items-center gap-3 pl-8 pr-4 py-2 transition-colors text-left border-l-2',
-        isSelected
-          ? 'bg-[#F3F1ED] border-[#11676A]'
-          : 'hover:bg-[#F8F7F5] border-transparent',
-      ].join(' ')}
+      aria-current={isSelected ? 'page' : undefined}
+      className={`w-full flex items-center gap-1.5 h-[32px] pl-[40px] pr-9 text-left ${
+        isSelected ? 'bg-[#D6E6F5] outline outline-1 -outline-offset-1 outline-[#377DC0]' : 'hover:bg-black/[0.045]'
+      }`}
     >
-      {/* Building icon */}
-      <div className="w-7 h-7 rounded-lg flex-none bg-[#F3F1ED] border border-[#E8E5DF] flex items-center justify-center">
-        <Building2 className={`w-3.5 h-3.5 ${isSelected ? 'text-[#11676A]' : 'text-[#8A8C8E]'}`} />
-      </div>
-
-      {/* Label + sublabel */}
-      <div className="min-w-0 flex-1">
-        <p className={`text-[12px] font-medium truncate leading-snug ${isSelected ? 'text-[#11676A]' : 'text-[#2D2F31]'}`}>
-          {building.name}
-        </p>
-        <p className="text-[10px] text-[#8A8C8E] truncate leading-none mt-0.5">
-          {building.relevamientos > 0
-            ? `${building.relevamientos} relev. · ${building.lastRelevamiento}`
-            : 'Sin relevamientos'}
-        </p>
-      </div>
+      <Building2 className="w-4 h-4 flex-none text-[#377DC0]" />
+      <span className="text-[14px] truncate min-w-0 flex-1 text-[#1A1C1E]">{building.name}</span>
     </button>
   );
 }

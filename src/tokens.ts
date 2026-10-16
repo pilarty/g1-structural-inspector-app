@@ -2,37 +2,31 @@
 // Single source of truth for colors, spacing, radii, shadows, and patterns.
 // Import from here instead of repeating raw values across components.
 
-// Brand — teal palette
+// Brand — storm-coast palette (navy / teal / ice / sand)
 export const brand = {
-  DEFAULT:      '#11676A',               // Primary action, header bg
-  dark:         '#0E5254',               // Hover on primary
-  deep:         '#0D5254',               // ActivityBar background
-  label:        '#0B5559',               // Small all-caps field labels
-  cardBg:       'rgba(17,103,106,0.07)', // TurquoiseCard surface
-  cardBorder:   'rgba(17,103,106,0.20)', // TurquoiseCard border (NewBuilding/Setup)
-  cardDivider:  'rgba(17,103,106,0.15)', // Inside card dividers
-  chipBg:       '#DCEFEF',               // Light teal chip background
-  chipText:     '#0B5559',               // Light teal chip text
-} as const;
-
-// Severity — damage classification
-export const severity = {
-  critical: { dot: '#EF4444', bg: 'rgba(239,68,68,0.09)',   label: 'Crítica' },
-  high:     { dot: '#F97316', bg: 'rgba(249,115,22,0.09)',  label: 'Alta'    },
-  medium:   { dot: '#FBBF24', bg: 'rgba(251,191,36,0.09)',  label: 'Media'   },
-  low:      { dot: '#10B981', bg: 'rgba(16,185,129,0.09)',  label: 'Baja'    },
+  DEFAULT:      '#377DC0',               // Primary action, header bg
+  dark:         '#2D69A6',               // Hover on primary
+  deep:         '#14202B',               // ActivityBar background (storm navy)
+  label:        '#14202B',               // Small all-caps field labels
+  cardBg:       'rgba(55,125,192,0.07)', // TurquoiseCard surface
+  cardBorder:   'rgba(55,125,192,0.20)', // TurquoiseCard border (NewBuilding/Setup)
+  cardDivider:  'rgba(55,125,192,0.15)', // Inside card dividers
+  chipBg:       '#E3EEF8',               // Ice-blue chip background
+  chipText:     '#14202B',               // Ice-blue chip text
+  accent:       '#AD8F6E',               // Sand accent — used sparingly
+  accentBg:     'rgba(173,143,110,0.16)',// Sand accent chip background
 } as const;
 
 // Status — robot connection states
 export const robotStatus = {
-  listo:        { dot: '#10B981', chip: 'bg-[#DCEFEF] text-[#0B5559]',     label: 'Listo'               },
+  listo:        { dot: '#10B981', chip: 'bg-[#E3EEF8] text-[#14202B]',     label: 'Listo'               },
   espera:       { dot: '#FBBF24', chip: 'bg-[#FFFBEB] text-[#92400E]',     label: 'Conectado en espera' },
   desconectado: { dot: '#EF4444', chip: 'bg-[#FEF2F2] text-[#991B1B]',     label: 'Desconectado'        },
 } as const;
 
 // Surface / backgrounds
 export const surface = {
-  app:       '#F3F1ED',                  // App-level background
+  app:       '#FFFFFF',                  // App-level background
   card:      '#FFFFFF',                  // White card
   input:     'rgba(255,255,255,0.60)',   // Input background
   inputHover:'rgba(255,255,255,0.80)',   // Input hover
@@ -75,8 +69,8 @@ export const shadows = {
   card:   '0 2px 16px rgba(0,0,0,0.07)',
   float:  '0 2px 12px rgba(0,0,0,0.08)',
   modal:  '0 8px 48px rgba(0,0,0,0.16)',
-  brand:  '0 2px 12px rgba(17,103,106,0.30)',
-  brandSm:'0 2px 10px rgba(17,103,106,0.25)',
+  brand:  '0 2px 12px rgba(55,125,192,0.30)',
+  brandSm:'0 2px 10px rgba(55,125,192,0.25)',
 } as const;
 
 // Grid background pattern (content area behind cards)
@@ -98,6 +92,10 @@ export const whitePlanBg = {
   ].join(', '),
   backgroundSize: '22px 22px',
 } as const;
+
+// Tarjeta blanca sobre fondo gris claro (pantalla Añadir robot)
+export const tarjetaBlanca =
+  'bg-white rounded-lg border border-[#14202B]/[0.07] shadow-[0_1px_2px_rgba(20,32,43,0.04),0_8px_24px_rgba(20,32,43,0.05)] overflow-hidden';
 
 // Nav bar height
 export const navHeight = '48px'; // h-12

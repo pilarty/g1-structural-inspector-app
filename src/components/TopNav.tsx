@@ -1,46 +1,40 @@
-import React from 'react';
-import { Building2, Bell, User, ChevronDown } from 'lucide-react';
+import React, { useState } from 'react';
+import { User } from 'lucide-react';
+import VentanaPerfil from './VentanaPerfil';
 
 interface TopNavProps {
-  /**
-   * Optional element rendered after the app title — e.g. a status badge or
-   * building name chip. Pass null/undefined to render the title alone.
-   */
+  /** Algo para mostrar arriba de la pantalla (por ejemplo, un aviso). Sin esto, no se dibuja nada. */
   badge?: React.ReactNode;
 }
 
 /**
- * App-wide top navigation bar. Fixed at h-12, teal background, shows
- * app title + optional badge on the left and notification + user avatar on the right.
+ * Antes era la barra de arriba (parada de emergencia y usuario). Ahora los dos están en la barra
+ * de la izquierda, así que solo aparece si una pantalla le pasa algo para mostrar.
  */
 export default function TopNav({ badge }: TopNavProps) {
+  if (!badge) return null;
   return (
-    <nav className="flex-none h-12 bg-[#11676A] flex items-center px-6 z-20">
-      {/* Left — title + optional badge */}
-      <div className="flex items-center gap-2.5 flex-1 min-w-0">
-        <Building2 className="w-4 h-4 text-white/80 flex-none" />
-        <span className="text-[14px] font-semibold text-white tracking-tight whitespace-nowrap">
-          Relevamiento Estructural
-        </span>
-        {badge}
-      </div>
-
-      {/* Right — notifications + user */}
-      <div className="flex items-center gap-1 flex-none">
-        <button
-          aria-label="Notificaciones"
-          className="p-2 text-white/55 hover:text-white hover:bg-white/10 rounded-md transition-colors"
-        >
-          <Bell className="w-4 h-4" />
-        </button>
-        <button className="ml-1 flex items-center gap-2 px-2.5 py-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-colors">
-          <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-            <User className="w-3.5 h-3.5 text-white" />
-          </div>
-          <span className="text-[12px] font-medium">M. García</span>
-          <ChevronDown className="w-3.5 h-3.5 opacity-55" />
-        </button>
-      </div>
+    <nav className="flex-none h-10 bg-[#14202B] flex items-center px-6 z-20 border-b border-white/5">
+      {badge}
     </nav>
+  );
+}
+
+/** Botón de perfil de la barra izquierda: abre la ventana de perfil y configuración. */
+export function MenuUsuario() {
+  const [abierto, setAbierto] = useState(false);
+  return (
+    <div className="relative w-full">
+      <button type="button" onClick={() => setAbierto(true)} aria-label="Perfil"
+        className={`group relative w-full flex items-center justify-center h-14 transition-colors ${abierto ? 'text-white' : 'text-white/35 hover:text-white/70'}`}>
+        <span className={`w-9 h-9 rounded-full flex items-center justify-center ${abierto ? 'bg-white/25' : 'bg-white/10 group-hover:bg-white/15'}`}>
+          <User size={20} />
+        </span>
+        <span className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 whitespace-nowrap bg-[#1A1C1E] text-white text-[13px] font-medium px-3 py-2 rounded-lg shadow-lg opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-150 z-40">
+          Perfil
+        </span>
+      </button>
+      {abierto && <VentanaPerfil onCerrar={() => setAbierto(false)} />}
+    </div>
   );
 }
