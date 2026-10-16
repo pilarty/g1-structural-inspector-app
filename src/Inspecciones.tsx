@@ -175,12 +175,12 @@ export default function Inspecciones({ activeTab, onTabChange, onVer }: Inspecci
                 <table className="w-full text-left">
                   <thead>
                     <tr className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#8A8C8E] border-b border-[#E5E7EB]">
-                      <Th className="hidden xl:table-cell">Código</Th>
+                      <Th className="hidden 2xl:table-cell">Código</Th>
                       <Th orden={orden} col="fecha" onOrdenar={ordenarPor}>Fecha</Th>
                       <Th orden={orden} col="edificio" onOrdenar={ordenarPor}>Edificación</Th>
-                      <Th className="hidden xl:table-cell">Motivo</Th>
-                      <Th>Robot</Th>
-                      <Th orden={orden} col="duracion" onOrdenar={ordenarPor}>Duración</Th>
+                      <Th className="hidden 2xl:table-cell">Motivo</Th>
+                      <Th className="hidden xl:table-cell">Robot</Th>
+                      <Th orden={orden} col="duracion" onOrdenar={ordenarPor} className="hidden xl:table-cell">Duración</Th>
                       <Th orden={orden} col="hallazgos" onOrdenar={ordenarPor}>Hallazgos</Th>
                       <Th>Estado</Th>
                       <Th />
@@ -190,7 +190,7 @@ export default function Inspecciones({ activeTab, onTabChange, onVer }: Inspecci
                     {filtradas.map(i => (
                       <tr key={i.id} onClick={() => onVer(i.edificioId, i.id)}
                         className="group cursor-pointer border-b border-[#EEEFF1] last:border-0 hover:bg-[#F7FAFD] transition-colors">
-                        <Td className="hidden xl:table-cell"><span className="font-mono text-[12px] text-[#66686A]">{codigo(i.id)}</span></Td>
+                        <Td className="hidden 2xl:table-cell"><span className="font-mono text-[12px] text-[#66686A]">{codigo(i.id)}</span></Td>
                         <Td>
                           <span className="block text-[13px] font-medium text-[#1A1C1E] tabular-nums">{fechaCorta(i.inicio)}</span>
                           <span className="block text-[12px] text-[#8A8C8E] tabular-nums">{hora(i.inicio)}</span>
@@ -199,16 +199,16 @@ export default function Inspecciones({ activeTab, onTabChange, onVer }: Inspecci
                           <span className="block text-[13px] font-semibold text-[#0F1A24] truncate">{i.edificio}</span>
                           <span className="block text-[12px] text-[#8A8C8E] truncate">{i.proyecto}{i.planta ? ` · ${i.planta}` : ''}</span>
                         </Td>
-                        <Td className="hidden xl:table-cell max-w-[220px]">
+                        <Td className="hidden 2xl:table-cell max-w-[220px]">
                           <span className="block text-[13px] text-[#1A1C1E] truncate">{etiquetaMotivo(i.motivo) ?? <span className="text-[#A0A2A4]">—</span>}</span>
                         </Td>
-                        <Td>
+                        <Td className="hidden xl:table-cell">
                           <span className="flex items-center gap-2 text-[13px] text-[#1A1C1E]">
                             <span className="w-6 h-6 rounded-[3px] bg-[#F1F3F5] flex items-center justify-center"><Bot className="w-3.5 h-3.5 text-[#66686A]" /></span>
                             {i.robot}
                           </span>
                         </Td>
-                        <Td><span className="text-[13px] text-[#66686A] tabular-nums">{duracionTexto({ inicio: i.inicio ?? null, fin: i.fin ?? null, estado: i.estado ?? '' })}</span></Td>
+                        <Td className="hidden xl:table-cell"><span className="text-[13px] text-[#66686A] tabular-nums">{duracionTexto({ inicio: i.inicio ?? null, fin: i.fin ?? null, estado: i.estado ?? '' })}</span></Td>
                         <Td><Hallazgos total={i.detections} /></Td>
                         <Td><Estado enCurso={i.estado === 'en_curso'} /></Td>
                         <Td className="w-12 pr-4">
@@ -283,7 +283,7 @@ function Th({ children, col, orden, onOrdenar, className = '' }: {
   if (!col || !onOrdenar) return <th className={`px-4 xl:px-5 py-3 font-semibold ${className}`}>{children}</th>;
   const activa = orden?.col === col;
   return (
-    <th className="px-4 xl:px-5 py-3 font-semibold">
+    <th className={`px-4 xl:px-5 py-3 font-semibold ${className}`}>
       <button type="button" onClick={() => onOrdenar(col)}
         className={`inline-flex items-center gap-1 uppercase tracking-[0.06em] hover:text-[#1A1C1E] ${activa ? 'text-[#1A1C1E]' : ''}`}>
         {children}
