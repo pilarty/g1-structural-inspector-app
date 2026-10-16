@@ -154,9 +154,22 @@ ipcMain.on('backend:ver-log', () => {
   shell.openPath(rutaLog())
 })
 
+// Pruebas automáticas (carpeta pruebas/): con G1_PRUEBAS_DIR los archivos se guardan ahí sin
+// abrir el diálogo de Windows, que Selenium no puede manejar. Sin esa variable, todo funciona igual.
+const DIR_PRUEBAS = process.env.G1_PRUEBAS_DIR || null
+const enPruebas = (nombre, extension) => {
+  fs.mkdirSync(DIR_PRUEBAS, { recursive: true })
+  return path.join(DIR_PRUEBAS, String(nombre || 'archivo').replace(/[\\/:*?"<>|]/g, '-') + extension)
+}
+
 // Archivo de inspección (.g1insp): guardar lo que arma la app y abrir uno para importarlo.
 ipcMain.handle('archivo:guardar', async (_e, nombre, contenido) => {
   if (!ventana) return null
+  if (DIR_PRUEBAS) {
+    const destino = enPruebas(nombre, '.g1insp')
+    fs.writeFileSync(destino, String(contenido), 'utf8')
+    return destino
+  }
   const { canceled, filePath } = await dialog.showSaveDialog(ventana, {
     title: 'Guardar inspección para compartir',
     defaultPath: path.join(app.getPath('documents'), String(nombre || 'inspeccion') + '.g1insp'),
@@ -169,6 +182,10 @@ ipcMain.handle('archivo:guardar', async (_e, nombre, contenido) => {
 })
 ipcMain.handle('archivo:abrir', async () => {
   if (!ventana) return null
+  if (DIR_PRUEBAS && process.env.G1_PRUEBAS_ARCHIVO) {
+    const origen = process.env.G1_PRUEBAS_ARCHIVO
+    return { nombre: path.basename(origen), contenido: fs.readFileSync(origen, 'utf8') }
+  }
   const { canceled, filePaths } = await dialog.showOpenDialog(ventana, {
     title: 'Importar inspección',
     filters: [{ name: 'Inspección G1', extensions: ['g1insp'] }],
@@ -182,6 +199,11 @@ ipcMain.handle('archivo:abrir', async () => {
 // se convierte a PDF, se pregunta dónde guardarlo y se abre.
 ipcMain.handle('informe:pdf', async (_e, nombre) => {
   if (!ventana) return null
+  if (DIR_PRUEBAS) {
+    const destino = enPruebas(nombre, '.pdf')
+    fs.writeFileSync(destino, await ventana.webContents.printToPDF({ pageSize: 'A4', printBackground: true, margins: { marginType: 'default' } }))
+    return destino
+  }
   const { canceled, filePath } = await dialog.showSaveDialog(ventana, {
     title: 'Guardar informe',
     defaultPath: path.join(app.getPath('documents'), String(nombre || 'informe') + '.pdf'),

@@ -279,7 +279,7 @@ export default function NewRobot({ activeTab, onTabChange }: NewRobotProps) {
               </p>
             </div>
 
-            <div className="grid grid-cols-[260px_minmax(0,1fr)] items-start gap-6">
+            <div className="grid grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)] items-start gap-5 xl:gap-6">
 
               {/* Izquierda — robots guardados (siempre visible) */}
               <div className="sticky top-0">
@@ -323,7 +323,7 @@ export default function NewRobot({ activeTab, onTabChange }: NewRobotProps) {
                 )}
 
                 {modo === 'formulario' && (
-                  <div className="grid grid-cols-[minmax(0,1fr)_340px] items-start gap-6">
+                  <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] items-start gap-6">
                     <RobotConnectionSection
                       key={editandoId ?? 'nuevo'}
                       form={form}
