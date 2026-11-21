@@ -1,4 +1,3 @@
-import React from 'react';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav, PrimaryButton } from './components';
 import { Play } from 'lucide-react';
@@ -24,11 +23,9 @@ export default function BuildingEmpty({ activeTab, onTabChange, onStartInspectio
 
         <TopNav />
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto" style={GRID_BG}>
           <div className="p-6 max-w-[900px] space-y-4">
 
-            {/* Hero card — identical to BuildingDetail */}
             <div className="rounded-2xl overflow-hidden shadow-[0_2px_16px_rgba(0,0,0,0.08)]">
               <div className="bg-[#377DC0] px-8 py-8 flex items-start justify-between gap-8">
                 <div>
@@ -62,7 +59,6 @@ export default function BuildingEmpty({ activeTab, onTabChange, onStartInspectio
               </div>
             </div>
 
-            {/* Empty state block */}
             <div className="bg-white rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.07)] flex flex-col items-center justify-center py-16 px-8 text-center">
 
 

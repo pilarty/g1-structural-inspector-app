@@ -1,6 +1,6 @@
 import { BACKEND_URL } from './sesion';
 
-// ─── Ficha de un edificio o casa ─────────────────────────────────────────────
+// Ficha de un edificio o casa
 // Campos según: Ley 17.801 (Registro de la Propiedad), Ley 26.209 (Catastro),
 // Ley 257 CABA, Disposición 392/2006 DGFOC y la ficha de relevamiento edilicio.
 
@@ -97,7 +97,7 @@ export function edificioVacio(proyectoId = ''): EdificioForm {
   };
 }
 
-// ─── Validaciones ─────────────────────────────────────────────────────────────
+// Validaciones
 
 const ANIO_ACTUAL = new Date().getFullYear();
 const RE_CP = /^([A-Za-z]\d{4}[A-Za-z]{3}|\d{4})$/;
@@ -194,7 +194,7 @@ export const SECCIONES: { id: string; titulo: string; campos: CampoEdificio[]; o
   { id: 'documentos', titulo: 'Documentación', campos: [] },
 ];
 
-// ─── Ubicación (Georef) ───────────────────────────────────────────────────────
+// Ubicación (Georef)
 
 export interface Ubicacion { lat: number; lon: number; direccionNormalizada: string | null }
 
@@ -206,7 +206,7 @@ export async function ubicarDireccion(f: EdificioForm, signal?: AbortSignal): Pr
   return d.encontrado ? { lat: d.lat, lon: d.lon, direccionNormalizada: d.direccion_normalizada } : { motivo: d.motivo };
 }
 
-// ─── Guardado ─────────────────────────────────────────────────────────────────
+// Guardado
 
 const texto = (t: string) => t.trim() || null;
 
@@ -258,7 +258,7 @@ export async function crearEdificacion(cuerpo: ReturnType<typeof aEdificacionApi
   return { id: String(d.id) };
 }
 
-// ─── Documentos ───────────────────────────────────────────────────────────────
+// Documentos
 
 export interface ArchivoAdjunto {
   id: string;
@@ -297,7 +297,7 @@ export function subirDocumento(edificioId: string, a: ArchivoAdjunto, alAvanzar:
 export const formatoTamano = (bytes: number) =>
   bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
-// ─── Lectura y edición de un edificio guardado ───────────────────────────────
+// Lectura y edición de un edificio guardado
 
 /** Fila de `edificacion` tal como la devuelve la nube. */
 export interface EdificacionApi {

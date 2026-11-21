@@ -112,7 +112,7 @@ export default function VentanaPerfil({ onCerrar }: { onCerrar: () => void }) {
   );
 }
 
-// ── Perfil: nombre, apellido y correo ──
+// Perfil: nombre, apellido y correo
 function SeccionPerfil({ perfil, nombreMostrado, onCambio }: {
   perfil: Perfil | null; nombreMostrado: string; onCambio: (p: Perfil) => void;
 }) {
@@ -225,7 +225,7 @@ function SeccionPerfil({ perfil, nombreMostrado, onCambio }: {
   );
 }
 
-// ── Seguridad: la contraseña se cambia con un código que llega por correo ──
+// Seguridad: la contraseña se cambia con un código que llega por correo
 function SeccionSeguridad({ email, onCambiarAhora }: { email: string | null; onCambiarAhora: (destino: string) => void }) {
   const [enviando, setEnviando] = useState(false);
   const [destino, setDestino] = useState<string | null>(null);
@@ -273,7 +273,7 @@ function SeccionSeguridad({ email, onCambiarAhora }: { email: string | null; onC
   );
 }
 
-// ── Cuenta: cerrar sesión y eliminar la cuenta ──
+// Cuenta: cerrar sesión y eliminar la cuenta
 function SeccionCuenta({ nombre, email, onCerrarSesion, onEliminada }: {
   nombre: string; email: string | null; onCerrarSesion: () => void; onEliminada: () => void;
 }) {
@@ -350,7 +350,7 @@ function SeccionCuenta({ nombre, email, onCerrarSesion, onEliminada }: {
   );
 }
 
-// ── Piezas compartidas ──
+// Piezas compartidas
 
 /** Tarjeta blanca con título, como los bloques de las otras pantallas. */
 function Tarjeta({ titulo, children }: { titulo: string; children: React.ReactNode }) {

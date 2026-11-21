@@ -283,7 +283,7 @@ export default function MapaHallazgos({
   else if (hallazgos.length === 0 && recorrido.length === 0 && !paredes)
     mensaje = enCurso ? 'Esperando la posición del robot…' : 'Este relevamiento no registró hallazgos.';
 
-  // ── Zoom y desplazamiento (rueda del mouse y arrastrar) ──
+  // Zoom y desplazamiento (rueda del mouse y arrastrar)
   const k = zoom.k;
   const cx = vista ? (vista.area.x1 + vista.area.x2) / 2 : 0;
   const cy = vista ? (vista.area.y1 + vista.area.y2) / 2 : 0;
@@ -317,7 +317,7 @@ export default function MapaHallazgos({
     return () => svg.removeEventListener('wheel', rueda);
   });
 
-  // ── Datos del recorrido ──
+  // Datos del recorrido
   let distancia = 0;
   for (let i = 1; i < recorrido.length; i++) {
     distancia += Math.hypot(recorrido[i].x - recorrido[i - 1].x, recorrido[i].y - recorrido[i - 1].y);
@@ -343,7 +343,7 @@ export default function MapaHallazgos({
   );
   const lista = [...hallazgos].sort((a, b) => (numero.get(a.id) ?? 0) - (numero.get(b.id) ?? 0));
 
-  // ── Informe PDF: se arma oculto, se espera a que carguen las fotos y se guarda ──
+  // Informe PDF: se arma oculto, se espera a que carguen las fotos y se guarda
   async function exportarInforme() {
     if (!informe) return;
     setExportando(true);

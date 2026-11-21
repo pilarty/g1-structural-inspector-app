@@ -1,7 +1,7 @@
 // Acciones de navegación que se disparan desde componentes que aparecen en varias
 // pantallas (como la barra de proyectos). App registra qué hacer en cada una.
 
-// ─── Cambios sin guardar ─────────────────────────────────────────────────────
+// Cambios sin guardar
 
 let haySinGuardar: (() => boolean) | null = null;
 

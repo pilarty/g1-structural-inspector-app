@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { duracion, etiquetaEstado, fechaLarga, horaLocal } from './formato';
 import { useRobots } from './robots';
 import { DESTINOS, TIPOS_PROPIEDAD, etiquetaDe, obtenerEdificacion, type EdificacionApi } from './edificioForm';
@@ -14,7 +14,7 @@ import DialogoConfirmar from './components/DialogoConfirmar';
 import { BACKEND_URL } from './sesion';
 import { ordenPlanta, plantasDe } from './plantas';
 
-// Default to first building that has relevamientos
+// Si no hay una elegida, se muestra la primera edificación con inspecciones
 // El edificio por defecto ahora sale de los datos de AWS (useProyectos).
 
 type TabId = 'datos' | 'robot' | 'edificio';
@@ -77,7 +77,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, selectedBu
     return () => { vivo = false; };
   }, [currentBuildingId]);
 
-  // ── Plantas e inspecciones de esta edificación ──
+  // Plantas e inspecciones de esta edificación
   const SIN_PLANTA = 'Sin planta indicada';
   const plantaDe = (p?: string) => p || SIN_PLANTA;
   const inspecciones = edificio.historial.filter(h => h.id !== undefined);
@@ -92,7 +92,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, selectedBu
   const deLaPlanta = variasPlantas ? inspecciones.filter(h => plantaDe(h.planta) === plantaActual) : inspecciones;
   const elegir = (id: number) => onElegirInspeccion?.(id === edificio.ultimoRelevamiento?.id ? null : id);
 
-  // ── Eliminar la inspección que se está viendo ──
+  // Eliminar la inspección que se está viendo
   async function eliminarInspeccion() {
     const rid = currentBuilding.ultimoRelevamiento?.id;
     if (!rid) return;
@@ -122,7 +122,6 @@ export default function InspectionRecorrido({ activeTab, onTabChange, selectedBu
     <div className="flex h-screen font-sans text-[#1A1C1E]">
       <ActivityBar active={activeTab === 'recorrido' ? 'dashboard' : activeTab} onChange={onTabChange} />
 
-      {/* ── Main content ── */}
       <div className="flex flex-col flex-1 overflow-hidden">
         <TopNav />
 
@@ -238,7 +237,7 @@ export default function InspectionRecorrido({ activeTab, onTabChange, selectedBu
               }}
             />
           ) : (
-            /* No relevamientos empty state */
+            /* Sin inspecciones */
             <div className="flex flex-col items-center justify-center h-full text-center px-8">
               <Map className="w-8 h-8 text-[#C4C7CA] mb-4" />
               <h3 className="text-[16px] font-semibold text-[#1A1C1E] mb-2">Todavía no hay inspecciones</h3>
@@ -256,7 +255,6 @@ export default function InspectionRecorrido({ activeTab, onTabChange, selectedBu
 
         </div>
 
-        {/* Bottom info panel */}
         {/* Datos de abajo: tarjeta flotante, igual que el panel de hallazgos */}
         <div className="flex-none px-3 pb-3">
         <div className="rounded-lg bg-white/90 backdrop-blur-sm border border-[#E5E7EB] shadow-[0_4px_16px_rgba(20,32,43,0.10)]">
@@ -291,7 +289,6 @@ export default function InspectionRecorrido({ activeTab, onTabChange, selectedBu
             )}
           </div>
 
-          {/* Tab content */}
           <div className="px-5 pt-3.5 pb-4 h-[86px] overflow-hidden [&_p]:whitespace-nowrap">
             {infoTab === 'datos' && (() => {
               const u = currentBuilding.ultimoRelevamiento;

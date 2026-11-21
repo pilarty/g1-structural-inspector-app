@@ -1,8 +1,6 @@
 import React from 'react';
 
-// ─── Panel typography ───────────────────────────────────────────────────────
-// One consistent style each for title / field label / body text, used inside
-// TurquoiseCard sections across every screen (originated in Relevamiento).
+// Título, etiqueta y texto de las tarjetas de los paneles
 
 export function PanelTitle({ children }: { children: React.ReactNode }) {
   return <span className="text-[14px] font-bold text-[#1A1C1E]">{children}</span>;

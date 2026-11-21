@@ -1,9 +1,7 @@
-import React from 'react';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav, ProjectsSidebar, PrimaryButton, SecondaryButton } from './components';
 import { Plus, FolderPlus } from 'lucide-react';
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
 
 interface HomeProps {
   onNavigateToFloorPlan: (buildingId: string) => void;
@@ -13,7 +11,7 @@ interface HomeProps {
   onSelectBuilding?: (id: string) => void;
 }
 
-export default function Home({ onNavigateToFloorPlan, activeTab, onTabChange, selectedBuildingId, onSelectBuilding }: HomeProps) {
+export default function Home({ onNavigateToFloorPlan, activeTab, onTabChange, onSelectBuilding }: HomeProps) {
   return (
     <div className="flex h-screen bg-[#FFFFFF] font-sans text-[#1A1C1E]">
       <ActivityBar active={activeTab} onChange={tab => { onTabChange(tab); if (tab === 'relevamiento') onNavigateToFloorPlan(''); }} />
@@ -27,7 +25,6 @@ export default function Home({ onNavigateToFloorPlan, activeTab, onTabChange, se
             onSelectBuilding={id => onSelectBuilding?.(id)}
           />
 
-          {/* Main content */}
           <main className="flex-1 flex items-center justify-center bg-[#FFFFFF]">
             <div className="flex flex-col items-center text-center max-w-[440px]">
               <p className="text-[24px] font-bold text-[#1A1C1E] mb-2.5 tracking-tight">

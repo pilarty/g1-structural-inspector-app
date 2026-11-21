@@ -5,7 +5,7 @@ import { tarjetaBlanca } from './tokens';
 import { MODELO_SIMULADOR, type EstadoPaso, type IdPaso, type Paso, type ResultadoPrueba } from './robotConexion';
 import type { RobotNube } from './robots';
 
-// ─── Pasos de la prueba ───────────────────────────────────────────────────────
+// Pasos de la prueba
 
 export const PASOS_BASE: Paso[] = ([
   ['red', 'Red', 3], ['ssh', 'SSH', 6], ['dds', 'DDS', 5], ['camara', 'Cámara', 8],
@@ -86,7 +86,7 @@ export function ListaPasos({ pasos }: { pasos: Paso[] }) {
 const fechaCorta = (iso: string) =>
   new Date(iso).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
-// ─── Panel "Probar conexión" ──────────────────────────────────────────────────
+// Panel "Probar conexión"
 
 export function PanelPrueba({ secundario = false, prueba, probando, puedeProbar, motivoNoProbar, onProbar }: {
   /** Botón en estilo secundario (cuando en la pantalla ya hay otro botón principal) */
@@ -132,7 +132,7 @@ export function PanelPrueba({ secundario = false, prueba, probando, puedeProbar,
   );
 }
 
-// ─── Robots guardados ─────────────────────────────────────────────────────────
+// Robots guardados
 
 export function RobotsGuardados({ robots, cargando, error, seleccionado, creando, onSeleccionar, onNuevo }: {
   robots: RobotNube[];
@@ -215,7 +215,7 @@ export function RobotsGuardados({ robots, cargando, error, seleccionado, creando
   );
 }
 
-// ─── Vista de un robot guardado ───────────────────────────────────────────────
+// Vista de un robot guardado
 
 /** Cabecera del robot elegido: nombre, modelo, última prueba y acciones. */
 export function CabeceraRobot({ robot, conectando, onConectar, onEditar, onEliminar, children }: {
@@ -388,7 +388,7 @@ export function SinRobots({ cargando, onNuevo }: { cargando: boolean; onNuevo: (
   );
 }
 
-// ─── Eliminar robot ───────────────────────────────────────────────────────────
+// Eliminar robot
 
 export function DialogoEliminar({ robot, enviando, error, onConfirmar, onCerrar }: {
   robot: RobotNube;
@@ -427,7 +427,7 @@ export function DialogoEliminar({ robot, enviando, error, onConfirmar, onCerrar 
   );
 }
 
-// ─── Reconexión ───────────────────────────────────────────────────────────────
+// Reconexión
 
 export function DialogoReconexion({ robot, prueba, conectando, autorizado, onEditar, onAutorizar, onCerrar }: {
   robot: RobotNube;

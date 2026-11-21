@@ -21,7 +21,6 @@ interface FichaEdificioProps {
   /** Abrir una inspección (relevamiento) de este edificio en el plano */
   onVerInspeccion: (relevamientoId: number) => void;
   /** Barra lateral: botón «+ Nuevo» */
-  onNuevoEdificio: () => void;
 }
 
 const ICONO_TIPO: Record<string, React.ReactNode> = {
@@ -34,7 +33,7 @@ const pesos = (v: number | string | null) =>
   v === null || v === undefined || v === '' ? null : Number(v).toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 2 });
 const fecha = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' }) : null);
 
-export default function FichaEdificio({ activeTab, onTabChange, edificioId, onVolver, onEditar, onAbrirEdificio, onNuevoEdificio, onVerInspeccion }: FichaEdificioProps) {
+export default function FichaEdificio({ activeTab, onTabChange, edificioId, onVolver, onEditar, onAbrirEdificio, onVerInspeccion }: FichaEdificioProps) {
   const { proyectos, recargar } = useProyectos();
   const inspecciones = proyectos.flatMap(x => x.buildings).find(b => b.id === edificioId)?.historial ?? [];
   const [borrando, setBorrando] = useState<{ enviando: boolean; error: string | null; inspecciones: number } | null>(null);

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Building2 } from 'lucide-react';
 import type { Building } from '../data';
 
@@ -8,10 +7,7 @@ interface BuildingListItemProps {
   onClick: () => void;
 }
 
-/**
- * Single building row inside the PROYECTOS sidebar tree.
- * Shows only the building name.
- */
+/** Fila de una edificación dentro de la lista de proyectos. */
 export default function BuildingListItem({ building, isSelected, onClick }: BuildingListItemProps) {
   return (
     <button

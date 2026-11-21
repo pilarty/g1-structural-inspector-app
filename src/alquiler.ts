@@ -114,7 +114,7 @@ export function abrirPago(url: string) {
   else window.open(url, '_blank', 'noopener');
 }
 
-// ─── Cálculos para mostrar (el servidor vuelve a calcular todo y es quien manda) ───
+// Cálculos para mostrar (el servidor vuelve a calcular todo y es quien manda)
 
 export const precioUsd = (m: Modalidad, cantidad: number, p: Precios) =>
   (m === 'semanal' ? p.semanal_usd : p.mensual_usd) * cantidad;

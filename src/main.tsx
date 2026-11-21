@@ -7,8 +7,7 @@ import { SesionProvider } from './sesion'
 import { ProyectosProvider } from './proyectos'
 import './index.css'
 
-// Single source of truth for icon styling app-wide: thin, technical line
-// weight (Linear/Vercel/Datadog-style), no per-icon overrides needed.
+// Todos los íconos con trazo fino
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <LucideProvider strokeWidth={1.5}>

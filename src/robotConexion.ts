@@ -1,6 +1,6 @@
 import { BACKEND_URL } from './sesion';
 
-// ─── Perfil de conexión de un Unitree G1 ─────────────────────────────────────
+// Perfil de conexión de un Unitree G1
 // Un G1 de fábrica ofrece dos canales: SSH a su computadora de desarrollo
 // (192.168.123.164) y DDS del SDK de Unitree (rt/lowstate, Domain ID 0).
 // Solo funciona por cable: el estado del robot (DDS) no sale por WiFi.
@@ -64,7 +64,7 @@ export function formularioDesdePerfil(codigo: string, c: ConexionGuardada): Robo
   };
 }
 
-// ─── Validaciones ─────────────────────────────────────────────────────────────
+// Validaciones
 
 export type CampoForm = keyof RobotForm;
 export type Errores = Partial<Record<CampoForm, string>>;
@@ -134,7 +134,7 @@ export function avisos(f: RobotForm): Avisos {
   return a;
 }
 
-// ─── Conversión para el backend y la nube ─────────────────────────────────────
+// Conversión para el backend y la nube
 
 export function aConexionGuardada(f: RobotForm): ConexionGuardada {
   return {
@@ -154,7 +154,7 @@ function cuerpoPrueba(f: RobotForm, robotId?: string) {
   };
 }
 
-// ─── Prueba de conexión ───────────────────────────────────────────────────────
+// Prueba de conexión
 
 export type IdPaso = 'red' | 'ssh' | 'dds' | 'camara';
 export type EstadoPaso = 'espera' | 'en_curso' | 'ok' | 'error' | 'omitido' | 'pendiente';
@@ -236,7 +236,7 @@ export function reconectar(robotId: string, alCambiar: (r: ResultadoPrueba) => v
   return correrPrueba(`${BACKEND_URL}/robot/reconectar/${robotId}`, { method: 'POST', signal }, 'rapida', alCambiar);
 }
 
-// ─── Interfaces, estado y seguridad ──────────────────────────────────────────
+// Interfaces, estado y seguridad
 
 export interface InterfazRed {
   nombre: string;

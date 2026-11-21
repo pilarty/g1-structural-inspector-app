@@ -5,7 +5,7 @@ interface TurquoiseCardProps {
   className?: string;
   /** 'overlay' — flat, square corners, no blur (map overlay panels, Relevamiento) | 'md' — rounded-xl | 'lg' — rounded-2xl (form/setup cards) */
   size?: 'overlay' | 'md' | 'lg';
-  /** Add 1px teal border (used on form-style cards in NewBuilding, Setup) */
+  /** Con borde (tarjetas de formulario) */
   bordered?: boolean;
 }
 

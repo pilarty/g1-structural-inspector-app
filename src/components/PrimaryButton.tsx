@@ -4,11 +4,11 @@ interface PrimaryButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
   disabled?: boolean;
-  /** Icon rendered to the left of the label */
+  /** Ícono a la izquierda del texto */
   icon?: React.ReactNode;
-  /** Icon rendered to the right of the label */
+  /** Ícono a la derecha del texto */
   iconRight?: React.ReactNode;
-  /** 'default' — inline px-6 py-2.5 | 'large' — px-7 py-3 | 'full' — w-full py-3.5 */
+  /** Tamaño: normal, grande o de todo el ancho */
   variant?: 'default' | 'large' | 'full';
   /** Ya no se usa (los botones no llevan sombra) */
   shadow?: boolean;

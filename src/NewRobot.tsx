@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRobots, guardarRobot, eliminarRobot, type RobotNube } from './robots';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav, PrimaryButton, SecondaryButton } from './components';
@@ -71,7 +71,7 @@ export default function NewRobot({ activeTab, onTabChange }: NewRobotProps) {
   }, [errores, tocados, intentoGuardar, erroresServidor]);
   const pruebaVigente = prueba && clavePrueba === claveConexion(form) ? prueba : null;
 
-  // ── Interfaces de red: se detectan al abrir y cuando cambia el host ──
+  // Interfaces de red: se detectan al abrir y cuando cambia el host
   async function detectar(host = form.host) {
     setDetectando(true);
     try {
@@ -154,7 +154,7 @@ export default function NewRobot({ activeTab, onTabChange }: NewRobotProps) {
     if (modo === 'ver' && robots.length && !robots.some(r => r.id === editandoId)) seleccionar(robots[0]);
   }, [robots, modo]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Prueba de conexión ──
+  // Prueba de conexión
   async function probar() {
     abortar.current?.abort();
     const ctrl = new AbortController();
@@ -171,7 +171,7 @@ export default function NewRobot({ activeTab, onTabChange }: NewRobotProps) {
     }
   }
 
-  // ── Guardar (no abre ninguna conexión con el robot) ──
+  // Guardar (no abre ninguna conexión con el robot)
   async function guardar() {
     setIntentoGuardar(true);
     setMensajeGuardar(null);
@@ -204,7 +204,7 @@ export default function NewRobot({ activeTab, onTabChange }: NewRobotProps) {
     }
   }
 
-  // ── Reconexión con un perfil guardado ──
+  // Reconexión con un perfil guardado
   async function conectar(robot: RobotNube) {
     abortar.current?.abort();
     const ctrl = new AbortController();
@@ -227,7 +227,7 @@ export default function NewRobot({ activeTab, onTabChange }: NewRobotProps) {
     }
   }
 
-  // ── Eliminar (pide confirmación; si el robot estaba conectado, la app lo olvida) ──
+  // Eliminar (pide confirmación; si el robot estaba conectado, la app lo olvida)
   async function confirmarEliminar() {
     if (!eliminando) return;
     const { robot } = eliminando;

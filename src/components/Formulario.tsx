@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChevronDown, Plus } from 'lucide-react';
 
-// ─── Piezas de formulario con el estilo de la pantalla Robot ─────────────────
+// Piezas de formulario con el estilo de la pantalla Robot
 
 /** Tarjeta de una sección: icono, título y una línea que explica para qué sirve. */
 export function Seccion({ id, icono, titulo, descripcion, children }: {
@@ -129,7 +129,7 @@ export function Segmentado<T extends string>({ valor, onCambio, opciones, error 
   );
 }
 
-// ─── Bloques dentro de la tarjeta ────────────────────────────────────────────
+// Bloques dentro de la tarjeta
 
 export function Cabecera({ numero, titulo, descripcion }: { numero?: number; titulo: string; descripcion?: string }) {
   return (
@@ -200,7 +200,7 @@ export function MasDatos({ id, titulo, abierta, onAlternar, cargados, children }
   );
 }
 
-// ─── Tarjeta única de formulario ──────────────────────────────────────────────
+// Tarjeta única de formulario
 
 /** La tarjeta blanca que contiene todas las secciones; `pie` va fijo abajo (botones). */
 export function TarjetaFormulario({ children, pie }: { children: React.ReactNode; pie: React.ReactNode }) {

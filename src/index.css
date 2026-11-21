@@ -75,7 +75,7 @@
   .route-end-pulse { animation: none; }
 }
 
-/* ── Informe de inspección (se arma oculto y solo se ve al imprimir / guardar PDF) ── */
+/* Informe de inspección (se arma oculto y solo se ve al imprimir o guardar el PDF) */
 #informe-impresion { display: none; }
 @media print {
   @page { size: A4; margin: 14mm 12mm; }

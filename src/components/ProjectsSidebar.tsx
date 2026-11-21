@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Search, ChevronDown, ChevronRight, ChevronsLeft, Plus, FolderPlus, Folder, FolderOpen, MoreHorizontal, Trash2, Pencil, FileUp, Share2 } from 'lucide-react';
 import { useProyectos } from '../proyectos';
 import BuildingListItem from './BuildingListItem';
-import type { NavTab } from '../ActivityBar';
 import { editarElemento, eliminado, nuevoEdificioEn, nuevoProyecto, verProyecto } from '../navegacion';
 import { eliminarEdificacion } from '../edificioForm';
 import { eliminarProyecto } from '../proyectoForm';
@@ -11,9 +10,8 @@ import DialogoImportar from './DialogoImportar';
 import { exportarEdificacion } from '../archivoInspeccion';
 
 interface ProjectsSidebarProps {
-  /** Currently highlighted building (drives the left-border active state) */
+  /** Edificación seleccionada */
   selectedBuildingId: string | null;
-  /** Called when user clicks a building row */
   onSelectBuilding: (id: string) => void;
   /**
    * Lo que se está creando en ese momento (se muestra resaltado en la lista):
@@ -35,11 +33,7 @@ function FilaBorrador({ texto, sangria }: { texto: string; sangria: boolean }) {
   );
 }
 
-/**
- * Collapsible left-panel project/building tree.
- * Manages its own collapsed/expanded state internally.
- * Renders building initials chips in collapsed mode.
- */
+/** Lista de proyectos y edificaciones de la izquierda; se puede plegar. */
 export default function ProjectsSidebar({
   selectedBuildingId,
   onSelectBuilding,
@@ -94,7 +88,7 @@ export default function ProjectsSidebar({
     }))
     .filter(p => !query || p.buildings.length > 0);
 
-  // ── Collapsed state ───────────────────────────────────────────────────────
+  // Plegada
   if (collapsed) {
     return (
       <aside className="flex-none w-[36px] flex flex-col bg-[#F8F9FA] border-r border-[#E5E7EB] items-center py-1.5">
@@ -109,7 +103,7 @@ export default function ProjectsSidebar({
     );
   }
 
-  // ── Expanded state ────────────────────────────────────────────────────────
+  // Desplegada
   return (
     <aside className="flex-none w-[240px] xl:w-[280px] flex flex-col bg-[#F8F9FA] border-r border-[#E5E7EB] overflow-hidden">
       {/* Encabezado: título, acciones y buscador */}
@@ -168,7 +162,6 @@ export default function ProjectsSidebar({
           const isOpen = conBorrador || !expandedProjects.has(project.id);
           return (
             <div key={project.id}>
-              {/* Project header */}
               <div className={`group relative flex items-center h-[32px] ${
                 proyectoSeleccionado === project.id ? 'bg-[#D6E6F5]' : 'hover:bg-black/[0.045]'
               }`}>

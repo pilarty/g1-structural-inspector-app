@@ -104,7 +104,6 @@ export default function App() {
         onEditar={() => setActiveTab('editar-edificio')}
         onVerInspeccion={rid => { setRelevamientoElegido(rid); setActiveTab('recorrido'); }}
         onAbrirEdificio={id => { setRelevamientoElegido(null); setSelectedBuildingId(id); setActiveTab('recorrido'); }}
-        onNuevoEdificio={() => { setProyectoParaEdificio(null); setActiveTab('nuevo-edificio'); }}
       />
     );
   }
@@ -119,7 +118,6 @@ export default function App() {
         onCancel={() => setActiveTab('ficha-edificio')}
         onCreado={() => setActiveTab('ficha-edificio')}
         onAbrirEdificio={id => { setRelevamientoElegido(null); setSelectedBuildingId(id); setActiveTab('recorrido'); }}
-        onNuevoEdificio={() => { setProyectoParaEdificio(null); setActiveTab('nuevo-edificio'); }}
       />
     );
   }
@@ -177,7 +175,6 @@ export default function App() {
           setVolverAInspeccion(false);
         }}
         onAbrirEdificio={id => { setRelevamientoElegido(null); setSelectedBuildingId(id); setActiveTab('recorrido'); }}
-        onNuevoEdificio={() => { setProyectoParaEdificio(null); setActiveTab('nuevo-edificio'); }}
       />
     );
   }

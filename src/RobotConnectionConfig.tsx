@@ -7,7 +7,7 @@ import {
   type Avisos, type CampoForm, type Errores, type InterfazRed, type RobotForm,
 } from './robotConexion';
 
-// ─── Configuración de conexión — Unitree G1 ──────────────────────────────────
+// Configuración de conexión — Unitree G1
 
 /** Bloque del formulario: título y una línea que explica para qué sirve. */
 function Seccion({ titulo, descripcion, children }: {

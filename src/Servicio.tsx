@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CreditCard, ShieldCheck, Clock, AlertCircle } from 'lucide-react';
 import ActivityBar, { NavTab } from './ActivityBar';
 import { TopNav, PrimaryButton } from './components';

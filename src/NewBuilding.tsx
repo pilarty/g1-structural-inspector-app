@@ -29,7 +29,6 @@ interface NewBuildingProps {
   /** Barra lateral: abrir un edificio de la lista */
   onAbrirEdificio: (id: string) => void;
   /** Barra lateral: botón «+ Nuevo» */
-  onNuevoEdificio: () => void;
 }
 
 const ICONOS_TIPO: Record<string, React.ReactNode> = {
@@ -48,7 +47,7 @@ type EstadoUbicacion =
 const EXTRA_UBICACION: CampoEdificio[] = ['codigoPostal'];
 const EXTRA_INMUEBLE: CampoEdificio[] = ['subsuelos', 'superficieCubierta', 'superficieTerreno', 'modificaciones'];
 
-export default function NewBuilding({ activeTab, onTabChange, onCancel, proyectoInicial, onCreado, edificioId, onAbrirEdificio, onNuevoEdificio }: NewBuildingProps) {
+export default function NewBuilding({ activeTab, onTabChange, onCancel, proyectoInicial, onCreado, edificioId, onAbrirEdificio }: NewBuildingProps) {
   const editando = !!edificioId;
   const { proyectos, recargar } = useProyectos();
   const [f, setF] = useState<EdificioForm>(() => edificioVacio(proyectoInicial ?? ''));
@@ -143,7 +142,7 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
       return n;
     });
 
-  // ── Coordenadas: se buscan solas cuando la dirección está completa ──
+  // Coordenadas: se buscan solas cuando la dirección está completa
   useEffect(() => {
     if (cargando) return;
     if (!/\d/.test(f.calleNumero) || !f.localidad.trim() || !f.provincia) {
@@ -166,7 +165,7 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
     }
   }
 
-  // ── Documentos ──
+  // Documentos
   function agregarArchivos(tipo: TipoDocumento, lista: FileList | File[]) {
     const nuevos: ArchivoAdjunto[] = [];
     const problemas: string[] = [];
@@ -206,7 +205,7 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
     }
   }
 
-  // ── Estado de cada paso (para la barra de progreso) ──
+  // Estado de cada paso (para la barra de progreso)
   const tieneDatos = (id: string, campos: CampoEdificio[]) =>
     id === 'documentos' ? archivos.some(a => a.tipo !== DOCUMENTO_PLANO_PH) || docsGuardados.some(d => d.tipo_archivo !== DOCUMENTO_PLANO_PH)
       : campos.some(c => String(f[c]).trim() !== '') || (id === 'ph' && archivos.some(a => a.tipo === DOCUMENTO_PLANO_PH));
@@ -224,7 +223,7 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
     setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   }
 
-  // ── Guardar ──
+  // Guardar
   async function guardar() {
     setIntento(true);
     setErrorGuardar(null);
@@ -521,7 +520,7 @@ export default function NewBuilding({ activeTab, onTabChange, onCancel, proyecto
   );
 }
 
-// ─── Barra de progreso con circulitos ────────────────────────────────────────
+// Barra de progreso con circulitos
 
 function Progreso({ pasos, onIr }: {
   pasos: { id: string; titulo: string; obligatoria?: boolean; listo: boolean; conError: boolean }[];
@@ -556,7 +555,7 @@ function Progreso({ pasos, onIr }: {
   );
 }
 
-// ─── Documentos que ya estaban guardados (al editar) ─────────────────────────
+// Documentos que ya estaban guardados (al editar)
 
 function DocumentosGuardados({ docs, onQuitar }: { docs: DocumentoGuardado[]; onQuitar: (d: DocumentoGuardado) => void }) {
   if (!docs.length) return null;
@@ -580,7 +579,7 @@ function DocumentosGuardados({ docs, onQuitar }: { docs: DocumentoGuardado[]; on
   );
 }
 
-// ─── Coordenadas ──────────────────────────────────────────────────────────────
+// Coordenadas
 
 function Coordenadas({ estado, onReintentar }: { estado: EstadoUbicacion; onReintentar: () => void }) {
   return (
@@ -603,7 +602,7 @@ function Coordenadas({ estado, onReintentar }: { estado: EstadoUbicacion; onRein
   );
 }
 
-// ─── Zona para adjuntar archivos de un tipo ──────────────────────────────────
+// Zona para adjuntar archivos de un tipo
 
 function ZonaDocumentos({ tipo, etiqueta, ayuda, archivos, onAgregar, onQuitar, bloqueado }: {
   tipo: TipoDocumento;

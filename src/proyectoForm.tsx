@@ -5,7 +5,7 @@ import { Campo, Entrada, Selector } from './components/Formulario';
 import { PanelTitle } from './components';
 import type { ResultadoEliminar } from './edificioForm';
 
-// ─── Proyecto: datos, validación y guardado ──────────────────────────────────
+// Proyecto: datos, validación y guardado
 
 export const FINALIDADES = [
   { valor: 'tecnica_periodica', etiqueta: 'Inspección técnica periódica' },
@@ -25,11 +25,6 @@ export const TIPOS_CLIENTE = [
 ];
 
 export type EstadoProyecto = 'activo' | 'pausa' | 'finalizado';
-export const ESTADOS_PROYECTO: { valor: EstadoProyecto; etiqueta: string }[] = [
-  { valor: 'activo', etiqueta: 'Activo' },
-  { valor: 'pausa', etiqueta: 'En pausa' },
-  { valor: 'finalizado', etiqueta: 'Finalizado' },
-];
 
 export interface ProyectoForm {
   // Proyecto
@@ -200,7 +195,7 @@ export async function eliminarProyecto(id: string, forzar = false): Promise<Resu
   }
 }
 
-// ─── Diálogo para crear un proyecto sin salir de otra pantalla ──────────────
+// Diálogo para crear un proyecto sin salir de otra pantalla
 
 /** Pide solo lo obligatorio; el resto queda con sus valores por defecto y se completa después. */
 export function DialogoNuevoProyecto({ nombresExistentes, onCreado, onCerrar }: {
