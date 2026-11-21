@@ -115,23 +115,6 @@ def test_f08_editar_ficha(app, backend, driver, escenario):
     assert app.hay_texto(nueva), "La ficha no muestra la dirección nueva"
 
 
-# ── Robot ──
-@pytest.mark.caso("F-09", "RF3, CU3", "Registrar un robot de prueba y ver la prueba de conexión")
-def test_f09_registrar_robot(app, backend, driver):
-    nombre = f"{P} Robot UI"
-    app.ir_a("Robot")
-    app.boton("Añadir otro robot").click()
-    app.escribir("Nombre", nombre)
-    app.opcion("Es un simulador")
-    app.clic("Guardar robot")
-    guardado = backend.esperar(lambda: any(r["codigo"] == nombre for r in backend.get("/nube/api/robots").json()), limite=20)
-    assert guardado, "El robot no se guardó"
-    app.esperar_xpath(f"//button[contains(normalize-space(.), {_xp(nombre)})]").click()
-    for paso in ("Red", "SSH", "DDS", "Cámara"):
-        assert app.hay_texto(paso), f"La prueba de conexión no muestra el paso {paso}"
-    assert app.hay_texto("Es un simulador: no hace falta probar la conexión.")
-
-
 # ── Iniciar inspección ──
 def _elegir_lugar(pagina, escenario, planta="Planta baja"):
     pagina.elegir("Proyecto", escenario["nombre_proyecto"])
@@ -139,8 +122,8 @@ def _elegir_lugar(pagina, escenario, planta="Planta baja"):
     pagina.elegir("Planta", planta)
 
 
-@pytest.mark.caso("F-10", "RF4, CU4", "Iniciar inspección sin robot elegido")
-def test_f10_sin_robot(app, driver, escenario):
+@pytest.mark.caso("F-09", "RF4, CU4", "Iniciar inspección sin robot elegido")
+def test_f09_sin_robot(app, driver, escenario):
     p = IniciarInspeccion(driver)
     p.abrir()
     _elegir_lugar(p, escenario)
@@ -150,8 +133,8 @@ def test_f10_sin_robot(app, driver, escenario):
     assert "Sin elegir" in p.paso("Robot")
 
 
-@pytest.mark.caso("F-11", "RF4, CU4", "Motivo «Otro» sin escribir el texto")
-def test_f11_motivo_otro_vacio(app, driver, escenario):
+@pytest.mark.caso("F-10", "RF4, CU4", "Motivo «Otro» sin escribir el texto")
+def test_f10_motivo_otro_vacio(app, driver, escenario):
     p = IniciarInspeccion(driver)
     p.abrir()
     _elegir_lugar(p, escenario)
@@ -163,8 +146,8 @@ def test_f11_motivo_otro_vacio(app, driver, escenario):
     assert p.habilitado(), "Con el motivo escrito debería dejar iniciar"
 
 
-@pytest.mark.caso("F-12", "RF4, RNF7, CU4", "Robot real sin conectar")
-def test_f12_robot_real_sin_conectar(app, backend, driver, escenario):
+@pytest.mark.caso("F-11", "RF4, RNF7, CU4", "Robot real sin conectar")
+def test_f11_robot_real_sin_conectar(app, backend, driver, escenario):
     nombre = f"{P} G1 real"
     if not any(r["codigo"] == nombre for r in backend.get("/nube/api/robots").json()):
         backend.post("/nube/api/robots", {"codigo": nombre, "unidad": "Unitree G1", "conexion": None, "credenciales": {},
@@ -178,8 +161,8 @@ def test_f12_robot_real_sin_conectar(app, backend, driver, escenario):
     assert "Sin conectar" in p.paso("Conexión")
 
 
-@pytest.mark.caso("F-13", "RF5–RF9, CU5–CU7", "Iniciar con el simulador, recorrer y detener")
-def test_f13_inspeccion_completa(app, backend, driver, escenario):
+@pytest.mark.caso("F-12", "RF5–RF9, CU5–CU7", "Iniciar con el simulador, recorrer y detener")
+def test_f12_inspeccion_completa(app, backend, driver, escenario):
     p = IniciarInspeccion(driver)
     p.abrir()
     _elegir_lugar(p, escenario, planta="Piso 1")
@@ -204,8 +187,8 @@ def test_f13_inspeccion_completa(app, backend, driver, escenario):
 
 
 # ── Relevamiento, hallazgos e informe ──
-@pytest.mark.caso("F-14", "RF10, CU8", "Filtrar por tipo de daño en el panel de hallazgos")
-def test_f14_filtrar_por_tipo(app, escenario):
+@pytest.mark.caso("F-13", "RF10, CU8", "Filtrar por tipo de daño en el panel de hallazgos")
+def test_f13_filtrar_por_tipo(app, escenario):
     app.abrir_edificacion(escenario["nombre_edificio"])
     app.esperar_xpath("//*[name()='svg'][@viewBox='0 0 800 600']//*[name()='circle'][@r='9.5']")
     antes = app.puntos_en_plano()
@@ -217,8 +200,8 @@ def test_f14_filtrar_por_tipo(app, escenario):
     assert app.puntos_en_plano() == antes
 
 
-@pytest.mark.caso("F-15", "RF11, RF12, CU9", "Confirmar un hallazgo con intervención y plazo")
-def test_f15_revisar_hallazgo(app, backend, escenario):
+@pytest.mark.caso("F-14", "RF11, RF12, CU9", "Confirmar un hallazgo con intervención y plazo")
+def test_f14_revisar_hallazgo(app, backend, escenario):
     app.abrir_edificacion(escenario["nombre_edificio"])
     detalle = app.abrir_hallazgo(1)
     assert detalle.find_elements(By.XPATH, ".//img | .//*[contains(.,'Sin foto') or contains(.,'Cargando foto')]")
@@ -236,8 +219,8 @@ def test_f15_revisar_hallazgo(app, backend, escenario):
     detalle.find_element(By.XPATH, ".//button[@aria-label='Cerrar']").click()
 
 
-@pytest.mark.caso("F-16", "RF14, RNF6, CU10", "Descargar el informe PDF")
-def test_f16_informe_pdf(app, driver, escenario):
+@pytest.mark.caso("F-15", "RF14, RNF6, CU10", "Descargar el informe PDF")
+def test_f15_informe_pdf(app, driver, escenario):
     app.abrir_edificacion(escenario["nombre_edificio"])
     app.esperar_plano()
     desde = time.time()
@@ -258,8 +241,8 @@ def test_f16_informe_pdf(app, driver, escenario):
 
 
 # ── Inspecciones ──
-@pytest.mark.caso("F-17", "RF13, CU11", "Buscar, filtrar y ordenar por hallazgos")
-def test_f17_buscar_y_ordenar(app, driver, escenario):
+@pytest.mark.caso("F-16", "RF13, CU11", "Buscar, filtrar y ordenar por hallazgos")
+def test_f16_buscar_y_ordenar(app, driver, escenario):
     lista = Inspecciones(driver)
     lista.abrir()
     lista.buscar(escenario["nombre_edificio"])
@@ -271,8 +254,8 @@ def test_f17_buscar_y_ordenar(app, driver, escenario):
     assert valores == sorted(valores, reverse=True), f"No quedó ordenado por hallazgos: {valores}"
 
 
-@pytest.mark.caso("F-18", "RF13, CU11", "Eliminar una inspección de prueba")
-def test_f18_eliminar_inspeccion(app, backend, driver, escenario):
+@pytest.mark.caso("F-17", "RF13, CU11", "Eliminar una inspección de prueba")
+def test_f17_eliminar_inspeccion(app, backend, driver, escenario):
     r = backend.post("/nube/relevamientos/iniciar", {"edificacion_id": escenario["edificacion"], "robot_id": escenario["robot"],
                                                       "planta": "Piso 2"})
     r.raise_for_status()
@@ -293,8 +276,8 @@ def test_f18_eliminar_inspeccion(app, backend, driver, escenario):
 
 
 # ── Compartir ──
-@pytest.mark.caso("F-19", "RF15, CU12", "Exportar una edificación e importarla")
-def test_f19_compartir(app, backend, driver, escenario):
+@pytest.mark.caso("F-18", "RF15, CU12", "Exportar una edificación e importarla")
+def test_f18_compartir(app, backend, driver, escenario):
     nombre = escenario["nombre_edificio"]
     app.ir_a("Inicio")
     fila = app.esperar_xpath(f"//aside//button[normalize-space(.)={_xp(nombre)}]")

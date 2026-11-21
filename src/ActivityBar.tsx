@@ -1,21 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { FolderPlus, House, ScanLine, Bot, ClipboardList, Map as MapIcon } from 'lucide-react';
+import { FolderPlus, House, ScanLine, Bot, ClipboardList, CreditCard, BookOpen } from 'lucide-react';
 import { consultarActivo } from './robotConexion';
+import { useLicenciaActual } from './alquiler';
 import ParadaEmergencia from './components/ParadaEmergencia';
 import { MenuUsuario } from './components/TopNav';
 
-export type NavTab = 'dashboard' | 'edificios' | 'relevamiento' | 'inspeccion' | 'equipo' | 'nuevo-edificio' | 'nuevo-proyecto' | 'nuevo-robot' | 'building-empty' | 'inspeccion-en-curso' | 'recorrido' | 'ficha-edificio' | 'editar-edificio' | 'editar-proyecto' | 'ficha-proyecto' | 'inspecciones' | 'mapa';
+export type NavTab = 'dashboard' | 'edificios' | 'relevamiento' | 'inspeccion' | 'equipo' | 'nuevo-edificio' | 'nuevo-proyecto' | 'nuevo-robot' | 'building-empty' | 'inspeccion-en-curso' | 'recorrido' | 'ficha-edificio' | 'editar-edificio' | 'editar-proyecto' | 'ficha-proyecto' | 'inspecciones' | 'servicio' | 'guia';
 
 const navItems: { id: NavTab; Icon: React.ElementType; label: string }[] = [
   { id: 'dashboard',   Icon: House,            label: 'Inicio' },
   { id: 'inspecciones', Icon: ClipboardList,   label: 'Inspecciones' },
-  { id: 'mapa',        Icon: MapIcon,          label: 'Mapa' },
   { id: 'inspeccion',  Icon: ScanLine,         label: 'Iniciar inspección' },
 ];
 
+// La pantalla Robot queda oculta: el robot se entrega configurado con el alquiler.
+// Cuando los usuarios puedan conectar su propio robot, alcanza con poner esto en true.
+export const MOSTRAR_PANTALLA_ROBOT = false;
+
 const actionItems: { id: NavTab; Icon: React.ElementType; label: string }[] = [
   { id: 'nuevo-proyecto', Icon: FolderPlus, label: 'Añadir proyecto' },
-  { id: 'nuevo-robot',    Icon: Bot,        label: 'Robot' },
+  ...(MOSTRAR_PANTALLA_ROBOT ? [{ id: 'nuevo-robot' as NavTab, Icon: Bot, label: 'Robot' }] : []),
+  { id: 'servicio',       Icon: CreditCard, label: 'Servicio de alquiler' },
 ];
 
 interface ActivityBarProps {
@@ -66,6 +71,11 @@ function useRobotConectado() {
 
 export default function ActivityBar({ active: pantalla, onChange }: ActivityBarProps) {
   const robot = useRobotConectado();
+  const licencia = useLicenciaActual();
+  // La guía de uso se ofrece mientras la versión Pro está activa
+  const acciones = licencia?.activa
+    ? [{ id: 'guia' as NavTab, Icon: BookOpen, label: 'Guía de uso' }, ...actionItems]
+    : actionItems;
   // El detalle de un relevamiento se abre desde el dashboard («Ver relevamiento»): se marca el dashboard
   const active: NavTab = pantalla === 'relevamiento' ? 'dashboard' : pantalla;
   return (
@@ -79,7 +89,7 @@ export default function ActivityBar({ active: pantalla, onChange }: ActivityBarP
 
       <div className="flex-1" />
 
-      {actionItems.map(item => (
+      {acciones.map(item => (
         <RailButton key={item.id} {...item} isActive={active === item.id} onClick={() => onChange(item.id)}
           {...(item.id === 'nuevo-robot' ? {
             punto: robot.si ? 'verde' as const : 'gris' as const,

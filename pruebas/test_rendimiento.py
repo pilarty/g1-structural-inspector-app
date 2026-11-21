@@ -31,7 +31,7 @@ for (const e of document.querySelectorAll('body *')) {
 return [...new Set(out)];
 """
 
-PANTALLAS = ["Inicio", "Inspecciones", "Mapa", "Iniciar inspección", "Añadir proyecto", "Robot"]
+PANTALLAS = ["Inicio", "Inspecciones", "Iniciar inspección", "Añadir proyecto"]
 
 
 @pytest.mark.ui

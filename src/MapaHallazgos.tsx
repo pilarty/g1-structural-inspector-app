@@ -95,7 +95,7 @@ export default function MapaHallazgos({
   relevamientoId?: number;
   enCurso?: boolean;
   /** Datos de la inspección para el informe PDF (sin la distancia, que se calcula acá) */
-  informe?: Omit<DatosInforme, 'distancia' | 'comitente'>;
+  informe?: Omit<DatosInforme, 'distancia' | 'comitente' | 'profesional' | 'matricula'>;
   /** Acá se deja la función que arma el informe, para llamarla desde el menú de la inspección */
   exportarRef?: React.MutableRefObject<(() => Promise<void>) | null>;
   /** Avisa cuando empieza y termina de armarse el informe */
@@ -352,6 +352,16 @@ export default function MapaHallazgos({
     document.body.appendChild(contenedor);
     const raiz = createRoot(contenedor);
     try {
+      // Plano y recorrido se piden de nuevo, por si la pantalla todavía no los había terminado de cargar
+      const [planoInf, caminoInf] = await Promise.all([
+        fetch(`${BACKEND_URL}/nube/api/relevamientos/${relevamientoId}/plano`).then(r => (r.ok ? r.json() as Promise<Plano> : null)).catch(() => null),
+        fetch(`${BACKEND_URL}/nube/api/relevamientos/${relevamientoId}/trayectoria`).then(r => (r.ok ? r.json() as Promise<Punto[]> : [])).catch(() => [] as Punto[]),
+      ]);
+      const paredesInf = planoInf?.paredes?.celdas?.length ? planoInf.paredes : paredes;
+      const recorridoInf = Array.isArray(caminoInf) && caminoInf.length > recorrido.length ? caminoInf : recorrido;
+      let distanciaInf = 0;
+      for (let i = 1; i < recorridoInf.length; i++)
+        distanciaInf += Math.hypot(recorridoInf[i].x - recorridoInf[i - 1].x, recorridoInf[i].y - recorridoInf[i - 1].y);
       // Fotos de los hallazgos que van (los descartados no)
       const incluidos = lista.filter(h => estadoDe(h.id) !== 'descartado');
       const fotos = await Promise.all(incluidos.map(async h => {
@@ -380,18 +390,36 @@ export default function MapaHallazgos({
       const proyecto = informe.proyectoId ? await obtenerProyecto(informe.proyectoId).catch(() => null) : null;
       const datos: DatosInforme = {
         ...informe,
-        comitente: [proyecto?.cliente_nombre, proyecto?.tipo_cliente ? etiquetaDe(TIPOS_CLIENTE, proyecto.tipo_cliente) : null].filter(Boolean).join(' · '),
-        distancia: recorrido.length > 1 ? `${distancia.toLocaleString('es-AR', { maximumFractionDigits: 1 })} m` : '—',
+        comitente: proyecto?.cliente_nombre
+          ? `${proyecto.cliente_nombre}${proyecto.tipo_cliente ? ` (${etiquetaDe(TIPOS_CLIENTE, proyecto.tipo_cliente)})` : ''}`
+          : '',
+        profesional: proyecto?.profesional_nombre ?? '',
+        matricula: proyecto?.profesional_matricula ?? '',
+        distancia: recorridoInf.length > 1 ? `${distanciaInf.toLocaleString('es-AR', { maximumFractionDigits: 1 })} m` : '—',
       };
-      raiz.render(<Informe datos={datos} hallazgos={filas} descartados={hallazgos.length - incluidos.length} />);
+      raiz.render(<Informe datos={datos} hallazgos={filas} descartados={hallazgos.length - incluidos.length}
+        plano={{ paredes: paredesInf, recorrido: recorridoInf.map(p => ({ x: p.x, y: p.y })) }} />);
       // Esperar a que se dibuje y a que carguen todas las fotos
       await new Promise(r => setTimeout(r, 50));
       await Promise.all([...contenedor.querySelectorAll('img')].map(img =>
         img.complete ? null : new Promise(r => { img.onload = r; img.onerror = r; })));
       const nombre = `Informe ${informe.edificacion} ${informe.fecha}`.replace(/[\\/:*?"<>|]/g, '-');
-      const puente = (window as unknown as { g1motor?: { guardarPdf?: (n: string) => Promise<string | null> } }).g1motor;
-      if (puente?.guardarPdf) await puente.guardarPdf(nombre);
-      else window.print(); // en el navegador: «Guardar como PDF» del diálogo de impresión
+      const puente = (window as unknown as { g1motor?: { guardarPdf?: (n: string, s?: { url: string }) => Promise<{ ruta: string | null; subido: boolean } | null> } }).g1motor;
+      if (puente?.guardarPdf) {
+        // Se pide un enlace firmado para guardar una copia del informe en la nube (S3)
+        const subida = await fetch(`${BACKEND_URL}/nube/api/archivos/subida`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ carpeta: 'informes', nombre: `${nombre}.pdf`, content_type: 'application/pdf' }),
+        }).then(r => (r.ok ? r.json() as Promise<{ key: string; url: string }> : null)).catch(() => null);
+        const res = await puente.guardarPdf(nombre, subida ? { url: subida.url } : undefined);
+        // Si se subió, queda registrado en la base de datos junto con su fecha de generación
+        if (subida && res?.subido) {
+          await fetch(`${BACKEND_URL}/nube/api/informes`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ relevamiento_id: informe.relevamientoId, archivo_url: subida.key }),
+          }).catch(() => null);
+        }
+      } else window.print(); // en el navegador: «Guardar como PDF» del diálogo de impresión
     } finally {
       raiz.unmount();
       contenedor.remove();

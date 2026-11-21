@@ -154,6 +154,20 @@ ipcMain.on('backend:ver-log', () => {
   shell.openPath(rutaLog())
 })
 
+// Página de pago de Mercado Pago: se abre en el navegador del sistema, y solo si es una dirección de Mercado Pago
+const DOMINIOS_PAGO = ['mercadopago.com.ar', 'mercadopago.com', 'mercadolibre.com.ar', 'mercadolibre.com']
+ipcMain.handle('pago:abrir', async (_e, url) => {
+  try {
+    const u = new URL(String(url))
+    const permitido = u.protocol === 'https:' && DOMINIOS_PAGO.some((d) => u.hostname === d || u.hostname.endsWith('.' + d))
+    if (!permitido) return false
+    await shell.openExternal(u.toString())
+    return true
+  } catch {
+    return false
+  }
+})
+
 // Pruebas automáticas (carpeta pruebas/): con G1_PRUEBAS_DIR los archivos se guardan ahí sin
 // abrir el diálogo de Windows, que Selenium no puede manejar. Sin esa variable, todo funciona igual.
 const DIR_PRUEBAS = process.env.G1_PRUEBAS_DIR || null
@@ -195,25 +209,48 @@ ipcMain.handle('archivo:abrir', async () => {
   return { nombre: path.basename(filePaths[0]), contenido: fs.readFileSync(filePaths[0], 'utf8') }
 })
 
-// Informe de inspección: la pantalla ya dejó armado el informe para imprimir;
-// se convierte a PDF, se pregunta dónde guardarlo y se abre.
-ipcMain.handle('informe:pdf', async (_e, nombre) => {
+const PIE_PDF = `<div style="box-sizing:border-box;width:100%;font-family:Arial,Helvetica,sans-serif;font-size:7.5px;color:#66686A;display:flex;justify-content:space-between;padding:0 12mm">
+<span>Informe generado con la aplicación G1 Structural Inspector</span>
+<span>Página <span class="pageNumber"></span> de <span class="totalPages"></span></span>
+</div>`
+const OPCIONES_PDF = {
+  pageSize: 'A4',
+  printBackground: true,
+  margins: { top: 0.55, bottom: 0.7, left: 0.47, right: 0.47 },
+  displayHeaderFooter: true,
+  headerTemplate: '<div></div>',
+  footerTemplate: PIE_PDF,
+}
+
+// Informe de inspección: la pantalla ya dejó armado el informe para imprimir.
+// Se convierte a PDF, se sube a S3 con el enlace firmado que pidió la pantalla
+// (si lo pidió) y después se pregunta dónde guardarlo y se abre.
+ipcMain.handle('informe:pdf', async (_e, nombre, subida) => {
   if (!ventana) return null
+  const pdf = await ventana.webContents.printToPDF(OPCIONES_PDF)
+  let subido = false
+  if (subida && subida.url) {
+    try {
+      const r = await fetch(subida.url, { method: 'PUT', headers: { 'Content-Type': 'application/pdf' }, body: pdf })
+      subido = r.ok
+    } catch {
+      subido = false
+    }
+  }
   if (DIR_PRUEBAS) {
     const destino = enPruebas(nombre, '.pdf')
-    fs.writeFileSync(destino, await ventana.webContents.printToPDF({ pageSize: 'A4', printBackground: true, margins: { marginType: 'default' } }))
-    return destino
+    fs.writeFileSync(destino, pdf)
+    return { ruta: destino, subido }
   }
   const { canceled, filePath } = await dialog.showSaveDialog(ventana, {
     title: 'Guardar informe',
     defaultPath: path.join(app.getPath('documents'), String(nombre || 'informe') + '.pdf'),
     filters: [{ name: 'PDF', extensions: ['pdf'] }],
   })
-  if (canceled || !filePath) return null
-  const pdf = await ventana.webContents.printToPDF({ pageSize: 'A4', printBackground: true, margins: { marginType: 'default' } })
+  if (canceled || !filePath) return { ruta: null, subido }
   fs.writeFileSync(filePath, pdf)
   shell.openPath(filePath)
-  return filePath
+  return { ruta: filePath, subido }
 })
 
 const unica = app.isPackaged ? app.requestSingleInstanceLock() : true

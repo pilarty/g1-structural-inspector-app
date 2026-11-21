@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import ActivityBar, { NavTab } from './ActivityBar';
+import ActivityBar, { NavTab, MOSTRAR_PANTALLA_ROBOT } from './ActivityBar';
 import { TopNav, PrimaryButton, SecondaryButton, PanelTitle } from './components';
 import { tarjetaBlanca } from './tokens';
 import { AreaTexto, Campo, Selector } from './components/Formulario';
@@ -27,7 +27,8 @@ const NUEVO = '__nuevo__';
 
 export default function InspectionSetup({ activeTab, onTabChange, edificioInicial, onNuevoProyecto, onNuevaEdificacion }: InspectionSetupProps) {
   const { proyectos } = useProyectos();
-  const { robots, cargando: cargandoRobots, error: errorRobots } = useRobots();
+  const { robots: todosRobots, cargando: cargandoRobots, error: errorRobots } = useRobots();
+  const robots = useMemo(() => todosRobots.filter(r => r.disponible), [todosRobots]);
   const [edificioId, setEdificioId] = useState(edificioInicial ?? '');
   // Proyecto: el de la edificación que llega elegida, si hay una
   const [proyectoId, setProyectoId] = useState(
@@ -287,16 +288,17 @@ export default function InspectionSetup({ activeTab, onTabChange, edificioInicia
                       <Campo etiqueta="Robot" obligatorio>
                         <Selector valor={robotId} onCambio={setRobotId}
                           placeholder={cargandoRobots ? 'Cargando robots…' : errorRobots ? 'No se pudieron cargar' : robots.length ? 'Elegí el robot' : 'No hay robots registrados'}
-                          opciones={robots.map(r => ({ valor: r.id, etiqueta: r.modelo ? `${r.label} · ${r.modelo}` : r.label }))} />
+                          opciones={robots.map(r => ({ valor: r.id, etiqueta: [r.label, r.modelo, r.alquiladoHasta && `alquilado hasta el ${fechaAlquiler(r.alquiladoHasta)}`].filter(Boolean).join(' · ') }))} />
                       </Campo>
                     </div>
                     {errorRobots && (
                       <p className="mt-3 text-[12px] text-[#991B1B]">{errorRobots} Si reiniciaste el backend, cerrá sesión y volvé a entrar.</p>
                     )}
+                    {!esSimulador && <InstruccionesConexion />}
                     {!cargandoRobots && !errorRobots && robots.length === 0 && (
                       <div className="mt-3 flex items-center gap-3 px-4 py-3 rounded-md bg-[#F8F9FA] border border-[#E5E7EB] text-[13px]">
-                        <span className="flex-1">Todavía no registraste ningún robot.</span>
-                        <SecondaryButton onClick={() => onTabChange('nuevo-robot')}>Agregar robot</SecondaryButton>
+                        <span className="flex-1">Tu cuenta todavía no tiene un robot asignado. El robot se asigna al confirmarse el alquiler.</span>
+                        {MOSTRAR_PANTALLA_ROBOT && <SecondaryButton onClick={() => onTabChange('nuevo-robot')}>Agregar robot</SecondaryButton>}
                       </div>
                     )}
                   </SeccionSetup>
@@ -307,7 +309,7 @@ export default function InspectionSetup({ activeTab, onTabChange, edificioInicia
                       puedeProbar={!esSimulador && !!robot.conexion}
                       motivoNoProbar={esSimulador
                         ? 'Es un simulador: no hace falta probar la conexión.'
-                        : 'Este robot no tiene datos de conexión. Configuralo en la pantalla Robot.'}
+                        : 'Este robot no tiene datos de conexión. Comunicate con soporte para que lo configuren.'}
                       onProbar={probarRobot}
                     />
                   )}
@@ -382,6 +384,45 @@ function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
       <dt className="text-[11px] text-[#8A8C8E]">{etiqueta}</dt>
       <dd className="text-[13px] font-semibold text-[#1A1C1E] truncate">{valor}</dd>
     </div>
+  );
+}
+
+/** Pasos para conectar la computadora con el robot que se entregó con el alquiler. */
+const fechaAlquiler = (iso: string) => iso.slice(0, 10).split('-').reverse().join('/');
+
+const PASOS_CONEXION: string[] = [
+  'Encendé el robot con el botón de la batería y esperá a que termine de arrancar.',
+  'Conectá la computadora al puerto de red del robot con un cable Ethernet.',
+  'En Windows, abrí Configuración › Red e Internet › Ethernet › Asignación de IP › Editar, elegí «Manual» y cargá la IP 192.168.123.51 con la máscara 255.255.255.0.',
+  'Elegí el robot en la lista y tocá «Probar conexión». La app comprueba la red, el acceso SSH, el estado de los motores (DDS) y la cámara.',
+  'Cuando los cuatro pasos estén en verde, confirmá las condiciones de seguridad y tocá «Permitir movimiento».',
+];
+
+const AYUDA_CONEXION: [string, string][] = [
+  ['Red', 'revisá el cable y que la IP de la computadora sea 192.168.123.51.'],
+  ['SSH', 'el robot todavía está arrancando; esperá un momento y volvé a probar.'],
+  ['DDS', 'comprobá que el robot haya terminado de arrancar y volvé a probar.'],
+  ['Cámara', 'apagá y encendé el robot. Si sigue fallando, comunicate con soporte.'],
+];
+
+function InstruccionesConexion() {
+  return (
+    <details className="mt-4 rounded-md border border-[#E5E7EB] bg-[#F8F9FA] text-[13px] text-[#1A1C1E]">
+      <summary className="cursor-pointer select-none px-4 py-2.5 font-semibold text-[#377DC0]">Cómo conectar el robot</summary>
+      <div className="px-4 pb-4">
+        <p className="text-[12px] text-[#66686A] mb-2">
+          El robot se entrega configurado y asociado a tu cuenta, por lo que no hace falta cargar sus datos. Solo tenés que conectarlo a
+          esta computadora:
+        </p>
+        <ol className="list-decimal pl-5 space-y-1">
+          {PASOS_CONEXION.map(p => <li key={p}>{p}</li>)}
+        </ol>
+        <p className="text-[12px] font-semibold mt-3 mb-1">Si falla algún paso de la prueba</p>
+        <ul className="space-y-0.5 text-[12px] text-[#4B4D4F]">
+          {AYUDA_CONEXION.map(([paso, texto]) => <li key={paso}><span className="font-semibold">{paso}:</span> {texto}</li>)}
+        </ul>
+      </div>
+    </details>
   );
 }
 

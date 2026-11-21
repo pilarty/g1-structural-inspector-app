@@ -10,6 +10,8 @@ interface RobotApi {
   conexion?: ConexionGuardada | null;
   ultima_prueba_fecha?: string | null;
   ultima_prueba?: Pick<ResultadoPrueba, 'resultado' | 'tipo' | 'interfaz'> | null;
+  disponible?: boolean;
+  alquilado_hasta?: string | null;
 }
 
 export interface RobotNube {
@@ -23,6 +25,10 @@ export interface RobotNube {
   configured: boolean;
   ultimaPruebaFecha: string | null;
   ultimaPruebaResultado: 'ok' | 'error' | null;
+  /** false si es un robot de un alquiler que ya terminó: se ve en el historial, pero no se puede usar */
+  disponible: boolean;
+  /** Último día del alquiler vigente, si el robot es alquilado */
+  alquiladoHasta: string | null;
 }
 
 export function useRobots() {
@@ -52,6 +58,8 @@ export function useRobots() {
             configured: !!r.conexion,
             ultimaPruebaFecha: r.ultima_prueba_fecha ?? null,
             ultimaPruebaResultado: r.ultima_prueba?.resultado ?? null,
+            disponible: r.disponible ?? true,
+            alquiladoHasta: r.alquilado_hasta ?? null,
           })),
         );
       } catch {

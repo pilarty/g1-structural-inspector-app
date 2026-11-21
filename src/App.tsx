@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Home from './Home';
 import InspectionSetup from './InspectionSetup';
 import NewBuilding from './NewBuilding';
@@ -11,11 +11,24 @@ import BuildingEmpty from './BuildingEmpty';
 import InspectionLive from './InspectionLive';
 import InspectionRecorrido from './InspectionRecorrido';
 import Inspecciones from './Inspecciones';
-import Mapa from './Mapa';
+import Servicio from './Servicio';
+import Guia from './Guia';
+import { useLicencia } from './alquiler';
 import type { NavTab } from './ActivityBar';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
+  const { licencia, recargar: recargarLicencia } = useLicencia();
+  // La primera vez que se activa la versión Pro de un alquiler, se muestra la guía de uso
+  useEffect(() => {
+    if (!licencia?.activa) return;
+    const clave = `guia-vista-${licencia.desde ?? ''}`;
+    try {
+      if (localStorage.getItem(clave)) return;
+      localStorage.setItem(clave, '1');
+    } catch { /* sin almacenamiento local: se muestra igual */ }
+    setActiveTab('guia');
+  }, [licencia?.activa, licencia?.desde]);
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
   // Proyecto recién creado: Nuevo edificio lo muestra ya elegido
   const [proyectoParaEdificio, setProyectoParaEdificio] = useState<string | null>(null);
@@ -121,13 +134,18 @@ export default function App() {
     );
   }
 
-  if (activeTab === 'mapa') {
+  if (activeTab === 'guia') {
+    return <Guia activeTab={activeTab} onTabChange={handleTabChange} licencia={licencia} />;
+  }
+
+  if (activeTab === 'servicio' || (activeTab === 'inspeccion' && licencia?.obligatoria && !licencia.activa)) {
     return (
-      <Mapa
+      <Servicio
         activeTab={activeTab}
         onTabChange={handleTabChange}
-        onAbrir={id => { setRelevamientoElegido(null); setSelectedBuildingId(id); setActiveTab('recorrido'); }}
-        onEditar={id => { setSelectedBuildingId(id); setActiveTab('editar-edificio'); }}
+        licencia={licencia}
+        onPagado={recargarLicencia}
+        motivoBloqueo={activeTab === 'inspeccion'}
       />
     );
   }
